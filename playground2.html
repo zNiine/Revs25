@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>3D Ballpark + Fly Ball (With Walls)</title>
+  <style>
+    body { margin:0; overflow:hidden; }
+    #stats {
+      position:absolute; top:10px; left:10px;
+      font-family:sans-serif; z-index:10;
+      background:rgba(255,255,255,0.8); padding:8px; border-radius:4px;
+    }
+    #stats div, #stats select, #stats button {
+      margin-bottom:6px; display:block;
+    }
+    canvas { display:block; }
+    #ballLabel, #apexLabel {
+      position:absolute; transform-origin:50% 100%; pointer-events:none;
+      font-family:sans-serif; background:rgba(255,255,255,0.8);
+      padding:2px 6px; border-radius:4px; z-index:10;
+    }
+    #apexLabel { display:none; }
+  </style>
+</head>
+<body>
+  <div id="stats">
+    <div id="homeInfo">Exit Velo: – mph, Angle: –°</div>
+    <div id="apexInfo">Max Height: – ft</div>
+    <label for="viewSelect">Snap View:</label>
+    <select id="viewSelect">
+      <option value="">— select view —</option>
+      <option value="home">Home Plate</option>
+      <option value="first">First Base</option>
+      <option value="third">Third Base</option>
+      <option value="outfield">Center Field</option>
+    </select>
+    <button id="resetBtn">Reset</button>
+    <button id="followBtn">Follow Ball: Off</button>
+  </div>
+  <div id="ballLabel">Distance: – ft</div>
+  <div id="apexLabel">Max Height: – ft</div>
+  <canvas id="c"></canvas>
+
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
+  <script>
+  window.addEventListener('DOMContentLoaded', () => {
+    // Renderer, Scene, Camera
+    const canvas   = document.getElementById('c');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 2000);
+    camera.position.set(0,200,400);
+    camera.lookAt(0,0,0);
+    scene.add(new THREE.DirectionalLight(0xffffff,1.2).position.set(-200,300,100));
+    scene.add(new THREE.AmbientLight(0x888888));
+
+ 
+
+    // UI
+    const homeInfo   = document.getElementById('homeInfo'),
+          apexInfo   = document.getElementById('apexInfo'),
+          viewSelect = document.getElementById('viewSelect'),
+          resetBtn   = document.getElementById('resetBtn'),
+          followBtn  = document.getElementById('followBtn'),
+          ballLabel  = document.getElementById('ballLabel'),
+          apexLabel  = document.getElementById('apexLabel');
+
+    // Pan/Orbit
+    let dragMode=null, px=0, py=0;
+    canvas.addEventListener('contextmenu', e=>e.preventDefault());
+    canvas.addEventListener('mousedown', e=>{
+      px=e.clientX; py=e.clientY;
+      dragMode = e.button===0?'pan': e.button===2?'orbit':null;
+    });
+    window.addEventListener('mouseup', ()=>{ dragMode=null; });
+    window.addEventListener('mousemove', e=>{
+      if (!dragMode) return;
+      const dx=e.clientX-px, dy=e.clientY-py;
+      px=e.clientX; py=e.clientY;
+      if (dragMode==='orbit') {
+        camera.rotation.y -= dx*0.005;
+        camera.rotation.x -= dy*0.005;
+      } else {
+        camera.translateX(-dx*0.5);
+        camera.translateY( dy*0.5);
+      }
+    });
+    // Zoom clamp
+    const MIN_HEIGHT = 5;
+    canvas.addEventListener('wheel', e=>{
+      const dir = camera.getWorldDirection(new THREE.Vector3());
+      camera.position.addScaledVector(dir, e.deltaY*0.1);
+      if (camera.position.y < MIN_HEIGHT) camera.position.y = MIN_HEIGHT;
+    });
+
+    // Field Group
+    const fieldGroup = new THREE.Group();
+    scene.add(fieldGroup);
+
+    // FENCE CONFIG
+    const fenceCfg = [
+      {deg:-45, dist:325}, {deg:-22.5, dist:362.5},
+      {deg:   0, dist:400}, {deg: 22.5, dist:362.5},
+      {deg:  45, dist:325}
+    ];
+    const lineMat = new THREE.LineBasicMaterial({ color:0xffffff });
+    const fenceGroup = new THREE.Group();
+
+    // foul lines
+    for (let deg of [-45,45]) {
+      const rad = (deg-90)*Math.PI/180;
+      const r   = fenceCfg.find(f=>f.deg===deg).dist;
+      const x   = r*Math.cos(rad), z = -r*Math.sin(rad);
+      fenceGroup.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0,1,0),
+          new THREE.Vector3(x,1,z)
+        ]),
+        lineMat
+      ));
+    }
+// ─── OUTFIELD WALL (5 ft tall) ────────────────────────────────────────────
+const wallShape = new THREE.Shape();
+fenceCfg.forEach((p,i) => {
+  const a = (p.deg - 90) * Math.PI/180;
+  const x = p.dist * Math.cos(a);
+  const z = -p.dist * Math.sin(a);
+  i === 0
+    ? wallShape.moveTo(x, z)
+    : wallShape.lineTo(x, z);
+});
+wallShape.lineTo(0, 0);            // close back to home plate
+
+const wallGeo = new THREE.ExtrudeGeometry(wallShape, {
+  depth: 5,                        // 5 ft tall
+  bevelEnabled: false
+});
+const wallMat = new THREE.MeshLambertMaterial({
+  color: 0xff7f00,
+  side: THREE.DoubleSide
+});
+const wallMesh = new THREE.Mesh(wallGeo, wallMat);
+
+// rotate so extrusion (local Z) becomes world Y
+wallMesh.rotateX(-Math.PI/2);
+
+fenceGroup.add(wallMesh);
+
+
+    fieldGroup.add(fenceGroup);
+
+    // INFIELD
+    const infieldGroup = new THREE.Group();
+    const BASE = 90, s2 = Math.SQRT2;
+    const pts  = [[0,0],[BASE/s2,-BASE/s2],[0,-BASE*s2],[-BASE/s2,-BASE/s2]];
+
+    // dirt
+    const dirtShape = new THREE.Shape(pts.map(p=>new THREE.Vector2(p[0],p[1])));
+    const dirtMesh = new THREE.Mesh(
+      new THREE.ShapeGeometry(dirtShape),
+      new THREE.MeshLambertMaterial({ color: 0xAD8A56 })
+    );
+    dirtMesh.rotation.x = -Math.PI/2;
+    infieldGroup.add(dirtMesh);
+
+    // bases
+    const baseGeo = new THREE.BoxGeometry(4,1,4),
+          baseMat = new THREE.MeshLambertMaterial({ color:0xffffff });
+    pts.forEach(p=>{
+      const b = new THREE.Mesh(baseGeo, baseMat);
+      b.position.set(p[0],1,-p[1]);
+      infieldGroup.add(b);
+    });
+    // baselines
+    [-45,45].forEach(deg=>{
+      const rad = (deg-90)*Math.PI/180, r = BASE*1.5;
+      infieldGroup.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0,1,0),
+          new THREE.Vector3(r*Math.cos(rad),1,-r*Math.sin(rad))
+        ]), lineMat
+      ));
+    });
+
+    fieldGroup.add(infieldGroup);
+
+    // infield always on top of fence
+    infieldGroup.traverse(obj=>{
+      if (obj.isMesh) {
+        obj.renderOrder        = 1;
+        obj.material.depthTest = false;
+      }
+    });
+
+    // BALL & TRACE
+    const ball = new THREE.Mesh(
+      new THREE.SphereGeometry(3,16,16),
+      new THREE.MeshStandardMaterial({ color:0xffff00 })
+    );
+    ball.frustumCulled = false;
+    scene.add(ball);
+
+    const tracePts  = [], traceGeom = new THREE.BufferGeometry().setFromPoints(tracePts);
+    const traceLine = new THREE.Line(traceGeom, lineMat);
+    traceLine.frustumCulled    = false;
+    traceLine.renderOrder      = 2;
+    traceLine.material.depthTest = false;
+    scene.add(traceLine);
+
+    ball.renderOrder        = 2;
+    ball.material.depthTest = false;
+
+    // ANIMATION SETUP
+    let D=0, T=1, Dir=0, elapsed=0, tApex=0, deflected=false, follow=false;
+    const g      = 32, clock = new THREE.Clock(), apexPos = new THREE.Vector3();
+
+    Papa.parse('data.csv',{ download:true, header:true, dynamicTyping:true, complete(res){
+      const o = res.data[1]||{};
+      D   = o.Distance||D;
+      T   = o.HangTime||T;
+      Dir = (o.Direction||0)*Math.PI/180;  // forward outfield
+      homeInfo.textContent = `Exit Velo: ${o.ExitSpeed} mph, Angle: ${o.Angle}°`;
+
+      const vy   = g*T/2; tApex = T/2;
+      const maxH = Math.round(vy*tApex - 0.5*g*tApex*tApex);
+      apexInfo.textContent = `Max Height: ${maxH} ft`;
+
+      // apex marker
+      const apexMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(2,8,8),
+        new THREE.MeshBasicMaterial({ color:0xff0000 })
+      );
+      const ar = Dir - Math.PI/2;
+      apexPos.set(
+        D/2 * Math.cos(ar),
+        vy*tApex - 0.5*g*tApex*tApex,
+        D/2 * Math.sin(ar)
+      );
+      apexMesh.position.copy(apexPos);
+      scene.add(apexMesh);
+      apexLabel.textContent = `Max Height: ${maxH} ft`;
+
+      clock.start();
+    }});
+
+    // keep distance label with ball
+    function updateLabel(){
+      const proj = ball.position.clone().project(camera);
+      ballLabel.style.transform = `
+        translate(-50%,-100%)
+        translate(${(proj.x*0.5+0.5)*window.innerWidth}px,
+                  ${(-proj.y*0.5+0.5)*window.innerHeight}px)
+      `;
+    }
+
+    function animate(){
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta(); elapsed += dt;
+      if (D) {
+        const u  = Math.min(elapsed/T,1),
+              ar = Dir - Math.PI/2,
+              x  = D*u*Math.cos(ar),
+              z  = D*u*Math.sin(ar),
+              vy = g*T/2,
+              y  = vy*elapsed - 0.5*g*elapsed*elapsed;
+
+        if (!deflected && y>9 && Math.hypot(x,z)>fenceCfg[2].dist) {
+          deflected = true;
+          Dir = Math.PI - Dir;
+        }
+
+        if (!(elapsed>tApex && y<=6)) {
+          ball.position.set(x, Math.max(y,6), z);
+          tracePts.push(ball.position.clone());
+          traceGeom.setFromPoints(tracePts);
+          ballLabel.textContent = `Distance: ${Math.round(Math.hypot(x,z))} ft`;
+        }
+      }
+      updateLabel();
+      renderer.render(scene,camera);
+    }
+    animate();
+
+    // Snap views
+    const views = {
+      home:     {pos:[0,50,200],    look:[0,0,0]},
+      first:    {pos:[100,50,100],  look:[63.6,1,63.6]},
+      third:    {pos:[-100,50,100], look:[-63.6,1,63.6]},
+      outfield: {pos:[0,50,-500],   look:[0,0,0]}
+    };
+    viewSelect.addEventListener('change', ()=>{
+      const v = views[viewSelect.value];
+      if (v) {
+        camera.position.set(...v.pos);
+        camera.lookAt(...v.look);
+      }
+    });
+
+    // Buttons & resize
+    resetBtn.onclick = ()=>{
+      elapsed=0; clock.start(); deflected=false;
+      ball.position.set(0,1,0);
+      tracePts.length=0; traceGeom.setFromPoints(tracePts);
+      camera.fov=60; camera.updateProjectionMatrix();
+      apexLabel.style.display='none';
+      viewSelect.value = '';
+    };
+    followBtn.onclick = ()=>{
+      follow = !follow;
+      followBtn.textContent = `Follow Ball: ${follow?'On':'Off'}`;
+      if (follow) camera.lookAt(ball.position);
+      else        camera.updateProjectionMatrix();
+    };
+    window.addEventListener('resize', ()=>{
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth,window.innerHeight);
+      updateLabel();
+    });
+  });
+  </script>
+</body>
+</html>

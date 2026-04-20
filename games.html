@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Games – ALPB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .controls label { font-size: 0.9rem; color: var(--text-muted); }
+    .controls select, .controls input { padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text); }
+    .toggle-switch { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    .toggle-switch input { opacity: 0; position: absolute; }
+    .toggle-switch .slider { width: 40px; height: 20px; background: var(--border); border-radius: 20px; transition: background 0.2s; position: relative; }
+    .toggle-switch .slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: var(--text); border-radius: 50%; transition: transform 0.2s; }
+    .toggle-switch input:checked + .slider { background: var(--accent); }
+    .toggle-switch input:checked + .slider::before { transform: translateX(20px); }
+    .game-card .leaders { padding: 0.75rem 1rem; border-top: 1px solid var(--border); background: var(--bg-elevated); font-size: 0.85rem; }
+    .game-card .leaders ul { margin: 0; padding-left: 1.25rem; }
+    .game-card .leaders li { margin-bottom: 0.25rem; }
+    .game-card .leaders a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="logo">ALPB</a>
+    <nav class="nav-desktop">
+      <a href="index.html">Home</a>
+      <a href="schedule.html">Standings</a>
+      <a href="games.html" class="active">Games</a>
+      <a href="leaderboards.html">Leaderboards</a>
+      <a href="park-factors.html">Park Factors</a>
+      <a href="fielding.html">Fielding</a>
+      <a href="stolen-bases.html">Base Running</a>
+      <a href="dong.html">Would it Dong?</a>
+    </nav>
+    <div class="hamburger" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></div>
+  </header>
+  <div id="side-menu" class="side-menu">
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="schedule.html">Standings</a></li>
+        <li><a href="games.html" class="active">Games</a></li>
+        <li><a href="leaderboards.html">Leaderboards</a></li>
+        <li><a href="park-factors.html">Park Factors</a></li>
+        <li><a href="fielding.html">Fielding</a></li>
+        <li><a href="stolen-bases.html">Base Running</a></li>
+        <li><a href="dong.html">Would it Dong?</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div id="overlay" class="overlay"></div>
+
+  <main class="main-container">
+    <div id="loading" class="loading">Loading games…</div>
+    <div id="error" class="error-msg" style="display:none;"></div>
+    <div id="content" style="display:none;">
+      <div class="controls">
+        <label for="filter-date">Date</label>
+        <input type="date" id="filter-date" />
+        <label for="filter-team">Team</label>
+        <select id="filter-team">
+          <option value="">All Teams</option>
+        </select>
+        <button type="button" id="clear-filter" class="btn btn-ghost">Show All</button>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-leaders" />
+          <span class="slider"></span>
+          <span>Show Leaders</span>
+        </label>
+      </div>
+      <h2 class="page-title">Games</h2>
+      <div class="games-grid" id="games-container"></div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    (function() {
+      var gamesMap = {};  // gameUID -> { date, away, home, awayRuns, homeRuns, leaders }
+      function num(r, k) { var v = r[k]; if (v === undefined || v === null || v === '') return NaN; return parseFloat(v) || NaN; }
+
+      function buildGames(filterDate, filterTeam, showLeaders) {
+        var gamesList = Object.keys(gamesMap).map(function(id) {
+          var g = gamesMap[id];
+          return { gameUID: id, date: g.date, away: g.away, home: g.home, awayRuns: g.awayRuns, homeRuns: g.homeRuns, leaders: g.leaders };
+        }).sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+        var list = gamesList.filter(function(g) {
+          if (filterDate) {
+            var iso = g.date ? new Date(g.date).toISOString().slice(0, 10) : '';
+            if (iso !== filterDate) return false;
+          }
+          if (filterTeam && g.away !== filterTeam && g.home !== filterTeam) return false;
+          return true;
+        });
+        var container = document.getElementById('games-container');
+        container.innerHTML = '';
+        list.forEach(function(g) {
+          var card = document.createElement('div');
+          card.className = 'game-card';
+          var dateStr = g.date ? new Date(g.date).toLocaleDateString() : '';
+          var awayName = (g.away || '').replace(/</g, '&lt;');
+          var homeName = (g.home || '').replace(/</g, '&lt;');
+          var html = '<div class="card-date">' + dateStr + '</div>' +
+            '<div class="half away"><span class="team-name">' + awayName + '</span><span class="score">' + (g.awayRuns ?? '') + '</span></div>' +
+            '<div class="half home"><span class="team-name">' + homeName + '</span><span class="score">' + (g.homeRuns ?? '') + '</span></div>';
+          if (showLeaders && g.leaders) {
+            var L = g.leaders;
+            var fp = (L.fastestPitch && L.fastestPitch.Pitcher) ? '<a href="pitcher-profiles.html?player=' + encodeURIComponent(L.fastestPitch.Pitcher) + '">' + L.fastestPitch.Pitcher + '</a> — <strong>' + (L.fastestPitch.RelSpeed != null ? L.fastestPitch.RelSpeed.toFixed(1) : '') + '</strong> mph' : 'n/a';
+            var hh = (L.hardestHit && L.hardestHit.Batter) ? '<a href="batter-profiles.html?player=' + encodeURIComponent(L.hardestHit.Batter) + '">' + L.hardestHit.Batter + '</a> — <strong>' + (L.hardestHit.ExitSpeed != null ? L.hardestHit.ExitSpeed.toFixed(1) : '') + '</strong> mph' : 'n/a';
+            var hrs = (L.homeRuns || []).map(function(hr) {
+              return '<li><a href="batter-profiles.html?player=' + encodeURIComponent(hr.Batter) + '">' + (hr.Batter || '') + '</a> — <strong>' + (hr.Distance != null ? hr.Distance.toFixed(0) : '') + '</strong> ft</li>';
+            }).join('');
+            html += '<div class="leaders"><ul><li><b>Fastest Pitch:</b> ' + fp + '</li><li><b>Hardest Hit:</b> ' + hh + '</li><li><b>Home Runs:</b></li><ul>' + (hrs || '<li>None</li>') + '</ul></ul></div>';
+          }
+          card.innerHTML = html;
+          card.addEventListener('click', function() {
+            window.location.href = 'Game-view.html?gameUID=' + encodeURIComponent(g.gameUID || '');
+          });
+          container.appendChild(card);
+        });
+      }
+
+      function populateTeamFilter() {
+        var teams = {};
+        Object.keys(gamesMap).forEach(function(id) {
+          var g = gamesMap[id];
+          if (g.away) teams[g.away] = true;
+          if (g.home) teams[g.home] = true;
+        });
+        var sel = document.getElementById('filter-team');
+        sel.innerHTML = '<option value="">All Teams</option>';
+        Object.keys(teams).sort().forEach(function(t) {
+          var opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          sel.appendChild(opt);
+        });
+      }
+
+      document.getElementById('filter-date').addEventListener('change', function() {
+        buildGames(document.getElementById('filter-date').value, document.getElementById('filter-team').value, document.getElementById('toggle-leaders').checked);
+      });
+      document.getElementById('filter-team').addEventListener('change', function() {
+        buildGames(document.getElementById('filter-date').value, document.getElementById('filter-team').value, document.getElementById('toggle-leaders').checked);
+      });
+      document.getElementById('toggle-leaders').addEventListener('change', function() {
+        buildGames(document.getElementById('filter-date').value, document.getElementById('filter-team').value, this.checked);
+      });
+      document.getElementById('clear-filter').addEventListener('click', function() {
+        document.getElementById('filter-date').value = '';
+        document.getElementById('filter-team').value = '';
+        document.getElementById('toggle-leaders').checked = false;
+        buildGames('', '', false);
+      });
+
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('content').style.display = 'none';
+      Papa.parse('./data.csv', {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        step: function(results) {
+          var r = results.data;
+          if (!r || !r.GameUID) return;
+          var id = r.GameUID;
+          if (!gamesMap[id]) {
+            gamesMap[id] = {
+              date: r.LocalDateTime || r.Date,
+              away: r.AwayNameFull,
+              home: r.HomeNameFull,
+              awayRuns: 0,
+              homeRuns: 0,
+              leaders: { fastestPitch: null, hardestHit: null, homeRuns: [] }
+            };
+          }
+          var g = gamesMap[id];
+          var runs = num(r, 'RunsScored') || 0;
+          if (runs && r['Top/Bottom']) {
+            if (r['Top/Bottom'] === 'Top') g.awayRuns += runs;
+            else g.homeRuns += runs;
+          }
+          var rel = num(r, 'RelSpeed');
+          if (!isNaN(rel) && (!g.leaders.fastestPitch || rel > g.leaders.fastestPitch.RelSpeed))
+            g.leaders.fastestPitch = { RelSpeed: rel, Pitcher: r.Pitcher };
+          var ev = num(r, 'ExitSpeed');
+          if (!isNaN(ev) && (!g.leaders.hardestHit || ev > g.leaders.hardestHit.ExitSpeed))
+            g.leaders.hardestHit = { ExitSpeed: ev, Batter: r.Batter };
+          if (r.PlayResult === 'HomeRun') {
+            var dist = num(r, 'Distance');
+            g.leaders.homeRuns.push({ Batter: r.Batter, Distance: isNaN(dist) ? 0 : dist });
+          }
+        },
+        complete: function() {
+          Object.keys(gamesMap).forEach(function(id) {
+            var hrs = gamesMap[id].leaders.homeRuns;
+            hrs.sort(function(a, b) { return b.Distance - a.Distance; });
+          });
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('content').style.display = 'block';
+          populateTeamFilter();
+          buildGames(
+            document.getElementById('filter-date').value,
+            document.getElementById('filter-team').value,
+            document.getElementById('toggle-leaders').checked
+          );
+        },
+        error: function(err) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').textContent = err.message || 'Failed to load data.csv.';
+          document.getElementById('error').style.display = 'block';
+        }
+      });
+
+      var hamburger = document.getElementById('hamburger-btn');
+      var sideMenu = document.getElementById('side-menu');
+      var overlay = document.getElementById('overlay');
+      function openMenu() { hamburger.classList.add('open'); sideMenu.classList.add('open'); overlay.classList.add('visible'); }
+      function closeMenu() { hamburger.classList.remove('open'); sideMenu.classList.remove('open'); overlay.classList.remove('visible'); }
+      hamburger.addEventListener('click', function() { if (sideMenu.classList.contains('open')) closeMenu(); else openMenu(); });
+      overlay.addEventListener('click', closeMenu);
+
+      document.addEventListener('DOMContentLoaded', function() {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+          firebase.auth().onAuthStateChanged(function(user) { if (!user) window.location.href = 'login.html'; });
+        }
+      });
+    })();
+  </script>
+  <script type="module">
+    try {
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js");
+      firebase.initializeApp({
+        apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+        authDomain: "revs-2c987.firebaseapp.com",
+        projectId: "revs-2c987",
+        storageBucket: "revs-2c987.firebasestorage.app",
+        messagingSenderId: "181256684157",
+        appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+        measurementId: "G-2050889X0C"
+      });
+    } catch (e) {}
+  </script>
+</body>
+</html>

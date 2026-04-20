@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitcher-Batter Matchups</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { text-align: center; }
+    .filters { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+    label { display: flex; flex-direction: column; font-size: 0.9rem; }
+    #pagination { margin: 10px 0; }
+    button { padding: 5px 10px; margin-right: 5px; }
+    .scrollable { max-height: 500px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #f4f4f4; cursor: pointer; }
+    th.sorted-asc::after { content: " ▲"; }
+    th.sorted-desc::after { content: " ▼"; }
+    tr.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Pitcher-Batter Matchups</h1>
+  <div class="filters">
+    <label><input type="checkbox" id="removePitchers" checked> Remove Pitchers Who Also Bat</label>
+    <label>Filter by Hitter:<input list="batters" id="hitterFilter" placeholder="Start typing batter..."><datalist id="batters"></datalist></label>
+    <label>Filter by Pitcher:<input list="pitchers" id="pitcherFilter" placeholder="Start typing pitcher..."><datalist id="pitchers"></datalist></label>
+    <label>Filter by Pitcher Team:<select id="pitcherTeamFilter"><option value="">-- All --</option></select></label>
+    <label>Filter by Batter Team:<select id="batterTeamFilter"><option value="">-- All --</option></select></label>
+    <button id="clearFilters">Clear Filters</button>
+  </div>
+  <div id="pagination">
+    <button id="prevPage">Previous</button>
+    <span id="pageInfo"></span>
+    <button id="nextPage">Next</button>
+  </div>
+  <div class="scrollable">
+    <table id="matchupTable">
+      <thead>
+        <tr>
+          <th data-col="PitcherName">Pitcher</th>
+          <th data-col="PitcherTeamFull">Pitcher Team</th>
+          <th data-col="BatterName">Batter</th>
+          <th data-col="BatterTeamFull">Batter Team</th>
+          <th data-col="walk_pct">Walk %</th>
+          <th data-col="k_pct">K %</th>
+          <th data-col="hit_pct">Hit %</th>
+          <th data-col="on_base_pct">On-Base %</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script>
+    const pageSize = 1000;
+    let data = [], filtered = [], currentPage = 1;
+    const players = {}, pTeams = new Set(), bTeams = new Set(), batterSet = new Set();
+
+    Papa.parse('data.csv',{download:true,header:true,complete:(res)=>{
+      res.data.forEach(r=>{
+        // track batters
+        batterSet.add(r.Batter);
+        const pFull = (r.PitcherTeam===r.HomeTeam? r.HomeNameFull: r.AwayNameFull);
+        const bFull = (r.BatterTeam===r.HomeTeam? r.HomeNameFull: r.AwayNameFull);
+        players[r.PitcherId] = {name:r.Pitcher, teamFull:pFull};
+        players[r.BatterId] = {name:r.Batter, teamFull:bFull};
+        pTeams.add(pFull); bTeams.add(bFull);
+      });
+      populateFilters(); loadMatchups();
+    }});
+
+    function populateFilters(){
+      const bf = document.getElementById('batters'), pf = document.getElementById('pitchers'),
+            ptf = document.getElementById('pitcherTeamFilter'), btf = document.getElementById('batterTeamFilter');
+      Object.values(players).forEach(p=>{ bf.append(new Option(p.name)); pf.append(new Option(p.name)); });
+      Array.from(pTeams).sort().forEach(t=>ptf.append(new Option(t,t)));
+      Array.from(bTeams).sort().forEach(t=>btf.append(new Option(t,t)));
+    }
+
+    function loadMatchups(){
+      Papa.parse('matchup.csv',{download:true,header:true,complete:(res)=>{
+        data = res.data.map(r=>({
+          PitcherName: players[r.PitcherId]?.name || r.PitcherId,
+          PitcherTeamFull: players[r.PitcherId]?.teamFull || '',
+          BatterName: players[r.BatterId]?.name || r.BatterId,
+          BatterTeamFull: players[r.BatterId]?.teamFull || '',
+          walk_pct: +r.walk_pct, k_pct: +r.k_pct,
+          hit_pct: +r.hit_pct, on_base_pct: +r.on_base_pct
+        }));
+        data.sort((a,b)=>b.on_base_pct - a.on_base_pct);
+        applyFilters();
+      }});
+    }
+
+    function applyFilters(){
+      const hf = document.getElementById('hitterFilter').value.toLowerCase(),
+            pf = document.getElementById('pitcherFilter').value.toLowerCase(),
+            ptf = document.getElementById('pitcherTeamFilter').value,
+            btf = document.getElementById('batterTeamFilter').value,
+            remove = document.getElementById('removePitchers').checked;
+      filtered = data.filter(r=>{
+        if(remove && batterSet.has(r.PitcherName)) return false;
+        return (!hf || r.BatterName.toLowerCase().includes(hf)) &&
+               (!pf || r.PitcherName.toLowerCase().includes(pf)) &&
+               (!ptf || r.PitcherTeamFull === ptf) &&
+               (!btf || r.BatterTeamFull === btf);
+      });
+      currentPage = 1; renderTable();
+    }
+
+    function renderTable(){
+      const tbody = document.querySelector('#matchupTable tbody'); tbody.innerHTML='';
+      const start = (currentPage-1)*pageSize;
+      const pageData = filtered.slice(start,start+pageSize);
+      const frag = document.createDocumentFragment();
+      pageData.forEach(r=>{const tr=document.createElement('tr');
+        ['PitcherName','PitcherTeamFull','BatterName','BatterTeamFull','walk_pct','k_pct','hit_pct','on_base_pct']
+        .forEach(c=>{const td=document.createElement('td');td.textContent=typeof r[c]==='number'?r[c].toFixed(3):r[c];tr.append(td);});
+        frag.append(tr);
+      }); tbody.append(frag);
+      document.getElementById('pageInfo').textContent=
+        `Page ${currentPage} of ${Math.ceil(filtered.length/pageSize)}`;
+      attachSort();
+    }
+
+    document.getElementById('prevPage').onclick = ()=>{if(currentPage>1){currentPage--;renderTable();}};
+    document.getElementById('nextPage').onclick = ()=>{if(currentPage*pageSize<filtered.length){currentPage++;renderTable();}};
+
+    function attachSort(){
+      document.querySelectorAll('#matchupTable th').forEach(th=>th.onclick=()=>{
+        const col=th.dataset.col,asc=!th.classList.contains('sorted-asc');
+        filtered.sort((a,b)=>asc?(a[col]>b[col]?1:-1):(a[col]<b[col]?1:-1));
+        document.querySelectorAll('#matchupTable th').forEach(x=>x.classList.remove('sorted-asc','sorted-desc'));
+        th.classList.add(asc?'sorted-asc':'sorted-desc');renderTable();
+      });
+    }
+
+    ['hitterFilter','pitcherFilter','pitcherTeamFilter','batterTeamFilter','removePitchers'].forEach(id=>{
+      document.getElementById(id).oninput=applyFilters; document.getElementById(id).onchange=applyFilters;
+    });
+    document.getElementById('clearFilters').onclick=()=>{['hitterFilter','pitcherFilter','pitcherTeamFilter','batterTeamFilter'].forEach(id=>document.getElementById(id).value='');document.getElementById('removePitchers').checked=true;applyFilters();};
+  </script>
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+  
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+      authDomain: "revs-2c987.firebaseapp.com",
+      projectId: "revs-2c987",
+      storageBucket: "revs-2c987.firebasestorage.app",
+      messagingSenderId: "181256684157",
+      appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+      measurementId: "G-2050889X0C"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    firebase.initializeApp(firebaseConfig);
+  
+  </script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const auth = firebase.auth();
+  
+        // Redirect to login if not authenticated
+        auth.onAuthStateChanged(user => {
+          if (!user) {
+            window.location.href = 'login.html';
+          } else {
+
+          }
+        });
+  
+        
+      });
+  </script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Park Factors – ALPB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="logo">ALPB</a>
+    <nav class="nav-desktop">
+      <a href="index.html">Home</a>
+      <a href="schedule.html">Standings</a>
+      <a href="games.html">Games</a>
+      <a href="leaderboards.html">Leaderboards</a>
+      <a href="park-factors.html" class="active">Park Factors</a>
+      <a href="fielding.html">Fielding</a>
+      <a href="stolen-bases.html">Base Running</a>
+      <a href="dong.html">Would it Dong?</a>
+    </nav>
+    <div class="hamburger" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></div>
+  </header>
+  <div id="side-menu" class="side-menu">
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="schedule.html">Standings</a></li>
+        <li><a href="games.html">Games</a></li>
+        <li><a href="leaderboards.html">Leaderboards</a></li>
+        <li><a href="park-factors.html" class="active">Park Factors</a></li>
+        <li><a href="fielding.html">Fielding</a></li>
+        <li><a href="stolen-bases.html">Base Running</a></li>
+        <li><a href="dong.html">Would it Dong?</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div id="overlay" class="overlay"></div>
+
+  <main class="main-container" style="max-width:100%;">
+    <h1 class="page-title">Park Factors</h1>
+    <div class="filters-panel">
+      <label for="bat-side-filter">Bat side</label>
+      <select id="bat-side-filter">
+        <option value="All">All</option>
+        <option value="Left">Left</option>
+        <option value="Right">Right</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table id="pf-table">
+          <thead>
+            <tr>
+              <th data-pf="park">Park</th>
+              <th data-pf="Elev">Elev</th>
+              <th data-pf="HR">HR</th>
+              <th data-pf="3B">3B</th>
+              <th data-pf="2B">2B</th>
+              <th data-pf="1B">1B</th>
+              <th data-pf="H">H</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    const cols = { home: 'HomeTeam', play: 'PlayResult', side: 'BatterSide', paId: 'PitchofPA', batter: 'Batter', game: 'GameID' };
+    const teamParkMap = { 'LAN':'Penn Medicine Park','SMD':'Regency Furniture Stadium','YOR':'Wellspan Park','HAG_FLY':'Meritus Park','LI':'Fairfield Properties BallPark','GAS':'CaroMont Health Park','STA_YAN':'SIUH Community Park','HP':'Truist Point','LEX_LEG':'Legends Field','WES_POW':'GoMart BallPark' };
+    const parkElevationMap = { 'Penn Medicine Park':368,'Regency Furniture Stadium':15,'Wellspan Park':367,'Meritus Park':538,'Fairfield Properties BallPark':20,'CaroMont Health Park':738,'SIUH Community Park':20,'Truist Point':866,'Legends Field':978,'GoMart BallPark':597 };
+    let raw = [], sortKey = 'H', sortAsc = false;
+
+    function heatColor(v, min, max) {
+      const mid = 100;
+      if (v <= mid) {
+        const ratio = (v - min) / ((mid - min) || 1);
+        const r = Math.round(ratio * 255);
+        return 'rgb(' + r + ',' + r + ',255)';
+      } else {
+        const ratio = (v - mid) / ((max - mid) || 1);
+        const g = Math.round((1 - ratio) * 255);
+        return 'rgb(255,' + g + ',' + g + ')';
+      }
+    }
+
+    function computeFactors() {
+      const MIN_PARKS = 4;
+      const sideFilter = document.getElementById('bat-side-filter').value;
+
+      const global = {}, parkMap = {}, parkCount = {};
+      raw.forEach(r => {
+        const pa = r[cols.paId] === '1', pr = r[cols.play], side = r[cols.side];
+        if (sideFilter !== 'All' && side !== sideFilter) return;
+        const p = r[cols.batter], park = r[cols.home];
+        if (!p || !park) return;
+        if (pa) { parkCount[p] = parkCount[p] || new Set(); parkCount[p].add(park); }
+        if (!global[p]) global[p] = { pa: 0, hr: 0, tb3: 0, db: 0, sb: 0, h: 0 };
+        parkMap[park] = parkMap[park] || {};
+        if (!parkMap[park][p]) parkMap[park][p] = { pa: 0, hr: 0, tb3: 0, db: 0, sb: 0, h: 0 };
+        if (pa) {
+          global[p].pa++; parkMap[park][p].pa++;
+          if (pr === 'HomeRun')  { global[p].hr++;  parkMap[park][p].hr++;  }
+          if (pr === 'Triple')   { global[p].tb3++; parkMap[park][p].tb3++; }
+          if (pr === 'Double')   { global[p].db++;  parkMap[park][p].db++;  }
+          if (pr === 'Single')   { global[p].sb++;  parkMap[park][p].sb++;  }
+          if (['HomeRun','Triple','Double','Single'].includes(pr)) { global[p].h++; parkMap[park][p].h++; }
+        }
+      });
+
+      // Build raw factors: compare in-park rate vs outside-park rate
+      const rawFactors = [];
+      Object.entries(parkMap).forEach(([park, hitters]) => {
+        const sums = { HR: 0, '3B': 0, '2B': 0, '1B': 0, H: 0 };
+        const totPA = { HR: 0, '3B': 0, '2B': 0, '1B': 0, H: 0 };
+        Object.entries(hitters).forEach(([p, st]) => {
+          if (st.pa < 1) return;
+          if ((parkCount[p] || new Set()).size < MIN_PARKS) return;
+          const g = global[p];
+          const outsidePA = g.pa - st.pa;
+          if (outsidePA < 1) return;
+          const ratios = {
+            HR:  (st.hr  / st.pa) / ((g.hr  - st.hr)  / outsidePA),
+            '3B':(st.tb3 / st.pa) / ((g.tb3 - st.tb3) / outsidePA),
+            '2B':(st.db  / st.pa) / ((g.db  - st.db)  / outsidePA),
+            '1B':(st.sb  / st.pa) / ((g.sb  - st.sb)  / outsidePA),
+            H:   (st.h   / st.pa) / ((g.h   - st.h)   / outsidePA)
+          };
+          ['HR','3B','2B','1B','H'].forEach(k => {
+            if (Number.isFinite(ratios[k])) {
+              sums[k]  += ratios[k] * st.pa;
+              totPA[k] += st.pa;
+            }
+          });
+        });
+        const entry = { park };
+        ['HR','3B','2B','1B','H'].forEach(k => {
+          entry[k] = totPA[k] ? (sums[k] / totPA[k]) * 100 : NaN;
+        });
+        rawFactors.push(entry);
+      });
+
+      // Normalize so league average = 100
+      const norms = {};
+      ['HR','3B','2B','1B','H'].forEach(k => {
+        const vals = rawFactors.map(r => r[k]).filter(Number.isFinite);
+        norms[k] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 1;
+      });
+
+      let data = rawFactors.map(r => {
+        const parkName = teamParkMap[r.park] || r.park;
+        const out = { park: parkName, Elev: parkElevationMap[parkName] || 0 };
+        ['HR','3B','2B','1B','H'].forEach(k => {
+          out[k] = Number.isFinite(r[k]) ? (r[k] / norms[k]) * 100 : NaN;
+        });
+        return out;
+      });
+
+      data.sort((a, b) => {
+        const vA = a[sortKey], vB = b[sortKey];
+        if (sortKey === 'park') return sortAsc ? String(vA).localeCompare(vB) : String(vB).localeCompare(vA);
+        return sortAsc ? (vA - vB) : (vB - vA);
+      });
+
+      const statKeys = ['HR','3B','2B','1B','H'];
+      const ranges = {};
+      statKeys.forEach(k => {
+        const vals = data.map(d => d[k]).filter(Number.isFinite);
+        ranges[k] = { min: Math.min(...vals), max: Math.max(...vals) };
+      });
+
+      const tbody = document.querySelector('#pf-table tbody');
+      tbody.innerHTML = '';
+      data.forEach(d => {
+        const tr = document.createElement('tr');
+        const tdPark = document.createElement('td');
+        tdPark.textContent = d.park;
+        tr.appendChild(tdPark);
+        const tdElev = document.createElement('td');
+        tdElev.textContent = d.Elev + ' ft';
+        tr.appendChild(tdElev);
+        statKeys.forEach(k => {
+          const td = document.createElement('td');
+          td.textContent = isNaN(d[k]) ? '–' : d[k].toFixed(1);
+          if (!isNaN(d[k])) {
+            const bg = heatColor(d[k], ranges[k].min, ranges[k].max);
+            const fg = d[k] <= 75 ? 'white' : (d[k] >= 125 ? 'white' : '#111');
+            td.setAttribute('style', `background:${bg} !important; color:${fg} !important; font-weight:600;`);
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('bat-side-filter').addEventListener('change', () => computeFactors());
+    document.querySelectorAll('#pf-table thead th').forEach((th, idx) => {
+      const headerKeys = ['park','Elev','HR','3B','2B','1B','H'];
+      th.addEventListener('click', () => {
+        const key = headerKeys[idx];
+        if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+        computeFactors();
+      });
+    });
+
+    Papa.parse('./data.csv', { download: true, header: true, skipEmptyLines: true, complete: results => { raw = results.data; computeFactors(); } });
+  </script>
+  <script>
+    (function(){
+      var h=document.getElementById('hamburger-btn'), s=document.getElementById('side-menu'), o=document.getElementById('overlay');
+      h.addEventListener('click', function(){ var open=s.classList.contains('open'); if(open){ h.classList.remove('open'); s.classList.remove('open'); o.classList.remove('visible'); }else{ h.classList.add('open'); s.classList.add('open'); o.classList.add('visible'); } });
+      o.addEventListener('click', function(){ h.classList.remove('open'); s.classList.remove('open'); o.classList.remove('visible'); });
+    })();
+  </script>
+  <script type="module">
+    try{ const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js"); initializeApp({ apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw", authDomain: "revs-2c987.firebaseapp.com", projectId: "revs-2c987", storageBucket: "revs-2c987.firebasestorage.app", messagingSenderId: "181256684157", appId: "1:181256684157:web:a9e1c5dfd767658e2ba714", measurementId: "G-2050889X0C" }); } catch(e){}
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){ if(typeof firebase!=='undefined'&&firebase.auth) firebase.auth().onAuthStateChanged(function(u){ if(!u) window.location.href='login.html'; }); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+  <meta charset="UTF-8" />
+  <title>Interactive Fielder Positions with Advanced Park Shapes</title>
+  <style>
+    body { margin: 0; background: #f0f0f0; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+    #controls { margin: 10px; }
+    #controls > * { margin-right: 10px; }
+    canvas { border: 1px solid #999; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label for="parkSelect">Ballpark:</label>
+    <select id="parkSelect">
+      <option value="default">-- Select Park --</option>
+      <option value="Meritus Park">Meritus Park</option>
+      <option value="Wellspan Park">Wellspan Park</option>
+      <option value="CaroMont Health Park">CaroMont Health Park</option>
+      <option value="Penn Medicine Park">Penn Medicine Park</option>
+      <option value="Fairfield Properties BallPark">Fairfield Properties BallPark</option>
+      <option value="SIUH Community Park">SIUH Community Park</option>
+      <option value="GoMart BallPark">GoMart BallPark</option>
+      <option value="Truist Point">Truist Point</option>
+      <option value="Legends Field">Legends Field</option>
+      <option value="Regency Furniture Stadium">Regency Furniture Stadium</option>
+    </select>
+    <input type="file" id="csvInput" accept=".csv" />
+    <button id="prevButton" disabled>&larr; Prev</button>
+    <span id="rowDisplay">Row: 0 / 0</span>
+    <button id="nextButton" disabled>Next &rarr;</button>
+  </div>
+  <canvas id="field" width="700" height="500"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    // Canvas & DOM setup
+    const canvas = document.getElementById('field');
+    const ctx = canvas.getContext('2d');
+    const parkSelect = document.getElementById('parkSelect');
+    const prevBtn = document.getElementById('prevButton');
+    const nextBtn = document.getElementById('nextButton');
+    const rowDisplay = document.getElementById('rowDisplay');
+
+    let rows = [], currentIndex = 0;
+
+    // Infield/outfield boundary constants
+    const extraCorner = 55;     // ft past 1B/3B
+    const extraCenter = 28.5;   // ft past 2B
+
+    // Park shape presets with five radii: leftFoul, leftCenter, center, rightCenter, rightFoul
+    const parks = {
+      default: {
+        leftFoul: 325, leftCenter: (325+400)/2, center: 400,
+        rightCenter: (400+325)/2, rightFoul: 325
+      },
+      "Meritus Park": {
+        leftFoul: 346, leftCenter: (346+387)/2, center: 400,
+        rightCenter: (400+360)/2, rightFoul: 325
+      },
+      "Wellspan Park": {
+        leftFoul: 300, leftCenter: (300+405)/2, center: 405,
+        rightCenter: (405+326)/2, rightFoul: 326
+      },
+      "CaroMont Health Park": {
+        leftFoul: 315, leftCenter: 361, center: 400,
+        rightCenter: 367, rightFoul: 325
+      },
+      "Penn Medicine Park": {
+        leftFoul: 320, leftCenter: 409, center: 400,
+        rightCenter: 363, rightFoul: 300
+      },
+      "Fairfield Properties BallPark": {
+        leftFoul: 325, leftCenter: (325+400)/2, center: 400,
+        rightCenter: (400+325)/2, rightFoul: 325
+      },
+      "SIUH Community Park": {
+        leftFoul: 320, leftCenter: (320+390)/2, center: 390,
+        rightCenter: (390+318)/2, rightFoul: 318
+      },
+      "GoMart BallPark": {
+        leftFoul: 330, leftCenter: (330+400)/2, center: 400,
+        rightCenter: (400+320)/2, rightFoul: 320
+      },
+      "Truist Point": {
+        leftFoul: 336, leftCenter: 363, center: 400,
+        rightCenter: 366, rightFoul: 339
+      },
+      "Legends Field": {
+        leftFoul: 320, leftCenter: (320+401)/2, center: 401,
+        rightCenter: (401+318)/2, rightFoul: 318
+      },
+      "Regency Furniture Stadium": {
+        leftFoul: 310, leftCenter: (310+400)/2, center: 400,
+        rightCenter: (400+325)/2, rightFoul: 325
+      }
+    };
+    let currentPark = parks.default;
+
+    // Scale and origin
+    const margin = 20;
+    const availHeight = canvas.height - margin * 2;
+    const origin = { x: canvas.width/2, y: canvas.height - margin };
+    let scale = availHeight / currentPark.center;
+
+    parkSelect.addEventListener('change', () => {
+      currentPark = parks[parkSelect.value] || parks.default;
+      scale = availHeight / currentPark.center;
+      render();
+    });
+
+    function toPx({x,z}) {
+      return { x: origin.x + z * scale, y: origin.y - x * scale };
+    }
+
+    function drawField() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // Infield diamond
+      const infield = [
+        {x:0,z:0},
+        {x:90*Math.cos(Math.PI/4),z:90*Math.sin(Math.PI/4)},
+        {x:90*Math.sqrt(2),z:0},
+        {x:90*Math.cos(Math.PI/4),z:-90*Math.sin(Math.PI/4)}
+      ];
+      ctx.strokeStyle='#444'; ctx.lineWidth=2;
+      ctx.beginPath(); infield.forEach((pt,i)=>{const p=toPx(pt);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);}); ctx.closePath(); ctx.stroke();
+      ctx.fillStyle='#fff'; infield.forEach(pt=>{const p=toPx(pt);ctx.fillRect(p.x-6,p.y-6,12,12);});
+
+      // Infield boundary
+      const rCorner = 90 + extraCorner;
+      const rCenter = 90*Math.sqrt(2) + extraCenter;
+      ctx.strokeStyle='#aaa'; ctx.lineWidth=2;
+      ctx.beginPath();
+      for(let deg=-45;deg<=45;deg++){const rad=deg*Math.PI/180;
+        const t=1-Math.abs(deg)/45;
+        const r=rCorner+t*(rCenter-rCorner);
+        const pt=toPx({x:r*Math.cos(rad),z:r*Math.sin(rad)});
+        deg===-45?ctx.moveTo(pt.x,pt.y):ctx.lineTo(pt.x,pt.y);
+      }
+      ctx.stroke();
+
+      // Foul lines
+      const ang=Math.PI/4;
+      const home=toPx({x:0,z:0});
+      const lfPt=toPx({x:currentPark.leftFoul*Math.cos(ang),z:-currentPark.leftFoul*Math.sin(ang)});
+      const rfPt=toPx({x:currentPark.rightFoul*Math.cos(ang),z:currentPark.rightFoul*Math.sin(ang)});
+      ctx.strokeStyle='#888'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(home.x,home.y);ctx.lineTo(lfPt.x,lfPt.y);
+      ctx.moveTo(home.x,home.y);ctx.lineTo(rfPt.x,rfPt.y); ctx.stroke();
+
+      // Outfield shape: five points
+      const angles=[-45,-22.5,0,22.5,45];
+      const radii=[currentPark.leftFoul,currentPark.leftCenter,currentPark.center,currentPark.rightCenter,currentPark.rightFoul];
+      ctx.strokeStyle='#555'; ctx.lineWidth=3;
+      ctx.beginPath();
+      angles.forEach((deg,i)=>{const rad=deg*Math.PI/180; const r=radii[i]; const pt=toPx({x:r*Math.cos(rad),z:r*Math.sin(rad)}); if(i===0)ctx.moveTo(pt.x,pt.y);else ctx.lineTo(pt.x,pt.y);});
+      ctx.stroke();
+
+      // Label fences
+      ctx.fillStyle='#000'; ctx.font='12px sans-serif';
+      angles.forEach((deg,i)=>{const rad=deg*Math.PI/180; const r=radii[i]; const pt=toPx({x:r*Math.cos(rad),z:r*Math.sin(rad)}); ctx.fillText(Math.round(r)+"'",pt.x+((deg<0)?-20:5),pt.y+15);});
+    }
+
+    function drawPlayers(row){['1B','2B','3B','SS','LF','CF','RF'].forEach(label=>{const x=parseFloat(row[label+'_PositionAtReleaseX']);const z=parseFloat(row[label+'_PositionAtReleaseZ']);if(!isNaN(x)&&!isNaN(z)){const p=toPx({x,z});ctx.fillStyle='rgba(220,50,50,0.8)';ctx.beginPath();ctx.arc(p.x,p.y,7,0,2*Math.PI);ctx.fill();ctx.fillStyle='#000';ctx.font='bold 14px sans-serif';ctx.fillText(label,p.x+10,p.y-10);}});}
+
+    function render(){drawField(); if(rows.length) drawPlayers(rows[currentIndex]); rowDisplay.textContent=`Row: ${currentIndex+1} / ${rows.length}`; prevBtn.disabled=currentIndex===0; nextBtn.disabled=currentIndex===rows.length-1;}
+    prevBtn.addEventListener('click',()=>{if(currentIndex>0){currentIndex--;render();}});
+    nextBtn.addEventListener('click',()=>{if(currentIndex<rows.length-1){currentIndex++;render();}});
+    document.addEventListener('keydown',e=>{if(!rows.length)return;if(e.key==='ArrowLeft')prevBtn.click();if(e.key==='ArrowRight')nextBtn.click();});
+    document.getElementById('csvInput').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;Papa.parse(f,{header:true,dynamicTyping:true,complete:res=>{rows=res.data.filter(r=>r['1B_PositionAtReleaseX']!=null);currentIndex=0;render();}});});
+    render();
+  </script>
+  <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+    authDomain: "revs-2c987.firebaseapp.com",
+    projectId: "revs-2c987",
+    storageBucket: "revs-2c987.firebasestorage.app",
+    messagingSenderId: "181256684157",
+    appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+    measurementId: "G-2050889X0C"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+
+  const auth = firebase.auth();
+
+    // Redirect to login if not authenticated
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = 'login.html';
+      } else {
+        // Display user email once logged in
+        document.addEventListener('DOMContentLoaded', () => {
+        });
+      }
+    });
+</script>
+</body>
+</html>

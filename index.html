@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>ALPB – Baseball Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="app-header">
+    <a href="index.html" class="logo">ALPB</a>
+    <nav class="nav-desktop">
+      <a href="index.html" class="active">Home</a>
+      <a href="schedule.html">Standings</a>
+      <a href="games.html">Games</a>
+      <a href="leaderboards.html">Leaderboards</a>
+      <a href="park-factors.html">Park Factors</a>
+      <a href="fielding.html">Fielding</a>
+      <a href="stolen-bases.html">Base Running</a>
+      <a href="dong.html">Would it Dong?</a>
+    </nav>
+    <form id="search-inline" class="nav-desktop header-search-form" onsubmit="event.preventDefault(); doSearch(document.getElementById('search-desktop-input')); return false;">
+      <input type="text" id="search-desktop-input" placeholder="Search…" list="suggestions-desktop" autocomplete="off" style="width:180px;padding:0.4rem 0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text);" />
+      <button type="submit" class="btn btn-primary" style="margin-left:4px;">Go</button>
+      <datalist id="suggestions-desktop"></datalist>
+    </form>
+    <div class="hamburger" id="hamburger-btn" aria-label="Menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </header>
+
+  <div id="side-menu" class="side-menu">
+    <div style="margin-bottom:1rem;">
+      <input type="text" id="mobile-search" placeholder="Search players, teams, umps…" list="suggestions-mobile" autocomplete="off" style="width:100%;padding:0.5rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text);" />
+      <button type="button" id="mobile-search-btn" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">Go</button>
+      <datalist id="suggestions-mobile"></datalist>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="schedule.html">Standings</a></li>
+        <li><a href="games.html">Games</a></li>
+        <li><a href="leaderboards.html">Leaderboards</a></li>
+        <li><a href="park-factors.html">Park Factors</a></li>
+        <li><a href="fielding.html">Fielding</a></li>
+        <li><a href="stolen-bases.html">Base Running</a></li>
+        <li><a href="dong.html">Would it Dong?</a></li>
+        <li><a href="https://zniine.github.io/Revs24/index.html">2024</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div id="overlay" class="overlay"></div>
+
+  <main class="main-container">
+    <div id="loading" class="loading">Loading…</div>
+    <div id="error" class="error-msg" style="display:none;"></div>
+    <div id="content" style="display:none;">
+
+      <section class="hero-metrics" id="hero-metrics">
+        <div class="card">
+          <div class="metric-value" id="avg-ev">—</div>
+          <div>Avg Exit Velocity</div>
+        </div>
+        <div class="card">
+          <div class="metric-value" id="avg-angle">—°</div>
+          <div>Avg Launch Angle</div>
+        </div>
+        <div class="card">
+          <div class="metric-value" id="avg-hr-dist">— ft</div>
+          <div>Avg HR Distance</div>
+        </div>
+        <div class="card">
+          <div class="metric-value" id="avg-four">— mph</div>
+          <div>Avg Four-Seam Velocity</div>
+        </div>
+      </section>
+
+      <section id="mini-leaderboards" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;margin-bottom:1.5rem;">
+        <div class="mini-board">
+          <h4>Farthest Home Runs</h4>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>Batter</th><th>Dist</th></tr>
+              </thead>
+              <tbody id="lb-hr"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="mini-board">
+          <h4>Average Team HR Distance</h4>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>Team</th><th>Distance (FT)</th></tr>
+              </thead>
+              <tbody id="lb-pop"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="recent-games">
+        <h3 class="page-title">Recent Trackman Game Uploads</h3>
+        <div class="games-grid" id="games-container"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    (function() {
+      // Stream data.csv and keep only aggregates (no full dataset in memory)
+      var hero = { evSum: 0, evN: 0, angleSum: 0, angleN: 0, hrDistSum: 0, hrN: 0, fourSum: 0, fourN: 0 };
+      var topHr = [];      // keep top 5 by distance
+      var teamHrDist = {};
+      var games = {};
+      var battersSet = {}, pitchersSet = {}, umpsSet = {}, teamsSet = {};
+
+      function showLoading(show) {
+        document.getElementById('loading').style.display = show ? 'block' : 'none';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('content').style.display = show ? 'none' : 'block';
+      }
+      function showError(msg) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'none';
+        var el = document.getElementById('error');
+        el.textContent = msg;
+        el.style.display = 'block';
+      }
+      function num(r, k) { var v = r[k]; if (v === undefined || v === null || v === '') return NaN; var n = parseFloat(v); return isNaN(n) ? NaN : n; }
+
+      function renderHeroMetrics() {
+        document.getElementById('avg-ev').textContent = hero.evN ? (hero.evSum / hero.evN).toFixed(1) + ' mph' : '—';
+        document.getElementById('avg-angle').textContent = hero.angleN ? (hero.angleSum / hero.angleN).toFixed(1) + '°' : '—';
+        document.getElementById('avg-hr-dist').textContent = hero.hrN ? (hero.hrDistSum / hero.hrN).toFixed(0) + ' ft' : '—';
+        document.getElementById('avg-four').textContent = hero.fourN ? (hero.fourSum / hero.fourN).toFixed(1) + ' mph' : '—';
+      }
+      function renderMiniBoards() {
+        var hrBody = document.getElementById('lb-hr');
+        hrBody.innerHTML = '';
+        topHr.slice(0, 5).forEach(function(r, i) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + (i + 1) + '</td><td class="clickable" data-name="' + (r.Batter || '').replace(/"/g, '&quot;') + '">' + (r.Batter || '') + '</td><td>' + (r.Distance != null ? Math.round(r.Distance) : '') + '</td>';
+          tr.querySelector('.clickable').addEventListener('click', function() {
+            window.location.href = 'batter-profiles.html?player=' + encodeURIComponent(tr.querySelector('.clickable').dataset.name);
+          });
+          hrBody.appendChild(tr);
+        });
+        var teamList = Object.keys(teamHrDist).map(function(team) {
+          var s = teamHrDist[team];
+          return { Team: team, AvgDistance: s.totalDist / s.count };
+        }).sort(function(a, b) { return b.AvgDistance - a.AvgDistance; }).slice(0, 5);
+        var teamBody = document.getElementById('lb-pop');
+        teamBody.innerHTML = '';
+        teamList.forEach(function(r, i) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + (r.Team || '') + '</td><td>' + (r.AvgDistance != null ? r.AvgDistance.toFixed(1) : '') + '</td>';
+          teamBody.appendChild(tr);
+        });
+      }
+      function buildRecentGames() {
+        var list = Object.keys(games).map(function(id) {
+          var g = games[id];
+          return { gameUID: id, date: g.date, away: g.away, home: g.home, awayRuns: g.awayRuns, homeRuns: g.homeRuns };
+        }).sort(function(a, b) { return new Date(b.date) - new Date(a.date); }).slice(0, 6);
+        var container = document.getElementById('games-container');
+        container.innerHTML = '';
+        list.forEach(function(g) {
+          var card = document.createElement('div');
+          card.className = 'game-card';
+          var dateStr = g.date ? new Date(g.date).toLocaleDateString() : '';
+          card.innerHTML = '<div class="card-date">' + dateStr + '</div>' +
+            '<div class="half away"><span class="team-name">' + (g.away || '').replace(/</g, '&lt;') + '</span><span class="score">' + (g.awayRuns || 0) + '</span></div>' +
+            '<div class="half home"><span class="team-name">' + (g.home || '').replace(/</g, '&lt;') + '</span><span class="score">' + (g.homeRuns || 0) + '</span></div>';
+          card.addEventListener('click', function() {
+            window.location.href = 'Game-view.html?gameUID=' + encodeURIComponent(g.gameUID || '');
+          });
+          container.appendChild(card);
+        });
+      }
+      function populateSearchDatalists() {
+        var dlMobile = document.getElementById('suggestions-mobile');
+        var dlDesktop = document.getElementById('suggestions-desktop');
+        dlMobile.innerHTML = '';
+        dlDesktop.innerHTML = '';
+        var add = function(name, url) {
+          var optM = document.createElement('option'); optM.value = name; optM.dataset.url = url; dlMobile.appendChild(optM);
+          var optD = document.createElement('option'); optD.value = name; optD.dataset.url = url; dlDesktop.appendChild(optD);
+        };
+        Object.keys(umpsSet).forEach(function(n) { add(n + ' (Umpire)', 'ump-profiles.html?player=' + encodeURIComponent(n)); });
+        Object.keys(battersSet).forEach(function(n) {
+          add(n, 'batter-profiles.html?player=' + encodeURIComponent(n));
+          if (pitchersSet[n]) add(n + ' (Pitcher)', 'pitcher-profiles.html?player=' + encodeURIComponent(n));
+        });
+        Object.keys(pitchersSet).forEach(function(n) { if (!battersSet[n]) add(n, 'pitcher-profiles.html?player=' + encodeURIComponent(n)); });
+        Object.keys(teamsSet).forEach(function(n) { add(n, 'team-profiles.html?team=' + encodeURIComponent(n)); });
+      }
+      function doSearch(inputEl) {
+        var raw = inputEl && inputEl.value !== undefined ? inputEl.value : (document.getElementById('mobile-search') && document.getElementById('mobile-search').value);
+        var q = (raw || '').trim().replace(/\s*\(.*\)$/, '').trim();
+        if (!q) return;
+        var opts = document.querySelectorAll('#suggestions-desktop option, #suggestions-mobile option');
+        for (var i = 0; i < opts.length; i++) {
+          var optVal = (opts[i].value || '').replace(/\s*\(.*\)$/, '').trim();
+          if ((opts[i].value === raw || optVal === q) && opts[i].dataset.url) {
+            window.location.href = opts[i].dataset.url;
+            return;
+          }
+        }
+        alert('No matching player, umpire, or team found.');
+      }
+
+      showLoading(true);
+      Papa.parse('./data.csv', {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        step: function(results) {
+          var r = results.data;
+          if (!r) return;
+          var pitchCall = r.PitchCall, playResult = r.PlayResult, gameUID = r.GameUID;
+          var homeFull = r.HomeNameFull, awayFull = r.AwayNameFull, homeTeam = r.HomeTeam, awayTeam = r.AwayTeam;
+          if (pitchCall === 'InPlay') {
+            var ev = num(r, 'ExitSpeed'); if (!isNaN(ev)) { hero.evSum += ev; hero.evN++; }
+            var angle = num(r, 'Angle'); if (!isNaN(angle)) { hero.angleSum += angle; hero.angleN++; }
+          }
+          if (playResult === 'HomeRun') {
+            var dist = num(r, 'Distance');
+            if (!isNaN(dist)) {
+              hero.hrDistSum += dist; hero.hrN++;
+              topHr.push({ Batter: r.Batter, Distance: dist });
+              topHr.sort(function(a, b) { return b.Distance - a.Distance; });
+              if (topHr.length > 5) topHr.length = 5;
+              var teamFull = (r.BatterTeam === homeTeam) ? homeFull : awayFull;
+              if (teamFull) {
+                teamHrDist[teamFull] = teamHrDist[teamFull] || { totalDist: 0, count: 0 };
+                teamHrDist[teamFull].totalDist += dist; teamHrDist[teamFull].count++;
+              }
+            }
+          }
+          if (r.AutoPitchType === 'Four-Seam') {
+            var rel = num(r, 'RelSpeed'); if (!isNaN(rel)) { hero.fourSum += rel; hero.fourN++; }
+          }
+          if (gameUID) {
+            if (!games[gameUID]) games[gameUID] = { date: r.LocalDateTime || r.Date, away: awayFull, home: homeFull, awayRuns: 0, homeRuns: 0 };
+            var runs = num(r, 'RunsScored') || 0;
+            if (runs && r['Top/Bottom']) {
+              if (r['Top/Bottom'] === 'Top') games[gameUID].awayRuns += runs;
+              else games[gameUID].homeRuns += runs;
+            }
+          }
+          if (r.Batter) battersSet[r.Batter] = true;
+          if (r.Pitcher) pitchersSet[r.Pitcher] = true;
+          if (r.Umpire) umpsSet[r.Umpire] = true;
+          if (homeFull) teamsSet[homeFull] = true;
+          if (awayFull) teamsSet[awayFull] = true;
+        },
+        complete: function() {
+          showLoading(false);
+          renderHeroMetrics();
+          renderMiniBoards();
+          populateSearchDatalists();
+          buildRecentGames();
+        },
+        error: function(err) {
+          showError(err.message || 'Failed to load data.csv.');
+        }
+      });
+
+      document.getElementById('mobile-search-btn').addEventListener('click', function() {
+        doSearch(document.getElementById('mobile-search'));
+      });
+      var searchForm = document.getElementById('search-inline');
+      if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          doSearch(document.getElementById('search-desktop-input'));
+        });
+      }
+
+      var hamburger = document.getElementById('hamburger-btn');
+      var sideMenu = document.getElementById('side-menu');
+      var overlay = document.getElementById('overlay');
+      function openMenu() {
+        hamburger.classList.add('open');
+        sideMenu.classList.add('open');
+        overlay.classList.add('visible');
+      }
+      function closeMenu() {
+        hamburger.classList.remove('open');
+        sideMenu.classList.remove('open');
+        overlay.classList.remove('visible');
+      }
+      hamburger.addEventListener('click', function() {
+        if (sideMenu.classList.contains('open')) closeMenu(); else openMenu();
+      });
+      overlay.addEventListener('click', closeMenu);
+
+      document.addEventListener('DOMContentLoaded', function() {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+          firebase.auth().onAuthStateChanged(function(user) {
+            if (!user) window.location.href = 'login.html';
+          });
+        }
+      });
+    })();
+  </script>
+
+  <script type="module">
+    try {
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js");
+      const firebaseConfig = {
+        apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+        authDomain: "revs-2c987.firebaseapp.com",
+        projectId: "revs-2c987",
+        storageBucket: "revs-2c987.firebasestorage.app",
+        messagingSenderId: "181256684157",
+        appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+        measurementId: "G-2050889X0C"
+      };
+      initializeApp(firebaseConfig);
+      if (typeof firebase !== 'undefined') firebase.initializeApp(firebaseConfig);
+    } catch (e) {}
+  </script>
+</body>
+</html>

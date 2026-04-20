@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Live Pitch + Hit Viewer</title>
+  <style>
+    body { font-family: sans-serif; padding: 1rem; background: #f0f0f0; }
+    .card { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 1rem; padding: 1rem; cursor: pointer; }
+    canvas, svg { display: block; margin: 1rem auto; }
+    h2 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h2>Live Pitch & Hit Tracker</h2>
+  <div id="cards"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+      authDomain: "revs-2c987.firebaseapp.com",
+      databaseURL: "https://revs-2c987-default-rtdb.firebaseio.com",
+      projectId: "revs-2c987"
+    });
+
+    const db = firebase.database();
+    const cards = document.getElementById("cards");
+    const events = {};
+    const pxPerIn = 10;
+
+    function guessPitchType(pitch) {
+      const mph = pitch?.Speed || 0;
+      const axis = pitch?.SpinAxis || 0;
+      const spin = pitch?.SpinRate || 0;
+      if (mph < 80 && axis > 200 && axis < 260) return 'Curveball';
+      if (spin > 1300 && axis >= 220 && axis <= 260) return 'Slider';
+      if (mph >= 85 && axis < 220) return 'Fastball';
+      return 'Unknown';
+    }
+
+    function drawStrikeZone(container, y, z) {
+      const width = 17 * pxPerIn;
+      const height = 19 * pxPerIn;
+      const margin = 10;
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", width + 20);
+      svg.setAttribute("height", height + 20);
+
+      const rect = document.createElementNS(svg.namespaceURI, "rect");
+      rect.setAttribute("x", margin);
+      rect.setAttribute("y", margin);
+      rect.setAttribute("width", width);
+      rect.setAttribute("height", height);
+      rect.setAttribute("fill", "none");
+      rect.setAttribute("stroke", "#333");
+      svg.appendChild(rect);
+
+      const zIn = z * 12;
+      const yIn = y * 12;
+
+      const strikeZoneTop = 42;
+      const strikeZoneBottom = 18;
+
+      const cx = margin + width / 2 + zIn * pxPerIn;
+      const cy = margin + (strikeZoneTop - yIn) * pxPerIn;
+
+      const dot = document.createElementNS(svg.namespaceURI, "circle");
+      dot.setAttribute("cx", cx);
+      dot.setAttribute("cy", cy);
+      dot.setAttribute("r", 5);
+      dot.setAttribute("fill", "red");
+      svg.appendChild(dot);
+
+      container.appendChild(svg);
+    }
+
+    function drawSprayChart(container, angleDeg, distanceFt) {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+
+      ctx.translate(150, 280);
+      ctx.fillStyle = "#eee";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, 140, -Math.PI/4, -3*Math.PI/4, true);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = "#999";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(140, -140);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-140, -140);
+      ctx.stroke();
+
+      const r = Math.min(distanceFt, 400) * 0.35;
+      const rad = angleDeg * Math.PI / 180;
+      const x = r * Math.sin(rad);
+      const y = -r * Math.cos(rad);
+
+      ctx.fillStyle = "blue";
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+
+      container.appendChild(canvas);
+    }
+
+    function makeRepostHandler(data) {
+      return function () {
+        const newKey = db.ref().child("trackman/pitches").push().key;
+        db.ref(`trackman/pitches/${newKey}`).set(data);
+        alert("Reposted to Firebase!");
+      }
+    }
+
+    function renderPitchCard(pitchEvent, locationRow) {
+      const loc = locationRow?.Pitch?.Location;
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.onclick = makeRepostHandler(pitchEvent);
+
+      const type = guessPitchType(pitchEvent.Pitch);
+      const speed = (pitchEvent.Pitch?.Speed || 0).toFixed(1);
+
+      card.innerHTML = `<strong>Pitch Type:</strong> ${type}<br><strong>Speed:</strong> ${speed} mph`;
+      if (loc?.Y != null && loc?.Z != null) drawStrikeZone(card, loc.Y, loc.Z);
+
+      cards.prepend(card);
+    }
+
+    
+
+    function renderHitCard(hitEvent, kindRow) {
+      const pitch = kindRow?.Pitch;
+      const hit = hitEvent?.Hit;
+      if (!hit) return;
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.onclick = makeRepostHandler(hitEvent);
+
+      const type = guessPitchType(pitch);
+      const speed = (pitch?.Speed || 0).toFixed(1);
+      const exitV = (hit?.Speed || 0).toFixed(1);
+      const angle = (hit?.Angle || 0).toFixed(1);
+      const dist = (hit?.Distance || 0).toFixed(1);
+      const dir = hit?.Launch?.HorizontalAngle || 0;
+
+      card.innerHTML = `<strong>Pitch Type:</strong> ${type}<br>
+                        <strong>Pitch Speed:</strong> ${speed} mph<br>
+                        <strong>Exit Velocity:</strong> ${exitV} mph<br>
+                        <strong>Launch Angle:</strong> ${angle}°<br>
+                        <strong>Distance:</strong> ${dist} ft`;
+
+      if (dir != null && hit?.Distance != null) drawSprayChart(card, dir, hit.Distance);
+
+      cards.prepend(card);
+    }
+
+    db.ref("trackman/pitches").on("child_added", snap => {
+      const d = snap.val();
+      if (!d?.PlayId) return;
+      const id = d.PlayId;
+      events[id] = events[id] || {};
+
+      if (d.Kind === "Pitch") events[id].kind = d;
+      else if (d.Kind === "Hit") events[id].hit = d;
+      else events[id].raw = d;
+
+      const e = events[id];
+
+      if (e.kind && e.raw && !e.pitchRendered) {
+        e.pitchRendered = true;
+        renderPitchCard(e.kind, e.raw);
+      }
+
+      if (e.hit && e.kind && !e.hitRendered) {
+        e.hitRendered = true;
+        renderHitCard(e.hit, e.kind);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>3D Ballpark – Manual Wall Geometry</title>
+    <style>
+        body { margin:0; overflow:hidden; }
+        #stats {
+            position:absolute; top:10px; left:10px;
+            background:rgba(255,255,255,0.9); padding:8px; border-radius:4px;
+            font-family:sans-serif; z-index:10; width:200px;
+        }
+        #stats > * { margin-bottom:6px; width:100%; display:block; }
+        canvas { display:block; }
+        /* Generic style for dynamically created ball labels */
+        .ball-distance-label {
+            position:absolute; transform-origin:50% 100%; pointer-events:none;
+            font-family:sans-serif; background:rgba(255,255,255,0.8);
+            padding:2px 6px; border-radius:4px; z-index:10;
+            /* Changed initial display to 'block' for debugging, will control explicitly in JS */
+            display: block; /* Start as block to ensure they are present */
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+        #apexLabel { display:none; } /* Kept but display:none by default */
+
+        /* Styles for the new filter popup */
+        #filterPopup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 100;
+            font-family: sans-serif;
+            display: none; /* Hidden by default, shown after Firebase auth */
+            flex-direction: column;
+            gap: 10px;
+        }
+        #filterPopup label {
+            font-weight: bold;
+        }
+        #filterPopup input, #filterPopup select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #filterPopup button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #filterPopup button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="stats">
+        <div id="homeInfo">Exit Velo: – mph, Angle: –°</div>
+        <div id="apexInfo">Max Height: – ft</div>
+        <label>Snap View:</label>
+        <button id="resetBtn">Reset</button>
+        <button id="followBtn">Follow Ball: Off</button>
+    </div>
+    <div id="apexLabel">Max Height: – ft</div>
+    <canvas id="c"></canvas>
+
+    <div id="filterPopup">
+        <h2>Filter Batted Balls</h2>
+        <div>
+            <label for="batterFilter">Batter Name:</label>
+            <input type="text" id="batterFilter" placeholder="e.g., Mike Trout" list="batterNames">
+            <datalist id="batterNames"></datalist> </div>
+        <div>
+            <label for="resultFilter">Result:</label>
+            <select id="resultFilter">
+                <option value="">All</option>
+                <option value="Single">Single</option>
+                <option value="Double">Double</option>
+                <option value="Triple">Triple</option>
+                <option value="HomeRun">Home Run</option>
+                <option value="Out">Out</option>
+                <option value="Foul Ball">Foul Ball</option>
+                <option value="Ball Called">Ball Called</option>
+                <option value="Strike Swinging">Strike Swinging</option>
+                <option value="Strike Called">Strike Called</option>
+                <option value="Walk">Walk</option>
+                <option value="Ground Ball">Ground Ball</option>
+                <option value="Fly Ball">Fly Ball</option>
+                <option value="Pop Up">Pop Up</option>
+            </select>
+        </div>
+        <div>
+            <label for="parkSelector">Select Park:</label>
+            <select id="parkSelector">
+                <option value="Wellspan Park">Wellspan Park (Default)</option>
+                <option value="Meritus Park">Meritus Park</option>
+                <option value="CaroMont Health Park">CaroMont Health Park</option>
+                <option value="Penn Medicine Park">Penn Medicine Park</option>
+                <option value="Fairfield Properties BallPark">Fairfield Properties BallPark</option>
+                <option value="SIUH Community Park">SIUH Community Park</option>
+                <option value="GoMart BallPark">GoMart BallPark</option>
+                <option value="Truist Point">Truist Point</option>
+                <option value="Legends Field">Legends Field</option>
+                <option value="Regency Furniture Stadium">Regency Furniture Stadium</option>
+            </select>
+        </div>
+        <div>
+            <label for="startDateFilter">Start Date:</label>
+            <input type="date" id="startDateFilter">
+        </div>
+        <div>
+            <label for="endDateFilter">End Date:</label>
+            <input type="date" id="endDateFilter">
+        </div>
+        <button id="animateBtn">Animate Selected Balls</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.7.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.7.3/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics-compat.js"></script>
+
+    <script>
+        // 0) Park data and helpers
+        const teamParkMap = {
+            'LAN':'Penn Medicine Park','SMD':'Regency Furniture Stadium','YOR':'Wellspan Park',
+            'HAG_FLY':'Meritus Park','LI':'Fairfield Properties BallPark','GAS':'CaroMont Health Park',
+            'STA_YAN':'SIUH Community Park','HP':'Truist Point','LEX_LEG':'Legends Field',
+            'WES_POW':'GoMart BallPark'
+        };
+        const parks = {
+            default: {
+                leftFoul:326, leftCenter:(405+326)/2, center:405, rightCenter:(300+405)/2, rightFoul:300,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:37.8
+            },
+            "Meritus Park": {
+                leftFoul:325, leftCenter:(400+360)/2, center:400, rightCenter:(346+387)/2, rightFoul:346,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            },
+            "Wellspan Park": {
+                leftFoul:326, leftCenter:(405+326)/2, center:405, rightCenter:(300+405)/2, rightFoul:300,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:37.8
+            },
+            "CaroMont Health Park": {
+                leftFoul:325, leftCenter:367, center:400, rightCenter:361, rightFoul:315,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            },
+            "Penn Medicine Park": {
+                leftFoul:300, leftCenter:363, center:400, rightCenter:409, rightFoul:320,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            },
+            "Fairfield Properties BallPark": {
+                leftFoul:325, leftCenter:0, center:400, rightCenter:0, rightFoul:325,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            },
+            "SIUH Community Park": {
+                leftFoul:318, leftCenter:0, center:390, rightCenter:0, rightFoul:320,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            },
+            "GoMart BallPark": {
+                leftFoul:320, leftCenter:(400+320)/2, center:400, rightCenter:(330+400)/2, rightFoul:330,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            },
+            "Truist Point": {
+                leftFoul:339, leftCenter:366, center:400, rightCenter:363, rightFoul:336,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            },
+            "Legends Field": {
+                leftFoul:318, leftCenter: 0, center:401, rightCenter:0, rightFoul:320,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            },
+            "Regency Furniture Stadium": {
+                leftFoul:325, leftCenter:(400+325)/2, center:400, rightCenter:(310+400)/2, rightFoul:310,
+                leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+            }
+        };
+
+        function degToRad(d){ return d * Math.PI/180; }
+
+        const canvas = document.getElementById('c');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 2000);
+        camera.position.set(0,200,300);
+        camera.lookAt(0,0,0);
+        camera.setViewOffset(window.innerWidth, window.innerHeight*2, 0, window.innerHeight - window.innerHeight, window.innerWidth, window.innerHeight);
+
+        // Corrected light setup
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        directionalLight.position.set(-200, 300, 100);
+        scene.add(directionalLight);
+
+        const ambientLight = new THREE.AmbientLight(0x888888);
+        scene.add(ambientLight);
+
+        const homeInfo = document.getElementById('homeInfo');
+        const apexInfo = document.getElementById('apexInfo');
+        const resetBtn = document.getElementById('resetBtn');
+        const followBtn = document.getElementById('followBtn');
+        const apexLabel = document.getElementById('apexLabel'); // This one remains in HTML, but hidden by default.
+        const filterPopup = document.getElementById('filterPopup');
+        const animateBtn = document.getElementById('animateBtn');
+        const batterFilterInput = document.getElementById('batterFilter'); // Get the batter input element
+        const batterNamesDatalist = document.getElementById('batterNames'); // Get the datalist element
+        const startDateFilter = document.getElementById('startDateFilter'); // New start date filter
+        const endDateFilter = document.getElementById('endDateFilter');   // New end date filter
+        const parkSelector = document.getElementById('parkSelector'); // Get the new park selector element
+
+
+        // Camera controls
+        let dragMode = null, px = 0, py = 0, follow = false;
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+        canvas.addEventListener('mousedown', e => {
+            px = e.clientX; py = e.clientY;
+            dragMode = e.button === 0 ? 'pan' : 'orbit';
+        });
+        window.addEventListener('mouseup', () => dragMode = null);
+        window.addEventListener('mousemove', e => {
+            if (!dragMode) return;
+            const dx = e.clientX - px, dy = e.clientY - py;
+            px = e.clientX; py = e.clientY;
+            if (dragMode === 'orbit') {
+                camera.rotation.y -= dx * 0.005;
+                camera.rotation.x -= dy * 0.005;
+            } else {
+                camera.translateX(-dx * 0.5);
+                camera.translateY(dy * 0.5);
+            }
+        });
+        canvas.addEventListener('wheel', e => {
+            const dir = camera.getWorldDirection(new THREE.Vector3());
+            camera.position.addScaledVector(dir, e.deltaY * 0.1);
+            if (camera.position.y < 5) camera.position.y = 5;
+        });
+
+        let allBallData = []; // Store all CSV data
+        let animatedBalls = []; // Array to hold active ball objects
+        let fieldGroup; // Declare fieldGroup globally to clear and re-add
+
+        // Function to generate the ballpark geometry (turf and walls)
+        function createBallpark(parkConfig) {
+            console.log("createBallpark called with parkConfig:", parkConfig); // Debugging: what park config is being used
+
+            const currentFieldGroup = new THREE.Group();
+            currentFieldGroup.rotation.y = Math.PI; // Adjust rotation for proper orientation
+
+            const texSize=512, sq=64;
+            const texC=document.createElement('canvas');
+            texC.width=texC.height=texSize;
+            const ctx2=texC.getContext('2d');
+            const cols=['#66cc66','#33aa33'];
+            for(let y=0;y<texSize;y+=sq)for(let x=0;x<texSize;x+=sq){
+                ctx2.fillStyle=cols[((x/sq)+(y/sq))%2];
+                ctx2.fillRect(x,y,sq,sq);
+            }
+            const turfTex=new THREE.CanvasTexture(texC);
+            turfTex.wrapS=turfTex.wrapT=THREE.RepeatWrapping;
+            turfTex.repeat.set(40,40);
+
+            const turfShape=new THREE.Shape();
+            turfShape.moveTo(0,0); // Sets the starting point for the turf shape
+
+            const rawAnchors = [
+                { ang:-45, d:parkConfig.leftFoul, h:parkConfig.leftFoulHeight },
+                { ang:parkConfig.leftCenter===0?-90:-22.5, d:parkConfig.leftCenter, h:parkConfig.leftCenterHeight },
+                { ang:0, d:parkConfig.center, h:parkConfig.centerHeight },
+                { ang:parkConfig.rightCenter===0?90:22.5, d:parkConfig.rightCenter, h:parkConfig.rightCenterHeight },
+                { ang:45, d:parkConfig.rightFoul, h:parkConfig.rightFoulHeight }
+            ];
+
+            console.log("rawAnchors (before map/filter):", rawAnchors); // Debugging: check raw anchor data
+            rawAnchors.forEach((p, index) => {
+                console.log(`Anchor ${index}: d=${p.d}, type=${typeof p.d}, d>0=${p.d > 0}`); // Detailed debug
+            });
+
+
+            const anchors = rawAnchors.map(p => {
+                const theta = degToRad(p.ang - 90);
+                // Explicitly parse distance to float for robustness
+                const d = parseFloat(p.d);
+                return { ang: p.ang, pos: new THREE.Vector3(d * Math.cos(theta), 0, -d * Math.sin(theta)), h: p.h };
+            }).filter(a => a.pos.length() > 0); // Filters out anchors with distance 0 or less, checking vector length
+
+            console.log("Anchors after filter:", anchors); // Debugging: crucial check for empty array
+
+            if (parkConfig.leftCenter === 0 && parkConfig.rightCenter === 0) {
+                const segments = 60, startAng = degToRad(135), endAng = degToRad(45);
+                for (let i = 0; i <= segments; i++) {
+                    const a = startAng + (i / segments) * (endAng - startAng);
+                    turfShape.lineTo(parkConfig.center * Math.cos(a), -parkConfig.center * Math.sin(a));
+                }
+            } else {
+                // Only iterate and add lines if there are valid anchors
+                if (anchors.length > 0) {
+                    anchors.forEach(A => turfShape.lineTo(A.pos.x, -A.pos.z));
+                } else {
+                    console.warn("createBallpark: No valid anchors found after filtering. Turf shape may be incomplete.");
+                }
+            }
+
+            // Check if any curves (lines) were added to the shape before attempting to close it
+            // If only moveTo(0,0) was called, curves.length will be 0.
+            if (turfShape.curves.length > 0) {
+                turfShape.closePath(); 
+            } else {
+                console.warn("createBallpark: Turf shape has no segments to close. Skipping closePath().");
+            }
+
+            const turfGeo = new THREE.ShapeGeometry(turfShape);
+            turfGeo.rotateX(-Math.PI / 2);
+            const turfMat = new THREE.MeshLambertMaterial({ map: turfTex, side: THREE.DoubleSide });
+            currentFieldGroup.add(new THREE.Mesh(turfGeo, turfMat));
+
+            // Walls
+            const segmentMeshes = [], segmentBoxes = [];
+            const lineMat = new THREE.LineBasicMaterial({color: 0xffffff});
+
+            // The wall drawing logic also relies on the 'anchors' array
+            if (parkConfig.leftCenter === 0 && parkConfig.rightCenter === 0) {
+                // Radial wall section
+                const segments = 60, startR = degToRad(-135), endR = degToRad(-45), thickness = 1;
+                for (let i = 0; i < segments; i++) {
+                    const r0 = startR + (i / segments) * (endR - startR),
+                          r1 = startR + ((i + 1) / segments) * (endR - startR);
+                    const p0 = new THREE.Vector3(parkConfig.center * Math.cos(r0), 0, -parkConfig.center * Math.sin(r0)),
+                          p1 = new THREE.Vector3(parkConfig.center * Math.cos(r1), 0, -parkConfig.center * Math.sin(r1));
+                    const t0 = (r0 - startR) / (endR - startR), t1 = (r1 - startR) / (endR - startR),
+                          h0 = THREE.MathUtils.lerp(parkConfig.leftFoulHeight, parkConfig.rightFoulHeight, t0),
+                          h1 = THREE.MathUtils.lerp(parkConfig.leftFoulHeight, parkConfig.rightFoulHeight, t1);
+                    const dir = p1.clone().sub(p0).normalize(),
+                          perp = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(thickness / 2);
+                    const pts = [
+                        p0.clone().add(perp), p0.clone().sub(perp),
+                        p1.clone().sub(perp), p1.clone().add(perp)
+                    ];
+                    const top = [
+                        pts[0].clone().setY(h0), pts[1].clone().setY(h0),
+                        pts[2].clone().setY(h1), pts[3].clone().setY(h1)
+                    ];
+                    const positions = [...pts,...top].flatMap(v=>[v.x,v.y,v.z]);
+                    const indices = [
+                        0,1,2,2,3,0,4,7,6,6,5,4,
+                        0,4,5,5,1,0,1,5,6,6,2,1,
+                        2,6,7,7,3,2,3,7,4,4,0,3
+                    ];
+                    const geo = new THREE.BufferGeometry();
+                    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                    geo.setIndex(indices);
+                    geo.computeVertexNormals();
+                    const wall = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({color: 0xff7f00}));
+                    currentFieldGroup.add(wall);
+                    segmentMeshes.push(wall);
+                    segmentBoxes.push(new THREE.Box3().setFromObject(wall));
+                }
+            } else {
+                // Straight wall segments section
+                // This loop also depends on `anchors` having sufficient length
+                if (anchors.length > 1) { // Need at least two anchors to draw segments
+                    for(let i=0;i<anchors.length-1;i++){
+                        const A=anchors[i], B=anchors[i+1];
+                        if(i===0||i===3){ // Foul lines
+                            const end=(i===0?A.pos:B.pos).clone().setY(1);
+                            const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,1,0),end]);
+                            currentFieldGroup.add(new THREE.Line(geo,lineMat));
+                        }
+                        const dir=B.pos.clone().sub(A.pos).normalize(),
+                              perp=new THREE.Vector3(-dir.z,0,dir.x);
+                        const p0=A.pos.clone().add(perp.clone().multiplyScalar(0.5)),
+                              p1=A.pos.clone().add(perp.clone().multiplyScalar(-0.5)),
+                              p2=B.pos.clone().add(perp.clone().multiplyScalar(-0.5)),
+                              p3=B.pos.clone().add(perp.clone().multiplyScalar(0.5));
+                        const h=(A.h+B.h)/2; // Simple average for segment height
+                        const pos=[p0,p1,p2,p3,p0.clone().setY(h),p1.clone().setY(h),p2.clone().setY(h),p3.clone().setY(h)]
+                                     .flatMap(v=>[v.x,v.y,v.z]);
+                        const idx=[0,1,2,2,3,0,4,7,6,6,5,4,0,4,5,5,1,0,1,5,6,6,2,1,2,6,7,7,3,2,3,7,4,4,0,3];
+                        const geo=new THREE.BufferGeometry();
+                        geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+                        geo.setIndex(idx);
+                        geo.computeVertexNormals();
+                        const wall = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({color: 0xff7f00}));
+                        currentFieldGroup.add(wall);
+                        segmentMeshes.push(wall);
+                        segmentBoxes.push(new THREE.Box3().setFromObject(wall));
+                    }
+                } else {
+                    console.warn("createBallpark: Not enough anchors to draw straight wall segments.");
+                }
+            }
+
+            // Infield
+            const infield=new THREE.Group();
+            const BASE=90, EXT=55, R=BASE+EXT;
+            const shape=new THREE.Shape();
+            shape.moveTo(0,0);
+            shape.lineTo(BASE/Math.SQRT2,-BASE/Math.SQRT2);
+            shape.lineTo(R/Math.SQRT2,-R/Math.SQRT2);
+            shape.absarc(0,0,R,-Math.PI/4,-3*Math.PI/4,true);
+            shape.lineTo(-BASE/Math.SQRT2,-BASE/Math.SQRT2);
+            shape.lineTo(0,0);
+            const dirtG=new THREE.ShapeGeometry(shape),
+                  dirtM=new THREE.MeshLambertMaterial({color:0xAD8A56}),
+                  dirtMesh=new THREE.Mesh(dirtG,dirtM);
+            dirtMesh.rotation.x=-Math.PI/2;
+            infield.add(dirtMesh);
+            const baseGeo=new THREE.BoxGeometry(4,1,4),
+                  baseMat=new THREE.MeshLambertMaterial({color:0xffffff});
+            [[BASE/Math.SQRT2,-BASE/Math.SQRT2],[0,-BASE],[-BASE/Math.SQRT2,-BASE/Math.SQRT2]]
+                .forEach(([x,z])=>{
+                    const b=new THREE.Mesh(baseGeo,baseMat);
+                    b.position.set(x,1,-z);
+                    infield.add(b);
+                });
+            [-45,45].forEach(deg=>{
+                const rad=degToRad(deg-90);
+                infield.add(new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints([
+                        new THREE.Vector3(0,1,0),
+                        new THREE.Vector3(R*Math.cos(rad),1,-R*Math.sin(rad))
+                    ]),
+                    lineMat
+                ));
+            });
+            infield.traverse(o=>{ if(o.isMesh){ o.renderOrder=1; o.material.depthTest=false;} });
+            currentFieldGroup.add(infield);
+
+            console.log("currentFieldGroup children count (before return):", currentFieldGroup.children.length); // NEW DEBUG
+            return { fieldGroup: currentFieldGroup, segmentBoxes };
+        }
+
+        // Helper function to update label position based on 3D mesh
+        function updateLabelPosition(mesh, labelElement) {
+            if (!mesh || !labelElement) return;
+
+            const vector = new THREE.Vector3();
+            mesh.updateMatrixWorld(); // Ensure the mesh's world matrix is up to date
+            vector.setFromMatrixPosition(mesh.matrixWorld); // Get world position
+            vector.project(camera); // Project to screen space
+
+            // Convert to screen coordinates
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+
+            // Apply CSS transform for positioning
+            labelElement.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+            // Explicitly set display to block here as well
+            labelElement.style.display = 'block'; 
+        }
+
+        // 2) initScene: now takes an array of ball data AND an optional parkName
+        function initScene(ballRows, selectedParkName = "Wellspan Park") { // Default to Wellspan Park
+            console.log("initScene called. Ball rows:", ballRows.length, "Selected Park Name:", selectedParkName);
+
+            // Clear previous field, balls, and their labels
+            if (fieldGroup) {
+                scene.remove(fieldGroup);
+                fieldGroup.traverse(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                });
+            }
+            // Remove all existing dynamic labels from the DOM
+            document.querySelectorAll('.ball-distance-label').forEach(label => label.remove());
+
+            animatedBalls.forEach(ballObj => {
+                scene.remove(ballObj.mesh);
+                scene.remove(ballObj.trace);
+                scene.remove(ballObj.apexDot);
+                if (ballObj.mesh.geometry) ballObj.mesh.geometry.dispose();
+                if (ballObj.mesh.material) ballObj.mesh.material.dispose();
+                if (ballObj.trace.geometry) ballObj.trace.geometry.dispose();
+                if (ballObj.trace.material) ballObj.trace.material.dispose();
+                if (ballObj.apexDot.geometry) ballObj.apexDot.geometry.dispose();
+                if (ballObj.apexDot.material) ballObj.apexDot.material.dispose();
+            });
+            animatedBalls = []; // Reset the array of animated balls
+
+            // Determine the park to use based on the selectedParkName
+            let cfg = parks[selectedParkName] || parks.default;
+            console.log("Resolved park config in initScene:", cfg);
+
+
+            const { fieldGroup: newFieldGroup, segmentBoxes } = createBallpark(cfg);
+            console.log("fieldGroup returned from createBallpark children count:", newFieldGroup.children.length);
+            fieldGroup = newFieldGroup; // Update the global fieldGroup
+            scene.add(fieldGroup);
+            console.log("scene children count after adding fieldGroup:", scene.children.length);
+
+            ballRows.forEach(row => {
+                const D = row.Distance;
+                const T = row.HangTime;
+                const Dir = (row.Direction || 0) * Math.PI / 180;
+                const g = 32;
+                const vy = g * T / 2;
+                const tA = T / 2;
+                const maxH = Math.round(vy * tA - 0.5 * g * tA * tA);
+
+                const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 16),
+                                                 new THREE.MeshStandardMaterial({color: Math.random() * 0xffffff}));
+                ballMesh.frustumCulled = false;
+                ballMesh.renderOrder = 2;
+                ballMesh.material.depthTest = false;
+                scene.add(ballMesh);
+
+                const tracePts = [], traceG = new THREE.BufferGeometry(),
+                      trace = new THREE.Line(traceG, new THREE.LineBasicMaterial({color: ballMesh.material.color.getHex()}));
+                trace.frustumCulled = false;
+                trace.renderOrder = 2;
+                trace.material.depthTest = false;
+                scene.add(trace);
+
+                const apexDot = new THREE.Mesh(new THREE.SphereGeometry(2, 8, 8),
+                                               new THREE.MeshBasicMaterial({color: 0xff0000}));
+                const ar = Dir - Math.PI / 2;
+                const apexPos = new THREE.Vector3(D / 2 * Math.cos(ar), vy * tA - 0.5 * g * tA * tA, D / 2 * Math.sin(ar));
+                apexDot.position.copy(apexPos);
+                scene.add(apexDot);
+
+                // Create a dynamic label for this ball
+                const distanceLabelElement = document.createElement('div');
+                distanceLabelElement.className = 'ball-distance-label';
+                distanceLabelElement.textContent = 'Distance: -- ft'; // Initial text
+                document.body.appendChild(distanceLabelElement);
+                // Immediately hide the label. It will be shown only when the ball starts moving
+                distanceLabelElement.style.display = 'none'; 
+                console.log(`Created label for ball: ${row.Batter}, element:`, distanceLabelElement);
+
+
+                animatedBalls.push({
+                    row: row,
+                    mesh: ballMesh,
+                    trace: trace,
+                    tracePts: tracePts,
+                    apexDot: apexDot,
+                    elapsed: 0,
+                    stopped: false,
+                    D: D,
+                    T: T,
+                    Dir: Dir,
+                    vy: vy,
+                    ar: ar,
+                    maxH: maxH,
+                    segmentBoxes: segmentBoxes, // Each ball needs to check against the current park's walls
+                    distanceLabelElement: distanceLabelElement // Store the label element with the ball object
+                });
+            });
+
+            // Hide general stats info if multiple balls are displayed
+            homeInfo.textContent = '';
+            apexInfo.textContent = '';
+            apexLabel.style.display = 'none'; // Ensure default apexLabel is hidden
+
+            // Start the animation loop if there are balls to animate
+            if (animatedBalls.length > 0) {
+                clock.start();
+                animate();
+                // Labels will be managed by the animate function based on ball movement
+            } else {
+                document.querySelectorAll('.ball-distance-label').forEach(label => label.style.display = 'none');
+            }
+        }
+
+        const g = 32, clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+
+            let anyBallMoving = false;
+
+            animatedBalls.forEach(ballObj => {
+                if (!ballObj.stopped) {
+                    anyBallMoving = true;
+                    ballObj.elapsed += dt;
+                    const u = Math.min(ballObj.elapsed / ballObj.T, 1);
+                    const x = ballObj.D * u * Math.cos(ballObj.ar);
+                    const z = ballObj.D * u * Math.sin(ballObj.ar);
+                    const y = (ballObj.vy) * ballObj.elapsed - 0.5 * g * ballObj.elapsed * ballObj.elapsed;
+                    const cand = new THREE.Vector3(x, Math.max(y, 0), z);
+
+                    let hitWall = false;
+                    for (const b of ballObj.segmentBoxes) {
+                        if (b.containsPoint(cand)) {
+                            hitWall = true;
+                            break;
+                        }
+                    }
+
+                    if (hitWall || u >= 1) { // Check if hit wall or animation completed
+                        ballObj.stopped = true;
+                        ballObj.mesh.position.copy(cand); // Set final position
+                        if (ballObj.distanceLabelElement) {
+                            ballObj.distanceLabelElement.style.display = 'none'; // Hide label when stopped
+                            console.log(`Ball ${ballObj.row.Batter} stopped. Hiding label.`);
+                        }
+                    } else {
+                        ballObj.mesh.position.copy(cand);
+                        ballObj.tracePts.push(cand.clone());
+                        ballObj.trace.geometry.setFromPoints(ballObj.tracePts);
+
+                        // Ensure label is visible and updated as long as the ball is moving
+                        if (ballObj.distanceLabelElement) {
+                            const currentDistance = Math.round(Math.hypot(ballObj.mesh.position.x, ballObj.mesh.position.z));
+                            ballObj.distanceLabelElement.textContent = `Distance: ${currentDistance} ft`;
+                            updateLabelPosition(ballObj.mesh, ballObj.distanceLabelElement);
+                        }
+                    }
+                } else {
+                    // If ball is already stopped, ensure its label remains hidden
+                    if (ballObj.distanceLabelElement) {
+                        ballObj.distanceLabelElement.style.display = 'none';
+                    }
+                }
+            });
+
+            // If "Follow Ball" is on, target the first active ball or the first overall ball
+            if (follow && animatedBalls.length > 0) {
+                const ballToFollow = animatedBalls.find(b => !b.stopped) || animatedBalls[0];
+                if (ballToFollow) {
+                    camera.lookAt(ballToFollow.mesh.position);
+                }
+            }
+
+            renderer.render(scene, camera);
+
+            // If no balls are currently moving, stop the clock and ensure all labels are hidden.
+            // This prevents the animation loop from running unnecessarily.
+            if (!anyBallMoving && clock.running) {
+                clock.stop();
+                document.querySelectorAll('.ball-distance-label').forEach(label => label.style.display = 'none');
+                console.log("All balls stopped. Animation clock stopped. All labels hidden.");
+            }
+        }
+
+        // UI Interactions
+        resetBtn.onclick = () => {
+            animatedBalls.forEach(ballObj => {
+                ballObj.elapsed = 0;
+                ballObj.stopped = false;
+                ballObj.mesh.position.set(0, 1, 0); // Reset position to origin
+                ballObj.tracePts.length = 0; // Clear trace points
+                ballObj.trace.geometry.setFromPoints(ballObj.tracePts);
+                // Ensure label is visible and reset its text when restarting
+                if (ballObj.distanceLabelElement) {
+                    ballObj.distanceLabelElement.style.display = 'block'; 
+                    ballObj.distanceLabelElement.textContent = 'Distance: -- ft';
+                }
+            });
+            if (animatedBalls.length > 0) {
+                clock.start();
+                animate(); // Restart animation
+            } else {
+                // If no balls, ensure all labels are hidden
+                document.querySelectorAll('.ball-distance-label').forEach(label => label.style.display = 'none');
+            }
+        };
+
+        followBtn.onclick = () => {
+            follow = !follow;
+            followBtn.textContent = `Follow Ball: ${follow ? 'On' : 'Off'}`;
+        };
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // Re-position all visible labels on resize
+            animatedBalls.forEach(ballObj => {
+                if (ballObj.distanceLabelElement && ballObj.distanceLabelElement.style.display === 'block') {
+                     updateLabelPosition(ballObj.mesh, ballObj.distanceLabelElement);
+                }
+            });
+        });
+
+        // 1) Load CSV first, then setup filter
+        Papa.parse('data.csv', { 
+            download: true, 
+            header: true, 
+            dynamicTyping: true,
+            complete(res) {
+                allBallData = res.data.filter(row => row.Distance && row.HangTime && row.Direction !== undefined); 
+                // Populate batter names for autocomplete
+                const uniqueBatters = new Set();
+                allBallData.forEach(row => {
+                    if (row.Batter) {
+                        uniqueBatters.add(String(row.Batter).trim());
+                    }
+                });
+                uniqueBatters.forEach(batterName => {
+                    const option = document.createElement('option');
+                    option.value = batterName;
+                    batterNamesDatalist.appendChild(option);
+                });
+
+                // Initial scene setup with the default park, but no ball animation yet
+                initScene([], parkSelector.value); 
+            }
+        });
+
+        // Filter Popup Logic
+        animateBtn.onclick = () => {
+            const batterFilter = batterFilterInput.value.toLowerCase();
+            const resultFilter = document.getElementById('resultFilter').value.toLowerCase(); 
+            const startDate = startDateFilter.value ? new Date(startDateFilter.value + 'T00:00:00') : null; 
+            const endDate = endDateFilter.value ? new Date(endDateFilter.value + 'T23:59:59') : null;     
+            const selectedPark = parkSelector.value; 
+
+            const filteredBalls = allBallData.filter(row => {
+                const matchesBatter = !batterFilter || (row.Batter && String(row.Batter).toLowerCase().includes(batterFilter));
+                const resultText = row.PlayResult ? String(row.PlayResult).toLowerCase() : ''; 
+
+                let matchesResult = true;
+                if (resultFilter) {
+                    if (resultFilter === "home run") {
+                        matchesResult = resultText.includes("home run");
+                    } else {
+                        matchesResult = resultText.includes(resultFilter);
+                    }
+                }
+
+                let matchesDate = true;
+                if (row.UTCDate) {
+                    const rowDate = new Date(row.UTCDate + 'T00:00:00'); 
+
+                    if (startDate && rowDate < startDate) {
+                        matchesDate = false;
+                    }
+                    if (endDate && rowDate > endDate) {
+                        matchesDate = false;
+                    }
+                } else if (startDate || endDate) {
+                    matchesDate = false;
+                }
+
+                return matchesBatter && matchesResult && matchesDate;
+            });
+
+            if (filteredBalls.length > 0) {
+                initScene(filteredBalls, selectedPark); 
+                filterPopup.style.display = 'none'; 
+                document.getElementById('stats').style.display = 'none'; 
+            } else {
+                initScene([], selectedPark);
+                alert('No matching batted balls found for the selected filters.');
+            }
+        };
+
+    </script>
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+            authDomain: "revs-2c987.firebaseapp.com",
+            projectId: "revs-2c987",
+            storageBucket: "revs-2c987.firebasestorage.app",
+            messagingSenderId: "181256684157",
+            appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+            measurementId: "G-2050889X0C"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const analytics = firebase.analytics(); 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const auth = firebase.auth();
+
+            // Redirect to login if not authenticated
+            auth.onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'login.html';
+                } else {
+                    // User is logged in, show the filter popup initially
+                    document.getElementById('filterPopup').style.display = 'flex';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

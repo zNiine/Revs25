@@ -1,0 +1,12 @@
+{
+  "name": "revs",
+  "version": "1.0.0",
+  "description": "ALPB baseball analytics - data build",
+  "scripts": {
+    "build-data": "node scripts/build-data.js",
+    "prebuild": "node scripts/build-data.js"
+  },
+  "devDependencies": {
+    "csv-parse": "^5.5.2"
+  }
+}

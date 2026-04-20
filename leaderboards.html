@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Add these compat scripts near the top of <head> -->
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Leaderboards – ALPB</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ----------------------------------------
+       RESET + GLOBAL
+    ---------------------------------------- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.4;
+    }
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+    ul {
+      list-style: none;
+    }
+
+    /* ----------------------------------------
+       HEADER (TOP BAR)
+    ---------------------------------------- */
+    header.top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 2rem;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header.top-bar #logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--accent);
+    }
+    /* Desktop nav + search (hidden below 768px) */
+    nav#menu,
+    .search-container {
+      display: none;
+    }
+    /* Hamburger button */
+    .hamburger {
+      width: 28px;
+      height: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .hamburger span {
+      display: block;
+      height: 3px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .hamburger.open span:nth-child(1) {
+      transform: translateY(8px) rotate(45deg);
+    }
+    .hamburger.open span:nth-child(2) {
+      opacity: 0;
+    }
+    .hamburger.open span:nth-child(3) {
+      transform: translateY(-8px) rotate(-45deg);
+    }
+
+    /* ----------------------------------------
+       OFF-CANVAS SIDE MENU (for nav + search)
+    ---------------------------------------- */
+    #side-menu {
+      position: fixed;
+      top: 0;
+      left: -280px;
+      width: 280px;
+      height: 100vh;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transition: left 0.3s ease;
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      gap: 1rem;
+      overflow-y: auto;
+    }
+    #side-menu.open {
+      left: 0;
+    }
+    #side-menu nav#menu-mobile ul {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    #side-menu nav#menu-mobile a {
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      padding: 0.5rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    #side-menu nav#menu-mobile a:hover,
+    #side-menu nav#menu-mobile a.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    #side-menu .search-container {
+      display: flex;
+      gap: 0.5rem;
+    }
+    #side-menu .search-container input {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      color: var(--text);
+    }
+    #side-menu .search-container button {
+      padding: 0.5rem 0.75rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #side-menu .search-container button:hover {
+      background: #0056b3;
+    }
+    /* Overlay behind side-menu */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.3);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 80;
+    }
+    #overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ----------------------------------------
+       SECONDARY NAV (SUBMENU)
+    ---------------------------------------- */
+    nav#subMenu {
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 2rem;
+      overflow-x: auto;
+    }
+    nav#subMenu ul {
+      display: flex;
+      gap: 1rem;
+      white-space: nowrap;
+    }
+    nav#subMenu a {
+      color: var(--text-muted);
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    nav#subMenu a:hover,
+    nav#subMenu a.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* ----------------------------------------
+       GLOBAL FILTERS BAR
+    ---------------------------------------- */
+    .global-filters {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+    .global-filters label {
+      margin-right: 0.5rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .global-filters select {
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      color: var(--text);
+    }
+
+    /* ----------------------------------------
+       TWO-COLUMN LAYOUT (Main + Sidebar)
+    ---------------------------------------- */
+    .layout {
+      display: flex;
+      flex: 1;
+      gap: 1rem;
+      padding: 2rem;
+      overflow: hidden;
+    }
+    main#cards-container {
+      flex: 3;
+      overflow-y: auto;
+      padding-right: 1rem;
+    }
+    aside#sidebar {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 8rem);
+      transition: max-height 0.3s ease;
+    }
+    aside#sidebar h3 {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      color: var(--text);
+    }
+    #table-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+    }
+    #table-list li:hover {
+      background: var(--accent-soft);
+    }
+    .drag-handle {
+      cursor: grab;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+    }
+    #table-list input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    /* ----------------------------------------
+       CARD STYLES (DETAILS & TABLES)
+    ---------------------------------------- */
+    .card {
+      width: 100%;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      color: var(--text);
+    }
+    .card > summary {
+      cursor: pointer;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text);
+    }
+    .card > summary:hover {
+      background: var(--bg-elevated);
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin: 0;
+      color: var(--text);
+    }
+    .back-to-top {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.4rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text);
+    }
+    .back-to-top:hover {
+      background: var(--accent-soft);
+    }
+    .filters {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding: 0.5rem 1rem;
+    }
+    .filters input,
+    .filters select,
+    .filters label {
+      padding: 0.4rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      color: var(--text);
+    }
+    .leaderboard {
+      padding: 0 1rem 1rem;
+    }
+    .leaderboard table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      table-layout: auto;
+      background: var(--bg-card);
+      color: var(--text);
+    }
+    .leaderboard th,
+    .leaderboard td {
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      text-align: left;
+      background: var(--bg-card);
+      color: var(--text);
+    }
+    .leaderboard tbody tr:nth-child(odd) td {
+      background: var(--bg-elevated);
+    }
+    .leaderboard thead th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-elevated);
+      color: var(--text-muted);
+      z-index: 1;
+      cursor: pointer;
+    }
+
+    /* ----------------------------------------
+       MODAL OVERLAY + IFRAME container
+    ---------------------------------------- */
+    .modalOverlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .modalOverlay.show {
+      display: flex;
+    }
+    #modalContent {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 80vw;
+      height: 80vh;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    #modalClose {
+      position: absolute; top: 8px; right: 12px;
+      font-size: 1.5rem; cursor: pointer; z-index: 1;
+      color: var(--text);
+    }
+    #animFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* ----------------------------------------
+       MEDIA QUERIES (≥ 768px)
+    ---------------------------------------- */
+    @media (min-width: 768px) {
+      /* On wide screens, hide the hamburger; show desktop nav + search inline */
+      .hamburger {
+        display: none;
+      }
+      #side-menu {
+        display: none;
+      }
+      #overlay {
+        display: none;
+      }
+      nav#menu {
+        display: flex;
+        gap: 2rem;
+      }
+      nav#menu ul {
+        display: flex;
+        gap: 2rem;
+      }
+      nav#menu a {
+        text-decoration: none;
+        color: var(--text-muted);
+        font-weight: 500;
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        transition: background 0.2s;
+      }
+      nav#menu a:hover {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      nav#menu a.active {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .search-container {
+        display: flex;
+        gap: 0.5rem;
+      }
+      .search-container input {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        min-width: 200px;
+        background: var(--bg-elevated);
+        color: var(--text);
+      }
+      .search-container input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .search-container button {
+        padding: 0.5rem 0.75rem;
+        border: none;
+        background: var(--accent);
+        color: white;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .search-container button:hover {
+        filter: brightness(1.1);
+      }
+    }
+
+    /* ----------------------------------------
+       MEDIA QUERIES (< 768px)
+    ---------------------------------------- */
+    @media (max-width: 767px) {
+      /* Submenu wraps horizontally; push padding */
+      nav#subMenu {
+        padding: 0.5rem 1rem;
+      }
+      nav#subMenu ul {
+        gap: 0.5rem;
+      }
+      /* Collapse two-column layout into single column */
+      .layout {
+        flex-direction: column;
+        padding: 1rem;
+      }
+      aside#sidebar {
+        display: none; /* hidden by default on mobile */
+        margin-top: 1rem;
+      }
+      body.show-sidebar aside#sidebar {
+        display: block;
+      }
+      /* Add a “Show Controls” button above cards */
+      .show-sidebar-btn {
+        display: block;
+        margin: 1rem 2rem;
+        padding: 0.5rem 1rem;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+      }
+      .show-sidebar-btn:hover {
+        filter: brightness(1.1);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <a href="index.html" class="logo">ALPB</a>
+    <nav class="nav-desktop">
+      <a href="index.html">Home</a>
+      <a href="schedule.html">Standings</a>
+      <a href="games.html">Games</a>
+      <a href="leaderboards.html" class="active">Leaderboards</a>
+      <a href="park-factors.html">Park Factors</a>
+      <a href="fielding.html">Fielding</a>
+      <a href="stolen-bases.html">Base Running</a>
+      <a href="dong.html">Would it Dong?</a>
+    </nav>
+    <form id="search-form" class="nav-desktop header-search-form">
+      <input type="text" id="search" placeholder="Search…" autocomplete="off" list="suggestions" style="width:180px;padding:0.4rem 0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text);" />
+      <button type="submit" id="search-btn" class="btn btn-primary" style="margin-left:4px;">Go</button>
+      <datalist id="suggestions"></datalist>
+    </form>
+    <div class="hamburger" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></div>
+  </header>
+  <div id="side-menu" class="side-menu">
+    <form id="search-form-mobile" class="search-container" style="margin-bottom:1rem;">
+      <input type="text" id="search-mobile" placeholder="Search…" autocomplete="off" list="suggestions-mobile" style="width:100%;padding:0.5rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text);" />
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">Go</button>
+      <datalist id="suggestions-mobile"></datalist>
+    </form>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="schedule.html">Standings</a></li>
+        <li><a href="games.html">Games</a></li>
+        <li><a href="leaderboards.html" class="active">Leaderboards</a></li>
+        <li><a href="park-factors.html">Park Factors</a></li>
+        <li><a href="fielding.html">Fielding</a></li>
+        <li><a href="stolen-bases.html">Base Running</a></li>
+        <li><a href="dong.html">Would it Dong?</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div id="overlay" class="overlay"></div>
+
+  <!-- SECONDARY NAV (SUBMENU) -->
+  <nav id="subMenu">
+    <ul>
+      <li><a href="#hr-distance">HR Distance</a></li>
+      <li><a href="#ev-speed">Exit Velocity</a></li>
+      <li><a href="#chase-rate">Chase Rate</a></li>
+      <li><a href="#release-speed">Max Velo</a></li>
+      <li><a href="#catcher-stats">Catcher Stats</a></li>
+      <li><a href="#avg-ev">Avg EV</a></li>
+      <li><a href="#spin-eff">Spin Efficiency</a></li>
+      <li><a href="#pitcher-hh">Pitcher HH%</a></li>
+      <li><a href="#batter-hh">Batter HH%</a></li>
+      <li><a href="#barrel-pct">Barrel%</a></li>
+      <li><a href="#sweetspot-pct">SweetSpot%</a></li>
+      <li><a href="#avg-team-hr-dist">Team HR Dist</a></li>
+      <li><a href="#fb-velo">Fastball Velo</a></li>
+      <li><a href="#whiff-rate">Whiff Rate</a></li>
+      <li><a href="#k-rate">K Rate</a></li>
+      <li><a href="#gb-rate">GB%</a></li>
+    </ul>
+  </nav>
+
+  <!-- GLOBAL FILTERS -->
+  <div class="global-filters">
+    <label for="time-filter">Time Range:</label>
+    <select id="time-filter">
+      <option value="0">All Time</option>
+      <option value="3">Yesterday</option>
+      <option value="4">Last 3 Days</option>
+      <option value="8">Last 7 Days</option>
+      <option value="16">Last 15 Days</option>
+      <option value="31">Last 30 Days</option>
+    </select>
+  </div>
+
+  <!-- “Show Controls” button for mobile to toggle sidebar -->
+
+  <!-- MAIN CONTENT + SIDEBAR -->
+  <div class="layout">
+    <!-- LEFT: All cards -->
+    <main id="cards-container">
+
+      <!-- 1. Home Run Distance -->
+      <details class="card" id="hr-distance" open>
+        <summary>
+          <h2>1. Home Run Distance</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="hr-team-filter" placeholder="Team" list="team-suggestions"/>
+            <input type="text" id="hr-player-filter" placeholder="Player" list="player-suggestions"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Team">Team</th>
+                <th data-key="Batter">Batter</th>
+                <th data-key="Pitcher">Pitcher</th>
+                <th data-key="Exit Vel">Exit Vel</th>
+                <th data-key="Launch Ang">Launch Ang</th>
+                <th data-key="Distance">Distance</th>
+                <th data-key="AutoPitchType">PitchType</th>
+                <th data-key="Date">Date</th>
+                <th>Details</th>
+                <th>Watch</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 2. Exit Velocity -->
+      <details class="card" id="ev-speed" open>
+        <summary>
+          <h2>2. Exit Velocity</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="ev-team-filter" placeholder="Team" list="team-suggestions"/>
+            <input type="text" id="ev-player-filter" placeholder="Player" list="player-suggestions"/>
+            <select id="ev-playresult-filter"><option value="">All Results</option></select>
+            <select id="ev-autotype-filter"><option value="">All Types</option></select>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Team">Team</th>
+                <th data-key="Batter">Batter</th>
+                <th data-key="Pitcher">Pitcher</th>
+                <th data-key="Exit Vel">Exit Vel</th>
+                <th data-key="Launch Ang">Launch Ang</th>
+                <th data-key="Distance">Distance</th>
+                <th data-key="PlayResult">Result</th>
+                <th data-key="AutoPitchType">PitchType</th>
+                <th data-key="Date">Date</th>
+                <th>Details</th>
+                <th>Watch</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 3. Chase Rate -->
+      <details class="card" id="chase-rate" open>
+        <summary>
+          <h2>3. Chase Rate</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="chase-team-filter" placeholder="Team" list="team-suggestions"/>
+            <label for="chase-min-filter">Min Outside:</label>
+            <input type="number" id="chase-min-filter" value="20" min="1"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Player">Player</th>
+                <th data-key="ChaseRate">Chase Rate</th>
+                <th data-key="TotalOutside">Total Outside</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 4. Release Speed -->
+      <details class="card" id="release-speed" open>
+        <summary>
+          <h2>4. Release Speed</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="rel-team-filter" placeholder="Team" list="team-suggestions"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Pitcher">Pitcher</th>
+                <th data-key="Release Speed">Release Speed</th>
+                <th data-key="PitchCall">Call</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 5. Catcher Stats -->
+      <details class="card" id="catcher-stats" open>
+        <summary>
+          <h2>5. Catcher Stats</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="catcher-player-filter" placeholder="Catcher" list="player-suggestions"/>
+            <input type="text" id="catcher-team-filter" placeholder="Team" list="team-suggestions"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Catcher">Catcher</th>
+                <th data-key="Team">Team</th>
+                <th data-key="PopTime">Avg PopTime</th>
+                <th data-key="ExchangeTime">Avg Exchange</th>
+                <th data-key="ThrowSpeed">Avg Throw</th>
+                <th data-key="Attempts">Attempts</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 6. Avg Exit Velocity by Batter -->
+      <details class="card" id="avg-ev" open>
+        <summary>
+          <h2>6. Avg Exit Velocity</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="avg-ev-team-filter" placeholder="Team" list="team-suggestions"/>
+            <label for="avg-ev-min-pa">Min BBE:</label>
+            <input type="number" id="avg-ev-min-pa" value="10" min="1" style="width:4rem"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Batter">Batter</th>
+                <th data-key="Team">Team</th>
+                <th data-key="AvgExitVelocity">Avg Exit Vel</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 8. Spin Efficiency -->
+      <details class="card" id="spin-eff" open>
+        <summary>
+          <h2>10. Spin Efficiency</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="seam-team-filter" placeholder="Team" list="team-suggestions"/>
+            <input type="text" id="seam-pitcher-filter" placeholder="Pitcher" list="player-suggestions"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Pitcher">Pitcher</th>
+                <th data-key="PitchType">Type</th>
+                <th data-key="SpinEff">SpinEff</th>
+                <th data-key="Count">Count</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 11. Pitcher Hard Hit % -->
+      <details class="card" id="pitcher-hh" open>
+        <summary>
+          <h2>11. Pitcher Hard Hit %</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="hh-p-team-filter" placeholder="Team" list="team-suggestions"/>
+            <input type="text" id="hh-p-pitcher-filter" placeholder="Pitcher" list="player-suggestions"/>
+            <label for="hh-threshold">Threshold</label>
+            <input type="number" id="hh-threshold" value="95" min="0" style="width:4rem"/> mph
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Pitcher">Pitcher</th>
+                <th data-key="HHPct">HH%</th>
+                <th data-key="Count">Count</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 12. Batter Hard Hit % -->
+      <details class="card" id="batter-hh" open>
+        <summary>
+          <h2>12. Batter Hard Hit %</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="hh-b-team-filter" placeholder="Team" list="team-suggestions"/>
+            <input type="text" id="hh-b-batter-filter" placeholder="Batter" list="player-suggestions"/>
+            <label for="hh-b-threshold">Threshold</label>
+            <input type="number" id="hh-b-threshold" value="95" min="0" style="width:4rem"/> mph
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Batter">Batter</th>
+                <th data-key="Team">Team</th>
+                <th data-key="HHPct">HH%</th>
+                <th data-key="Count">Count</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 9. Barrel % -->
+      <details class="card" id="barrel-pct" open>
+        <summary>
+          <h2>9. Barrel%</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="barrel-team-filter" placeholder="Team" list="team-suggestions"/>
+            <input type="text" id="barrel-player-filter" placeholder="Player" list="player-suggestions"/>
+            <label for="barrel-min-pa">Min BBE:</label>
+            <input type="number" id="barrel-min-pa" value="15" min="1" style="width:4rem"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Player">Player</th>
+                <th data-key="Barrel %">Barrel%</th>
+                <th data-key="Plate Apps">PA</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 10. SweetSpot % -->
+      <details class="card" id="sweetspot-pct" open>
+        <summary>
+          <h2>10. SweetSpot%</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="ss-team-filter" placeholder="Team" list="team-suggestions"/>
+            <input type="text" id="ss-player-filter" placeholder="Player" list="player-suggestions"/>
+            <label for="ss-min-pa">Min BBE:</label>
+            <input type="number" id="ss-min-pa" value="15" min="1" style="width:4rem"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Player">Player</th>
+                <th data-key="SweetSpot %">Sweet%</th>
+                <th data-key="Plate Apps">PA</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 11. Average Team Home-Run Distance -->
+      <details class="card" id="avg-team-hr-dist" open>
+        <summary>
+          <h2>11. Average Team Home-Run Distance</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Team">Team</th>
+                <th data-key="HRCount">HRs</th>
+                <th data-key="AvgDistance">Avg HR Distance (ft)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 12. Fastball Velocity -->
+      <details class="card" id="fb-velo" open>
+        <summary>
+          <h2>12. Fastball Velocity (Avg by Pitcher)</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="fb-velo-team-filter" placeholder="Team" list="team-suggestions"/>
+            <label for="fb-velo-type">Type:</label>
+            <select id="fb-velo-type">
+              <option value="">All Fastballs</option>
+              <option value="Four-Seam">Four-Seam</option>
+              <option value="Sinker">Sinker</option>
+            </select>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Pitcher">Pitcher</th>
+                <th data-key="Team">Team</th>
+                <th data-key="PitchType">Type</th>
+                <th data-key="AvgVelo">Avg Velo</th>
+                <th data-key="MaxVelo">Max Velo</th>
+                <th data-key="Count">Pitches</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 13. Pitcher Whiff Rate -->
+      <details class="card" id="whiff-rate" open>
+        <summary>
+          <h2>13. Pitcher Whiff Rate</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="whiff-team-filter" placeholder="Team" list="team-suggestions"/>
+            <label for="whiff-min">Min Swings:</label>
+            <input type="number" id="whiff-min" value="30" min="1" style="width:4rem"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Pitcher">Pitcher</th>
+                <th data-key="Team">Team</th>
+                <th data-key="WhiffPct">Whiff%</th>
+                <th data-key="Whiffs">Whiffs</th>
+                <th data-key="Swings">Swings</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 14. Strikeout Rate (K%) -->
+      <details class="card" id="k-rate" open>
+        <summary>
+          <h2>14. Strikeout Rate (K%)</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="k-rate-team-filter" placeholder="Team" list="team-suggestions"/>
+            <label for="k-rate-entity">View:</label>
+            <select id="k-rate-entity">
+              <option value="pitcher">Pitcher K%</option>
+              <option value="batter">Batter K%</option>
+            </select>
+            <label for="k-rate-min">Min PA:</label>
+            <input type="number" id="k-rate-min" value="20" min="1" style="width:4rem"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Player">Player</th>
+                <th data-key="Team">Team</th>
+                <th data-key="KPct">K%</th>
+                <th data-key="Ks">Ks</th>
+                <th data-key="PA">PA</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 15. Ground Ball % -->
+      <details class="card" id="gb-rate" open>
+        <summary>
+          <h2>15. Ground Ball % (Batter)</h2>
+          <button class="back-to-top">↑</button>
+        </summary>
+        <div class="leaderboard">
+          <div class="filters">
+            <input type="text" id="gb-team-filter" placeholder="Team" list="team-suggestions"/>
+            <label for="gb-min">Min BBE:</label>
+            <input type="number" id="gb-min" value="15" min="1" style="width:4rem"/>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th data-key="Batter">Batter</th>
+                <th data-key="Team">Team</th>
+                <th data-key="GBPct">GB%</th>
+                <th data-key="FBPct">FB%</th>
+                <th data-key="LDPct">LD%</th>
+                <th data-key="BBE">BBE</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+    </main>
+
+    <!-- RIGHT: Sidebar (Show/Hide on mobile) -->
+    <aside id="sidebar">
+      <h3>Show / Hide & Order</h3>
+      <ul id="table-list"></ul>
+    </aside>
+  </div>
+
+  <!-- MODAL (IFRAME) OVERLAY -->
+  <div id="modalOverlay" class="modalOverlay">
+    <div id="modalContent">
+      <span id="modalClose">&times;</span>
+      <iframe id="animFrame" src="" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <!-- Shared Datalists -->
+  <datalist id="team-suggestions"></datalist>
+  <datalist id="player-suggestions"></datalist>
+
+  <!-- EXTERNAL LIBRARIES -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+  <script>
+    /**************************************************
+      UTILITY FUNCTIONS & GLOBAL STATE
+    **************************************************/
+    const columns = {
+      player: 'Batter',
+      playerTeam: 'BatterTeam',
+      pitcher: 'Pitcher',
+      pitcherTeam: 'PitcherTeam',
+      playResult: 'PlayResult',
+      distance: 'Distance',
+      exitSpeed: 'ExitSpeed',
+      relSpeed: 'RelSpeed',
+      angle: 'Angle',
+      autoType: 'AutoPitchType',
+      plateHeight: 'PlateLocHeight',
+      plateSide: 'PlateLocSide',
+      pitchCall: 'PitchCall',
+      homeAbbr: 'HomeTeam',
+      awayAbbr: 'AwayTeam',
+      homeFull: 'HomeNameFull',
+      awayFull: 'AwayNameFull',
+      date: 'Date'
+    };
+
+    let data = [];
+    let fullData = [];
+    const teams = new Set(), playersSet = new Set();
+
+    function getFullTeamName(abbr, row) {
+      if (abbr === row[columns.homeAbbr]) return row[columns.homeFull];
+      if (abbr === row[columns.awayAbbr]) return row[columns.awayFull];
+      return abbr;
+    }
+
+    function renderLeaderboard(id, rows, cols) {
+      const tbody = document.querySelector(`#${id} tbody`);
+      tbody.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        cols.forEach(c => {
+          const td = document.createElement('td');
+          const val = r[c] != null ? r[c] : '';
+          let url = null;
+          if (c === 'Batter') {
+            url = `batter-profiles.html?player=${encodeURIComponent(val)}`;
+          } else if (c === 'Pitcher') {
+            url = `pitcher-profiles.html?player=${encodeURIComponent(val)}`;
+          } else if (c === 'Umpire') {
+            url = `ump-profiles.html?player=${encodeURIComponent(val)}`;
+          } else if (c === 'Team') {
+            url = `team-profiles.html?team=${encodeURIComponent(val)}`;
+          }
+
+          if (url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.textContent = val;
+            td.appendChild(a);
+          } else if (c === 'Details' || c === 'Watch' || c === 'Animate') {
+            td.innerHTML = val;
+          } else {
+            td.textContent = val;
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    /**************************************************
+      DRAW FUNCTIONS FOR EACH LEADERBOARD
+    **************************************************/
+    const RV = {
+      StrikeCalled:   0.1,
+      BallCalled:    -0.1,
+      StrikeSwinging: 0.3
+    };
+    const RE_COUNT = {
+      '0-0': 0.496, '0-1': 0.383, '0-2': 0.254,
+      '1-0': 0.621, '1-1': 0.508, '1-2': 0.379,
+      '2-0': 0.703, '2-1': 0.590, '2-2': 0.455,
+      '3-0': 0.855, '3-1': 0.736, '3-2': 0.602
+    };
+    const RE_AFTER_HIT = {
+      Single: 0.757,
+      Double: 1.053,
+      Triple: 1.560,
+      Out:    0.250
+    };
+
+    function drawSpinEfficiency(rows) {
+      const map = {};
+      rows.forEach(r => {
+        const pit = r[columns.pitcher], pt = r[columns.autoType];
+        const sv = parseFloat(r.SpinRate), vb = parseFloat(r.InducedVertBreak);
+        if (!pit || !pt || isNaN(sv) || isNaN(vb)) return;
+        const eff = vb / sv * 1000;
+        map[pit] = map[pit] || {};
+        map[pit][pt] = map[pit][pt] || { sum: 0, c: 0, team: getFullTeamName(r[columns.pitcherTeam], r) };
+        map[pit][pt].sum += eff;
+        map[pit][pt].c += 1;
+      });
+      let out = [];
+      Object.entries(map).forEach(([pit, pts]) => {
+        Object.entries(pts).forEach(([pt, v]) => {
+          if (v.c < 15) return;
+          out.push({
+            Pitcher: pit,
+            PitchType: pt,
+            SpinEff: (v.sum / v.c).toFixed(1),
+            Count: v.c,
+            Team: v.team
+          });
+        });
+      });
+      const teamF = document.getElementById('seam-team-filter').value;
+      const pitF  = document.getElementById('seam-pitcher-filter').value;
+      if (teamF) out = out.filter(r => r.Team === teamF);
+      if (pitF)  out = out.filter(r => r.Pitcher === pitF);
+      out.sort((a,b) => b.SpinEff - a.SpinEff);
+      renderLeaderboard('spin-eff', out.slice(0,10), ['Pitcher','PitchType','SpinEff','Count']);
+    }
+
+    function drawPitcherHardHit(rows) {
+      const threshold = +document.getElementById('hh-threshold').value;
+      const map = {};
+      rows.forEach(r => {
+        const pit = r[columns.pitcher];
+        const ev  = parseFloat(r[columns.exitSpeed]);
+        if (!pit || isNaN(ev)) return;
+        map[pit] = map[pit] || { hh: 0, tot: 0, team: getFullTeamName(r[columns.pitcherTeam], r) };
+        map[pit].tot++;
+        if (ev >= threshold) map[pit].hh++;
+      });
+      let out = Object.entries(map).map(([pit, v]) => ({
+        Pitcher: pit,
+        HHPct: ((v.hh / v.tot) * 100).toFixed(1),
+        Count: v.tot,
+        Team: v.team
+      })).filter(r => r.Count >= 15);
+      const teamF = document.getElementById('hh-p-team-filter').value;
+      const pitF  = document.getElementById('hh-p-pitcher-filter').value;
+      if (teamF) out = out.filter(r => r.Team === teamF);
+      if (pitF) out = out.filter(r => r.Pitcher === pitF);
+      out.sort((a,b) => b.HHPct - a.HHPct);
+      renderLeaderboard('pitcher-hh', out.slice(0,10), ['Pitcher','HHPct','Count']);
+    }
+
+    function drawBatterHardHit(rows) {
+      const threshold = +document.getElementById('hh-b-threshold').value;
+      const teamF     = document.getElementById('hh-b-team-filter').value;
+      const batF      = document.getElementById('hh-b-batter-filter').value;
+      const map = {};
+      rows.forEach(r => {
+        if (r.PitchCall !== 'InPlay') return;
+        const ev = parseFloat(r.ExitSpeed);
+        if (isNaN(ev)) return;
+        const bat  = r[columns.player];
+        const team = getFullTeamName(r[columns.playerTeam], r);
+        map[bat] = map[bat] || { hh: 0, tot: 0, team };
+        map[bat].tot++;
+        if (ev >= threshold) map[bat].hh++;
+      });
+      let out = Object.entries(map).map(([bat, v]) => ({
+        Batter: bat,
+        Team: v.team,
+        HHPct: ((v.hh / v.tot) * 100).toFixed(1),
+        Count: v.tot
+      }));
+      if (teamF) out = out.filter(r => r.Team === teamF);
+      if (batF) out = out.filter(r => r.Batter === batF);
+      out = out.filter(r => r.Count >= 15)
+               .sort((a,b) => b.HHPct - a.HHPct)
+               .slice(0,10);
+      renderLeaderboard('batter-hh', out, ['Batter','Team','HHPct','Count']);
+    }
+
+    function drawBarrelPct(rows) {
+      const teamF   = document.getElementById('barrel-team-filter').value;
+      const playerF = document.getElementById('barrel-player-filter').value;
+      const map = {};
+      rows.forEach(r => {
+        if (r.PitchCall !== 'InPlay') return;
+        const ev = parseFloat(r.ExitSpeed), la = parseFloat(r.Angle);
+        if (isNaN(ev) || isNaN(la)) return;
+        const team = getFullTeamName(r[columns.playerTeam], r);
+        const bat  = r[columns.player];
+        map[bat] = map[bat] || { barrel: 0, pa: 0, team };
+        map[bat].pa++;
+        if (ev >= 98 && la >= 26 && la <= 32) map[bat].barrel++;
+      });
+      let out = Object.entries(map).map(([bat, s]) => ({
+        Player: bat,
+        'Barrel %': +(s.barrel / s.pa * 100).toFixed(1),
+        'Plate Apps': s.pa,
+        Team: s.team
+      }));
+      if (teamF) out = out.filter(r => r.Team === teamF);
+      if (playerF) out = out.filter(r => r.Player === playerF);
+      const barrelMinPA = +document.getElementById('barrel-min-pa').value || 15;
+      out = out.filter(r => r['Plate Apps'] >= barrelMinPA)
+               .sort((a,b) => b['Barrel %'] - a['Barrel %'])
+               .slice(0,10);
+      renderLeaderboard('barrel-pct', out, ['Player','Barrel %','Plate Apps']);
+    }
+
+    function drawSweetSpotPct(rows) {
+      const teamF   = document.getElementById('ss-team-filter').value;
+      const playerF = document.getElementById('ss-player-filter').value;
+      const map = {};
+      rows.forEach(r => {
+        if (r.PitchCall !== 'InPlay') return;
+        const ev = parseFloat(r.ExitSpeed);
+        if (isNaN(ev)) return;
+        const team = getFullTeamName(r[columns.playerTeam], r);
+        const bat  = r[columns.player];
+        map[bat] = map[bat] || { ss: 0, pa: 0, team };
+        map[bat].pa++;
+        if (ev >= 90 && ev < 98) map[bat].ss++;
+      });
+      let out = Object.entries(map).map(([bat, s]) => ({
+        Player: bat,
+        'SweetSpot %': +(s.ss / s.pa * 100).toFixed(1),
+        'Plate Apps': s.pa,
+        Team: s.team
+      }));
+      if (teamF) out = out.filter(r => r.Team === teamF);
+      if (playerF) out = out.filter(r => r.Player === playerF);
+      const ssMinPA = +document.getElementById('ss-min-pa').value || 15;
+      out = out.filter(r => r['Plate Apps'] >= ssMinPA)
+               .sort((a,b) => b['SweetSpot %'] - a['SweetSpot %'])
+               .slice(0,10);
+      renderLeaderboard('sweetspot-pct', out, ['Player','SweetSpot %','Plate Apps']);
+    }
+
+    function drawFastballVelo(rows) {
+      const typeFilter = document.getElementById('fb-velo-type').value;
+      const teamFilter = document.getElementById('fb-velo-team-filter').value;
+      const fbTypes    = ['Four-Seam','Sinker'];
+      const map = {};
+      rows.forEach(r => {
+        const pt  = r[columns.autoType];
+        const pit = r[columns.pitcher];
+        const spd = parseFloat(r[columns.relSpeed]);
+        if (!pt || !pit || isNaN(spd)) return;
+        if (!fbTypes.includes(pt)) return;
+        if (typeFilter && pt !== typeFilter) return;
+        const key = `${pit}||${pt}`;
+        const team = getFullTeamName(r[columns.pitcherTeam], r);
+        map[key] = map[key] || { pitcher: pit, team, pt, sum: 0, max: 0, count: 0 };
+        map[key].sum += spd;
+        map[key].max = Math.max(map[key].max, spd);
+        map[key].count++;
+      });
+      let out = Object.values(map)
+        .filter(v => v.count >= 15)
+        .map(v => ({
+          Pitcher: v.pitcher, Team: v.team,
+          PitchType: v.pt,
+          AvgVelo: (v.sum / v.count).toFixed(1),
+          MaxVelo: v.max.toFixed(1),
+          Count: v.count
+        }));
+      if (teamFilter) out = out.filter(r => r.Team === teamFilter);
+      out.sort((a,b) => parseFloat(b.AvgVelo) - parseFloat(a.AvgVelo));
+      renderLeaderboard('fb-velo', out.slice(0,15), ['Pitcher','Team','PitchType','AvgVelo','MaxVelo','Count']);
+    }
+
+    function drawWhiffRate(rows) {
+      const teamFilter = document.getElementById('whiff-team-filter').value;
+      const minSwings  = +document.getElementById('whiff-min').value || 30;
+      const map = {};
+      rows.forEach(r => {
+        const pit  = r[columns.pitcher];
+        const call = r[columns.pitchCall];
+        if (!pit || !call) return;
+        const isSwing  = call === 'InPlay' || call === 'StrikeSwinging' || call.startsWith('Foul');
+        const isWhiff  = call === 'StrikeSwinging';
+        if (!isSwing) return;
+        const team = getFullTeamName(r[columns.pitcherTeam], r);
+        map[pit] = map[pit] || { whiffs: 0, swings: 0, team };
+        map[pit].swings++;
+        if (isWhiff) map[pit].whiffs++;
+      });
+      let out = Object.entries(map)
+        .filter(([, v]) => v.swings >= minSwings)
+        .map(([pit, v]) => ({
+          Pitcher: pit, Team: v.team,
+          WhiffPct: (v.whiffs / v.swings * 100).toFixed(1) + '%',
+          Whiffs: v.whiffs, Swings: v.swings
+        }));
+      if (teamFilter) out = out.filter(r => r.Team === teamFilter);
+      out.sort((a,b) => parseFloat(b.WhiffPct) - parseFloat(a.WhiffPct));
+      renderLeaderboard('whiff-rate', out.slice(0,10), ['Pitcher','Team','WhiffPct','Whiffs','Swings']);
+    }
+
+    function drawKRate(rows) {
+      const teamFilter   = document.getElementById('k-rate-team-filter').value;
+      const entity       = document.getElementById('k-rate-entity').value;
+      const minPA        = +document.getElementById('k-rate-min').value || 20;
+      // Identify unique PAs and count Ks
+      const paMap = {};
+      rows.forEach(r => {
+        const name  = entity === 'pitcher' ? r[columns.pitcher] : r[columns.player];
+        const team  = entity === 'pitcher' ? getFullTeamName(r[columns.pitcherTeam],r) : getFullTeamName(r[columns.playerTeam],r);
+        const paKey = entity === 'pitcher'
+          ? `${r.GameUID}|${r.Inning}|${r['Top/Bottom']}|${r.PAofInning}|${r[columns.player]}`
+          : `${r.GameUID}|${r.Inning}|${r['Top/Bottom']}|${r.PAofInning}`;
+        if (!name) return;
+        if (!paMap[name]) paMap[name] = { pas: new Set(), ks: 0, team };
+        paMap[name].pas.add(paKey);
+        if (r.KorBB === 'Strikeout') paMap[name].ks = Math.max(0, paMap[name].ks); // counted below
+      });
+      // Re-count Ks per PA end (last pitch of PA with KorBB=Strikeout)
+      const kCounts = {};
+      rows.forEach(r => {
+        if (r.KorBB !== 'Strikeout') return;
+        const name = entity === 'pitcher' ? r[columns.pitcher] : r[columns.player];
+        if (!name) return;
+        kCounts[name] = (kCounts[name] || 0) + 1;
+      });
+      let out = Object.entries(paMap)
+        .filter(([, v]) => v.pas.size >= minPA)
+        .map(([name, v]) => {
+          const ks = kCounts[name] || 0;
+          const pa = v.pas.size;
+          return {
+            Player: name, Team: v.team,
+            KPct: (ks / pa * 100).toFixed(1) + '%',
+            Ks: ks, PA: pa
+          };
+        });
+      if (teamFilter) out = out.filter(r => r.Team === teamFilter);
+      const sorted = entity === 'pitcher'
+        ? out.sort((a,b) => parseFloat(b.KPct) - parseFloat(a.KPct))
+        : out.sort((a,b) => parseFloat(a.KPct) - parseFloat(b.KPct));
+      renderLeaderboard('k-rate', sorted.slice(0,10), ['Player','Team','KPct','Ks','PA']);
+    }
+
+    function drawGBRate(rows) {
+      const teamFilter = document.getElementById('gb-team-filter').value;
+      const minBBE     = +document.getElementById('gb-min').value || 15;
+      const map = {};
+      rows.forEach(r => {
+        if (r[columns.pitchCall] !== 'InPlay') return;
+        const la  = parseFloat(r[columns.angle]);
+        if (isNaN(la)) return;
+        const bat  = r[columns.player];
+        const team = getFullTeamName(r[columns.playerTeam], r);
+        map[bat] = map[bat] || { gb:0, fb:0, ld:0, total:0, team };
+        map[bat].total++;
+        if (la < 10)             map[bat].gb++;
+        else if (la >= 25)       map[bat].fb++;
+        else                     map[bat].ld++;
+      });
+      let out = Object.entries(map)
+        .filter(([, v]) => v.total >= minBBE)
+        .map(([bat, v]) => ({
+          Batter: bat, Team: v.team,
+          GBPct: (v.gb / v.total * 100).toFixed(1) + '%',
+          FBPct: (v.fb / v.total * 100).toFixed(1) + '%',
+          LDPct: (v.ld / v.total * 100).toFixed(1) + '%',
+          BBE: v.total,
+          _gb: v.gb / v.total
+        }));
+      if (teamFilter) out = out.filter(r => r.Team === teamFilter);
+      out.sort((a,b) => b._gb - a._gb);
+      out = out.map(({ _gb, ...rest }) => rest);
+      renderLeaderboard('gb-rate', out.slice(0,10), ['Batter','Team','GBPct','FBPct','LDPct','BBE']);
+    }
+
+    function drawBatterRunExp(rows) {
+      const brMap = {};
+      rows.forEach(r => {
+        const pt  = r[columns.autoType], bat = r[columns.player];
+        if (!pt) return;
+        const B    = +r.Balls, S = +r.Strikes;
+        const call = r.PitchCall, hit = r.TaggedHitType;
+        const runs = parseInt(r.RunsScored, 10) || 0;
+        const pre  = RE_COUNT[`${B}-${S}`] || 0;
+        let post;
+        if (call === 'BallCalled') {
+          const key = `${Math.min(B+1,3)}-${S}`;
+          post = RE_COUNT[key] || 0;
+        } else if (call === 'StrikeCalled' || call === 'StrikeSwinging') {
+          const key = `${B}-${Math.min(S+1,2)}`;
+          post = RE_COUNT[key] || 0;
+        } else if (hit === 'HomeRun') {
+          post = 0;
+        } else if (RE_AFTER_HIT[hit] != null) {
+          post = RE_AFTER_HIT[hit];
+        } else {
+          post = RE_AFTER_HIT.Out;
+        }
+        const rv   = (pre - post) + runs;
+        const team = getFullTeamName(r[columns.playerTeam], r);
+        brMap[bat] = brMap[bat] || {};
+        brMap[bat][pt] = brMap[bat][pt] || { sum: 0, c: 0, team };
+        brMap[bat][pt].sum += rv;
+        brMap[bat][pt].c += 1;
+      });
+      let out = [];
+      Object.entries(brMap).forEach(([bat, pts]) => {
+        Object.entries(pts).forEach(([pt, v]) => {
+          if (v.c < 15) return;
+          out.push({
+            Batter: bat,
+            'Pitch Type': pt,
+            'Avg Run Value': (v.sum / v.c).toFixed(3),
+            Count: v.c,
+            Team: v.team
+          });
+        });
+      });
+      const teamF = document.getElementById('bre-team-filter').value;
+      const batF  = document.getElementById('bre-batter-filter').value;
+      if (teamF) out = out.filter(r => r.Team === teamF);
+      if (batF) out = out.filter(r => r.Batter === batF);
+      out.sort((a,b) => parseFloat(b['Avg Run Value']) - parseFloat(a['Avg Run Value']));
+      renderLeaderboard('batter-run-exp', out.slice(0,20), ['Batter','Pitch Type','Avg Run Value','Count']);
+    }
+
+    function drawTruePitchRunExp(rows) {
+      const prMap = {};
+      rows.forEach(r => {
+        const pt  = r[columns.autoType], pit = r[columns.pitcher];
+        if (!pt) return;
+        const B    = +r.Balls, S     = +r.Strikes;
+        const call = r.PitchCall, hit = r.TaggedHitType;
+        const runs = parseInt(r.RunsScored, 10) || 0;
+        const pre  = RE_COUNT[`${B}-${S}`] || 0;
+        let post;
+        if (call === 'BallCalled') {
+          const key = `${Math.min(B+1,3)}-${S}`;
+          post = RE_COUNT[key] || 0;
+        } else if (call === 'StrikeCalled' || call === 'StrikeSwinging') {
+          const key = `${B}-${Math.min(S+1,2)}`;
+          post = RE_COUNT[key] || 0;
+        } else if (hit === 'HomeRun') {
+          post = 0;
+        } else if (RE_AFTER_HIT[hit] != null) {
+          post = RE_AFTER_HIT[hit];
+        } else {
+          post = RE_AFTER_HIT.Out;
+        }
+        const rv   = (pre - post) + runs;
+        const team = getFullTeamName(r[columns.pitcherTeam], r);
+        prMap[pit] = prMap[pit] || {};
+        prMap[pit][pt] = prMap[pit][pt] || { sum: 0, c: 0, team };
+        prMap[pit][pt].sum += rv;
+        prMap[pit][pt].c += 1;
+      });
+      let out = [];
+      Object.entries(prMap).forEach(([pit, pts]) => {
+        Object.entries(pts).forEach(([pt, v]) => {
+          if (v.c < 15) return;
+          out.push({
+            Pitcher: pit,
+            'Pitch Type': pt,
+            AvgRunValue: (v.sum / v.c).toFixed(3),
+            Count: v.c,
+            Team: v.team
+          });
+        });
+      });
+      const teamF = document.getElementById('pre-team-filter').value;
+      const pitF  = document.getElementById('pre-pitcher-filter').value;
+      if (teamF) out = out.filter(r => r.Team === teamF);
+      if (pitF) out = out.filter(r => r.Pitcher === pitF);
+      out.sort((a,b) => parseFloat(a.AvgRunValue) - parseFloat(b.AvgRunValue));
+      renderLeaderboard('pitch-run-exp', out.slice(0,20), ['Pitcher','Pitch Type','AvgRunValue','Count']);
+    }
+
+ 
+    function drawAvgExitByBatter(rows) {
+      const avgMap = {};
+      rows.filter(r => r.PitchCall === 'InPlay' && !isNaN(parseFloat(r[columns.exitSpeed])))
+        .forEach(r => {
+          const bat = r[columns.player];
+          const tm  = getFullTeamName(r[columns.playerTeam], r);
+          if (!avgMap[bat]) avgMap[bat] = { sum: 0, count: 0, team: tm };
+          avgMap[bat].sum += parseFloat(r[columns.exitSpeed]);
+          avgMap[bat].count++;
+        });
+      const minBBE = +document.getElementById('avg-ev-min-pa').value || 10;
+      let out = Object.entries(avgMap)
+        .filter(([b, st]) => st.count >= minBBE)
+        .map(([b, st]) => ({
+          Batter: b,
+          Team: st.team,
+          AvgExitVelocity: (st.sum / st.count).toFixed(2)
+        }));
+      const avgTeam = document.getElementById('avg-ev-team-filter').value;
+      if (avgTeam) {
+        out = out.filter(r => r.Team === avgTeam);
+      }
+      out.sort((a,b) => parseFloat(b.AvgExitVelocity) - parseFloat(a.AvgExitVelocity));
+      renderLeaderboard('avg-ev', out.slice(0,10), ['Batter','Team','AvgExitVelocity']);
+    }
+
+    /* =============== 
+       CORE COMPUTATION
+       =============== */
+    function computeAndRender() {
+      // Calculate cutoff based on time filter
+      const days = +document.getElementById('time-filter').value;
+      let cutoff = 0;
+      if (days > 0) {
+        const d0 = new Date();
+        d0.setHours(0,0,0,0);
+        cutoff = d0.getTime() - (days - 1) * 24 * 3600 * 1000;
+      }
+      const filtered = data.filter(r =>
+        !cutoff || new Date(r[columns.date]).getTime() >= cutoff
+      );
+
+      /***** 1. Home Run Distance *****/
+      // Deduplicate by PitchUID first to avoid duplicate CSV rows
+      let hrWithNum = filtered
+        .filter(r => /home\s*run/i.test(r[columns.playResult]))
+        .map(r => ({
+          __dist: parseFloat(r[columns.distance].replace(/,/g,'')) || 0,
+          Team: getFullTeamName(r[columns.playerTeam], r),
+          Batter: r[columns.player],
+          Pitcher: r[columns.pitcher],
+          'Exit Vel': r[columns.exitSpeed],
+          'Launch Ang': r[columns.angle],
+          Distance: r[columns.distance],
+          AutoPitchType: r[columns.autoType],
+          Date: r[columns.date],
+          Details: `<a href="Game-view.html?pitchUID=${r.PitchUID}">View</a>`,
+          Watch: `<button class="watch-btn" data-game="${r.GameUID}" data-pitch="${r.PlayID}">▶️ Watch</button>
+                  <button class="details-button" data-game="${r.GameUID}" data-pitch="${r.PlayID}">Composite</button>`
+        }));
+
+      const hrTeam   = document.getElementById('hr-team-filter').value;
+      const hrPlayer = document.getElementById('hr-player-filter').value;
+      if (hrTeam)   hrWithNum = hrWithNum.filter(r => r.Team === hrTeam);
+      if (hrPlayer) { const hp = hrPlayer.toLowerCase(); hrWithNum = hrWithNum.filter(r => r.Batter && r.Batter.toLowerCase().includes(hp)); }
+      hrWithNum.sort((a,b) => b.__dist - a.__dist);
+      const hrDisplay = hrWithNum.slice(0,10).map(({ __dist, ...rest }) => rest);
+      renderLeaderboard(
+        'hr-distance',
+        hrDisplay,
+        ['Team','Batter','Pitcher','Exit Vel','Launch Ang','Distance','AutoPitchType','Date','Details','Watch']
+      );
+
+      /***** 2. Exit Velocity *****/
+      let evRows = filtered.filter(r =>
+        r[columns.exitSpeed] &&
+        r[columns.playResult] !== 'Undefined' &&
+        parseFloat(r[columns.angle]) >= -10
+      );
+      const evTeam   = document.getElementById('ev-team-filter').value;
+      const evPlayer = document.getElementById('ev-player-filter').value;
+      if (evTeam)   evRows = evRows.filter(r => getFullTeamName(r[columns.playerTeam], r) === evTeam);
+      if (evPlayer) evRows = evRows.filter(r => r[columns.player] === evPlayer);
+      const evResult = document.getElementById('ev-playresult-filter').value;
+      if (evResult) evRows = evRows.filter(r => r.PlayResult === evResult);
+      const evType = document.getElementById('ev-autotype-filter').value;
+      if (evType) evRows = evRows.filter(r => r.AutoPitchType === evType);
+      evRows.sort((a,b) => parseFloat(b[columns.exitSpeed]) - parseFloat(a[columns.exitSpeed]));
+      const evDisplay = evRows.slice(0,10).map(r => ({
+        Team: getFullTeamName(r[columns.playerTeam], r),
+        Batter: r[columns.player],
+        Pitcher: r[columns.pitcher],
+        'Exit Vel': r[columns.exitSpeed],
+        'Launch Ang': r[columns.angle],
+        Distance: r[columns.distance],
+        PlayResult: r[columns.playResult],
+        AutoPitchType: r[columns.autoType],
+        Date: r[columns.date],
+        Details: `<a href="Game-view.html?pitchUID=${r.PitchUID}">View</a>`,
+        Watch: `<button class="watch-btn" data-game="${r.GameUID}" data-pitch="${r.PlayID}">▶️ Watch</button>
+                <button class="details-button" data-game="${r.GameUID}" data-pitch="${r.PlayID}">Composite</button>`
+      }));
+      renderLeaderboard(
+        'ev-speed',
+        evDisplay,
+        ['Team','Batter','Pitcher','Exit Vel','Launch Ang','Distance','PlayResult','AutoPitchType','Date','Details','Watch']
+      );
+
+      /***** 3. Chase Rate *****/
+      const chaseMap = {};
+      filtered.forEach(r => {
+        const h = parseFloat(r[columns.plateHeight]);
+        const s = parseFloat(r[columns.plateSide]);
+        const outZone = (h < 1.5 || h > 3.5 || s < -0.83 || s > 0.83);
+        if (!outZone) return;
+        const batter = r[columns.player];
+        if (!chaseMap[batter]) chaseMap[batter] = { outside: 0, chase: 0, team: getFullTeamName(r[columns.playerTeam], r) };
+        chaseMap[batter].outside++;
+        const call = r[columns.pitchCall];
+        if (call !== 'StrikeCalled' && call !== 'BallCalled') chaseMap[batter].chase++;
+      });
+      let chaseRows = Object.entries(chaseMap).map(([player, stats]) => ({
+        Player: player,
+        ChaseRate: stats.outside ? (stats.chase / stats.outside).toFixed(2) : '0.00',
+        TotalOutside: stats.outside,
+        Team: stats.team
+      }));
+      const chaseTeam = document.getElementById('chase-team-filter').value;
+      const minOut    = +document.getElementById('chase-min-filter').value;
+      if (chaseTeam) chaseRows = chaseRows.filter(r => r.Team === chaseTeam);
+      chaseRows = chaseRows.filter(r => r.TotalOutside >= minOut);
+      chaseRows.sort((a,b) => parseFloat(a.ChaseRate) - parseFloat(b.ChaseRate));
+      renderLeaderboard('chase-rate', chaseRows.slice(0,10), ['Player','ChaseRate','TotalOutside']);
+
+      /***** 4. Release Speed *****/
+      let relRows = filtered.slice();
+      const relTeam = document.getElementById('rel-team-filter').value;
+      if (relTeam) {
+        relRows = relRows.filter(r =>
+          getFullTeamName(r[columns.pitcherTeam], r) === relTeam
+        );
+      }
+      relRows = relRows.filter(r => !isNaN(parseFloat(r[columns.relSpeed])));
+      relRows.sort((a,b) => parseFloat(b[columns.relSpeed]) - parseFloat(a[columns.relSpeed]));
+      const relDisplay = relRows.slice(0,10).map(r => ({
+        Pitcher: r[columns.pitcher],
+        'Release Speed': r[columns.relSpeed],
+        PitchCall: r[columns.pitchCall]
+      }));
+      renderLeaderboard('release-speed', relDisplay, ['Pitcher','Release Speed','PitchCall']);
+
+      /***** 5. Catcher Stats *****/
+      // Filter for rows that have a recorded pop time (steal attempt rows)
+      const catcherMap = {};
+      filtered.forEach(r => {
+        const pop = parseFloat(r.PopTime);
+        if (isNaN(pop) || pop <= 0 || pop > 2.5) return; // exclude throws around the horn (> 2.5s)
+        const bpx = parseFloat(r.BasePositionX);
+        if (isNaN(bpx) || bpx < 100) return; // only throws to 2nd base (BasePositionX ≈ 127)
+        const c = r.Catcher;
+        if (!c) return;
+        if (!catcherMap[c]) {
+          catcherMap[c] = {
+            popSum: 0, popCount: 0,
+            exchSum: 0, exchCount: 0,
+            throwSum: 0, throwCount: 0,
+            team: r.HomeNameFull || ''
+          };
+        }
+        const stats = catcherMap[c];
+        stats.popSum += pop; stats.popCount++;          // ← was popSum++, now adds real value
+        const ex = parseFloat(r.ExchangeTime);
+        if (!isNaN(ex) && ex > 0) { stats.exchSum += ex; stats.exchCount++; }
+        const th = parseFloat(r.ThrowSpeed);
+        if (!isNaN(th) && th > 0) { stats.throwSum += th; stats.throwCount++; }
+      });
+      let catcherRows = Object.entries(catcherMap).map(([name, s]) => ({
+        Catcher: name,
+        Team: s.team,
+        PopTime:      s.popCount   ? (s.popSum   / s.popCount).toFixed(2)   : '–',
+        ExchangeTime: s.exchCount  ? (s.exchSum  / s.exchCount).toFixed(2)  : '–',
+        ThrowSpeed:   s.throwCount ? (s.throwSum / s.throwCount).toFixed(1) : '–',
+        Attempts: s.popCount
+      }));
+      const cpf = document.getElementById('catcher-player-filter').value;
+      if (cpf) catcherRows = catcherRows.filter(r => r.Catcher === cpf);
+      const ctf = document.getElementById('catcher-team-filter').value;
+      if (ctf) catcherRows = catcherRows.filter(r => r.Team === ctf);
+      catcherRows = catcherRows.filter(r => r.Attempts >= 1)
+        .sort((a,b) => (parseFloat(a.PopTime)||99) - (parseFloat(b.PopTime)||99));
+      renderLeaderboard('catcher-stats', catcherRows.slice(0,15), ['Catcher','Team','PopTime','ExchangeTime','ThrowSpeed','Attempts']);
+
+      /***** 6. Avg Exit Velocity by Batter *****/
+      drawAvgExitByBatter(filtered);
+
+      /***** 7. Umpire Accuracy *****/
+
+      /***** 8. Spin Efficiency *****/
+      drawSpinEfficiency(filtered);
+
+      /***** 11. Pitcher HardHit% *****/
+      drawPitcherHardHit(filtered);
+
+      /***** 12. Batter HardHit% *****/
+      drawBatterHardHit(filtered);
+
+      /***** 13. Barrel% *****/
+      drawBarrelPct(filtered);
+
+      /***** 14. SweetSpot% *****/
+      drawSweetSpotPct(filtered);
+
+      /***** 15. Avg Team HR Dist *****/
+      const teamMap = {};
+      filtered.forEach(r => {
+        if (r.PlayResult !== 'HomeRun') return;
+        const dist = parseFloat(r.Distance);
+        if (isNaN(dist)) return;
+        const teamFull = (r.BatterTeam === r.HomeTeam) ? r.HomeNameFull : r.AwayNameFull;
+        if (!teamMap[teamFull]) teamMap[teamFull] = { totalDist: 0, count: 0 };
+        teamMap[teamFull].totalDist += dist;
+        teamMap[teamFull].count++;
+      });
+      const avgTeamRows = Object.entries(teamMap).map(([team, stats]) => ({
+        Team: team,
+        HRCount: stats.count,
+        AvgDistance: (stats.totalDist / stats.count).toFixed(1)
+      })).sort((a,b) => b.AvgDistance - a.AvgDistance);
+      renderLeaderboard('avg-team-hr-dist', avgTeamRows, ['Team','HRCount','AvgDistance']);
+
+      /***** New leaderboards *****/
+      drawFastballVelo(filtered);
+      drawWhiffRate(filtered);
+      drawKRate(filtered);
+      drawGBRate(filtered);
+
+      // Re-bind watch/composite buttons:
+      bindWatchButtons();
+    }
+
+    /**************************************************
+      HANDLE “WATCH” & “COMPOSITE” BUTTONS
+    **************************************************/
+    function bindWatchButtons() {
+      document.querySelectorAll('.watch-btn').forEach(btn => {
+        btn.removeEventListener('click', btn._watchHandler);
+        const handler = () => {
+          const gameUID  = btn.dataset.game;
+          const pitchUID = btn.dataset.pitch;
+          watchVideo(gameUID, pitchUID);
+        };
+        btn.addEventListener('click', handler);
+        btn._watchHandler = handler;
+      });
+      document.querySelectorAll('.details-button').forEach(btn => {
+        btn.removeEventListener('click', btn._viewHandler);
+        const handler = () => {
+          const gameUID  = btn.dataset.game;
+          const pitchUID = btn.dataset.pitch;
+          document.getElementById('animFrame').src = `animate.html?pitchUID=${encodeURIComponent(pitchUID)}`;
+          document.getElementById('modalOverlay').classList.add('show');
+        };
+        btn.addEventListener('click', handler);
+        btn._viewHandler = handler;
+      });
+    }
+
+    function watchVideo(gameUID, pitchUID) {
+      const overlay = document.createElement('div');
+      Object.assign(overlay.style, {
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.8)', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', zIndex: 10000
+      });
+      const video = document.createElement('video');
+      video.controls = true;
+      video.autoplay = true;
+      Object.assign(video.style, {
+        maxWidth: '90%', maxHeight: '90%', background: '#000'
+      });
+      video.src = `https://helloworld.idkconflict1.workers.dev/stream_video`
+        + `?session_id=${encodeURIComponent(gameUID)}`
+        + `&track_id=${encodeURIComponent(pitchUID)}`;
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      Object.assign(closeBtn.style, {
+        position: 'absolute', top: '10px', right: '10px',
+        fontSize: '1.5rem', background: 'transparent',
+        border: 'none', color: '#fff', cursor: 'pointer'
+      });
+      closeBtn.addEventListener('click', () => {
+        video.pause();
+        overlay.remove();
+      });
+      overlay.appendChild(video);
+      overlay.appendChild(closeBtn);
+      document.body.appendChild(overlay);
+    }
+
+    function watchImage(gameUID, pitchUID) {
+      const overlay = document.createElement('div');
+      Object.assign(overlay.style, {
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10000
+      });
+      const img = document.createElement('img');
+      Object.assign(img.style, {
+        maxWidth: '90%',
+        maxHeight: '90%',
+        boxShadow: '0 0 8px rgba(0,0,0,0.5)'
+      });
+      img.src = `https://helloworld.idkconflict1.workers.dev/stream_image`
+        + `?session_id=${encodeURIComponent(gameUID)}`
+        + `&play_id=${encodeURIComponent(pitchUID)}`;
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      Object.assign(closeBtn.style, {
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        fontSize: '1.5rem',
+        background: 'transparent',
+        border: 'none',
+        color: '#fff',
+        cursor: 'pointer'
+      });
+      closeBtn.addEventListener('click', () => overlay.remove());
+      overlay.appendChild(img);
+      overlay.appendChild(closeBtn);
+      document.body.appendChild(overlay);
+    }
+
+    /**************************************************
+      SEARCH HANDLER
+    **************************************************/
+    function initSearchHandler() {
+      document.getElementById('search-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const q = document.getElementById('search').value.trim();
+        handleSearchQuery(q);
+      });
+      document.getElementById('search-form-mobile').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const q = document.getElementById('search-mobile').value.trim();
+        handleSearchQuery(q);
+      });
+    }
+    function handleSearchQuery(q) {
+      const isUmp     = data.some(r => r.Umpire === q);
+      const isPitcher = data.some(r => r.Pitcher === q);
+      const isBatter  = data.some(r => r.Batter === q);
+      const isTeam    = data.some(r => r.HomeNameFull === q || r.AwayNameFull === q);
+      if (isUmp) {
+        window.location.href = `ump-profiles.html?player=${encodeURIComponent(q)}`;
+      } else if (isPitcher) {
+        window.location.href = `pitcher-profiles.html?player=${encodeURIComponent(q)}`;
+      } else if (isBatter) {
+        window.location.href = `batter-profiles.html?player=${encodeURIComponent(q)}`;
+      } else if (isTeam) {
+        window.location.href = `team-profiles.html?team=${encodeURIComponent(q)}`;
+      } else {
+        alert('No matching player or team found.');
+      }
+    }
+
+    function populateSuggestions() {
+      const dl = document.getElementById('suggestions');
+      const dlMobile = document.getElementById('suggestions-mobile');
+      dl.innerHTML = '';
+      dlMobile.innerHTML = '';
+      const names = new Set([
+        ...data.map(r => r.Batter),
+        ...data.map(r => r.Umpire),
+        ...data.map(r => r.Pitcher),
+        ...data.map(r => r.HomeNameFull),
+        ...data.map(r => r.AwayNameFull)
+      ]);
+      Array.from(names).sort().forEach(name => {
+        const opt1 = document.createElement('option');
+        opt1.value = name;
+        dl.appendChild(opt1);
+        const opt2 = document.createElement('option');
+        opt2.value = name;
+        dlMobile.appendChild(opt2);
+      });
+    }
+
+    function initFilters() {
+      teams.forEach(t => document.getElementById('team-suggestions').append(new Option(t)));
+      playersSet.forEach(p => document.getElementById('player-suggestions').append(new Option(p)));
+    }
+
+    /**************************************************
+      CANVAS FOR SIDEBAR ORDERING
+    **************************************************/
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('cards-container');
+      const list      = document.getElementById('table-list');
+
+      container.querySelectorAll('.card').forEach(card => {
+        if (!card.id) card.id = 'card-' + Math.random().toString(36).slice(2);
+        const title = card.querySelector('summary h2').textContent.trim();
+        const li    = document.createElement('li');
+        li.dataset.target = card.id;
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = true;
+        cb.addEventListener('change', () => {
+          card.style.display = cb.checked ? '' : 'none';
+        });
+
+        const handle = document.createElement('span');
+        handle.textContent = '☰';
+        handle.classList.add('drag-handle');
+
+        const label = document.createElement('span');
+        label.textContent = ' ' + title;
+
+        li.append(cb, handle, label);
+        list.append(li);
+      });
+
+      new Sortable(list, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: () => {
+          Array.from(list.children).forEach(li => {
+            const card = document.getElementById(li.dataset.target);
+            if (card) container.appendChild(card);
+          });
+        }
+      });
+    });
+
+    /**************************************************
+      SET UP PapaParse & INITIALIZE EVERYTHING
+    **************************************************/
+    Papa.parse('./data.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: results => {
+        data = results.data;
+        fullData = results.data;
+        data.forEach(r => {
+          teams.add(getFullTeamName(r[columns.playerTeam], r));
+          teams.add(getFullTeamName(r[columns.pitcherTeam], r));
+          playersSet.add(r[columns.player]);
+        });
+        initFilters();
+        initSearchHandler();
+        populateSuggestions();
+
+        // Populate Exit Velocity dropdowns
+        const playResults = [...new Set(data.map(r => r.PlayResult).filter(v => v && v !== 'Undefined'))].sort();
+        playResults.forEach(pr => {
+          document.getElementById('ev-playresult-filter').append(new Option(pr, pr));
+        });
+        const autoTypes = [...new Set(data.map(r => r.AutoPitchType).filter(v => v))].sort();
+        autoTypes.forEach(pt => {
+          document.getElementById('ev-autotype-filter').append(new Option(pt, pt));
+        });
+
+        // Attach global filters
+        const filterIds = [
+          'hr-team-filter','hr-player-filter',
+          'ev-team-filter','ev-player-filter','ev-playresult-filter','ev-autotype-filter',
+          'chase-team-filter','rel-team-filter','avg-ev-team-filter',
+          'chase-min-filter','time-filter','catcher-player-filter','catcher-team-filter',
+          'seam-team-filter','seam-pitcher-filter','hh-p-team-filter','hh-p-pitcher-filter',
+          'hh-b-team-filter','hh-b-batter-filter','hh-threshold','hh-b-threshold',
+          'barrel-team-filter','barrel-player-filter','ss-team-filter','ss-player-filter',
+          'avg-ev-min-pa','barrel-min-pa','ss-min-pa',
+          'fb-velo-team-filter','fb-velo-type','whiff-team-filter','whiff-min',
+          'k-rate-team-filter','k-rate-entity','k-rate-min','gb-team-filter','gb-min'
+        ];
+        filterIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.addEventListener('input', computeAndRender);
+        });
+
+        computeAndRender();
+      }
+    });
+
+    /**************************************************
+      MODAL CLOSE & “Back to Top” BUTTONS
+    **************************************************/
+    document.getElementById('modalClose').addEventListener('click', () => {
+      document.getElementById('modalOverlay').classList.remove('show');
+      document.getElementById('animFrame').src = '';
+    });
+    document.getElementById('modalOverlay').addEventListener('click', e => {
+      if (e.target.id === 'modalOverlay') {
+        document.getElementById('modalOverlay').classList.remove('show');
+        document.getElementById('animFrame').src = '';
+      }
+    });
+    document.querySelectorAll('.back-to-top').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    /**************************************************
+      HAMBURGER & SIDEBAR TOGGLE LOGIC
+    **************************************************/
+    const hamburger = document.getElementById('hamburger-btn');
+    const sideMenu  = document.getElementById('side-menu');
+    const overlay   = document.getElementById('overlay');
+    function openMenu() {
+      hamburger.classList.add('open');
+      sideMenu.classList.add('open');
+      overlay.classList.add('visible');
+    }
+    function closeMenu() {
+      hamburger.classList.remove('open');
+      sideMenu.classList.remove('open');
+      overlay.classList.remove('visible');
+    }
+    hamburger.addEventListener('click', () => {
+      if (sideMenu.classList.contains('open')) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+    overlay.addEventListener('click', closeMenu);
+
+    
+  </script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics.js";
+      const firebaseConfig = {
+        apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+        authDomain: "revs-2c987.firebaseapp.com",
+        projectId: "revs-2c987",
+        storageBucket: "revs-2c987.firebasestorage.app",
+        messagingSenderId: "181256684157",
+        appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+        measurementId: "G-2050889X0C"
+      };
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      firebase.initializeApp(firebaseConfig);
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const auth = firebase.auth();
+        auth.onAuthStateChanged(user => {
+          if (!user) {
+            window.location.href = 'login.html';
+          }
+        });
+      });
+    </script>
+</body>
+</html>

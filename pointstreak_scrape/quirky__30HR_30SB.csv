@@ -1,0 +1,7 @@
+Status,Season,season_id,Team,team_id,Player,player_id,AVG,R,H,2B,3B,HR,RBI,BB,SO,SB,HR_from_30,SB_from_30,stats_url,AB,CS,DP,E,G,HBP,P,SF,SH
+close,ALPB- 2023,34162,Spire City Ghost Hounds,165441,"Dedelow, C",1751123,.281,88,114,25,4,26,78,61,132,34,-4.0,4.0,https://baseball.pointstreak.com/team_stats.html?teamid=165441&seasonid=34162,406,5,4,4,115,7,LF,7,0
+close,ALPB- 2023,34162,Gastonia Honey Hunters,163528,"Jarrett, Z",1750944,.299,101,135,25,3,25,90,61,104,28,-5.0,-2.0,https://baseball.pointstreak.com/team_stats.html?teamid=163528&seasonid=34162,452,6,11,3,118,4,LF,3,0
+close,ALPB- 2025,34102,Charleston Dirty Birds,163527,"Nelson, J",1750017,.317,82,126,21,0,28,75,53,90,40,-2.0,10.0,https://baseball.pointstreak.com/team_stats.html?teamid=163527&seasonid=34102,397,8,9,6,99,7,IF,4,0
+close,ALPB- 2025,34102,High Point Rockers,163529,"Aklinski, B",1747963,.274,92,98,22,1,27,74,59,79,29,-3.0,-1.0,https://baseball.pointstreak.com/team_stats.html?teamid=163529&seasonid=34102,358,1,4,2,94,7,OF,5,0
+close,ALPB- 2024,33927,Gastonia Baseball Club,163528,"Wylie, J",1697020,.249,93,106,20,2,34,84,76,105,25,4.0,-5.0,https://baseball.pointstreak.com/team_stats.html?teamid=163528&seasonid=33927,426,6,14,8,120,3,IF,6,2
+close,ALPB- 2024,33927,High Point Rockers,163529,"Aklinski, B",1695413,.247,94,118,20,1,29,92,66,123,29,-1.0,-1.0,https://baseball.pointstreak.com/team_stats.html?teamid=163529&seasonid=33927,478,2,7,1,125,19,OF,5,0

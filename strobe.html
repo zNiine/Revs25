@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Join the Light Show</title>
+<style>
+  html,body{margin:0;height:100%;background:#000}
+  #lamp{position:fixed;inset:0;background:#000;display:none}
+  #join{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+        font:600 18px system-ui,-apple-system,Segoe UI,Roboto;color:#fff;background:rgba(0,0,0,.75);text-transform:uppercase;letter-spacing:.04em}
+  #join.hidden{display:none}
+  #safe{position:fixed;bottom:10px;left:0;right:0;text-align:center;font:12px system-ui;color:#aaa}
+  #hud{position:fixed;top:8px;right:10px;color:#8a8;font:11px system-ui;white-space:pre;pointer-events:none;max-width:70%;text-align:right}
+</style>
+<body>
+<div id="lamp"></div>
+<div id="join">
+  <img src="YRK.png" alt="York Revolution Logo" style="max-width: 80%; max-height: 80%; display: block; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.75));">
+  <div id="safe" style="color: white; font-size: 1.5rem; bottom: 20%; position: absolute;">tap anywhere</div>
+</div>
+<pre id="hud"></pre>
+
+<script type="module">
+/* ===========================================
+   AUDIENCE CLIENT — v1.4 (logo and tap anywhere text)
+   =========================================== */
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js';
+
+console.log("[A1] Script start.");
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+  authDomain: "revs-2c987.firebaseapp.com",
+  projectId: "revs-2c987",
+  storageBucket: "revs-2c987.appspot.com",
+  messagingSenderId: "181256684157",
+  appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+  measurementId: "G-2050889X0C",
+  databaseURL: "https://revs-2c987-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+console.log("[A2] Firebase app initialized.");
+const db  = getDatabase(app);
+console.log("[A3] RTDB handle created.");
+
+const params = new URLSearchParams(location.search);
+const showId = params.get('showId') || 'sweet-caroline';
+console.log("[A4] showId =", showId);
+
+const lamp  = document.getElementById('lamp');
+const join  = document.getElementById('join');
+const hud   = document.getElementById('hud');
+
+function banner(msg){
+  hud.textContent = (hud.textContent ? hud.textContent + '\n' : '') + msg;
+  console.log("[HUD]", msg);
+}
+
+/* ================
+   Audio scheduler
+   ================ */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+console.log("[A5] AudioContext created.");
+
+async function resumeAudioWithTimeout(ms=800){
+  console.log("[A5.1] resumeAudioWithTimeout(%d)", ms);
+  if (audioCtx.state === "running") { console.log("[A5.2] Audio already running"); return; }
+  let t;
+  await Promise.race([
+    audioCtx.resume(),
+    new Promise((_, reject)=>{ t=setTimeout(()=>reject(new Error("resume timeout")), ms); })
+  ]).then(()=>console.log("[A5.3] AudioContext resumed"))
+    .catch(e=>console.warn("[A5.3x] Audio resume issue:", e?.message||e))
+    .finally(()=> clearTimeout(t));
+}
+
+/* ============
+   Torch setup
+   ============ */
+let stream=null, track=null, hasTorch=false;
+
+async function safeStartTorch(){
+  console.log("[A6] safeStartTorch() called.");
+  if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
+    console.warn("[A6.1] mediaDevices/getUserMedia unavailable. Skipping torch.");
+    banner("camera: unavailable");
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} },
+      audio:false
+    });
+    console.log("[A7] getUserMedia() succeeded.");
+  } catch (e) {
+    console.warn("[A7x] getUserMedia failed:", e?.name, e?.message);
+    banner(`camera denied: ${e?.name||''}`);
+    return; // fall back to screen-only
+  }
+
+  track = stream.getVideoTracks()[0];
+  const caps = (track?.getCapabilities && track.getCapabilities()) || {};
+  hasTorch = !!caps.torch;
+  console.log("[A8] Torch capability =", hasTorch);
+
+  try {
+    const v = document.createElement('video');
+    v.style.display='none'; v.playsInline = true; v.muted = true; v.autoplay = true;
+    v.srcObject = stream; document.body.appendChild(v);
+    await v.play();
+    console.log("[A9] Hidden video playback started.");
+  } catch (e) {
+    console.warn("[A9x] Hidden video playback failed:", e?.message);
+  }
+}
+
+async function setTorch(on){
+  console.log("[A10] setTorch(%s) called. hasTorch=%s", on, hasTorch);
+  if (!track || !hasTorch) { console.log("[A10.1] Torch not available; screen-only."); return; }
+  try {
+    await track.applyConstraints({ advanced:[{ torch: !!on }] });
+    console.log("[A11] Torch set ->", on);
+  } catch (e) {
+    console.warn("[A11x] applyConstraints torch failed:", e?.name, e?.message);
+    hasTorch = false;
+    banner("torch unsupported");
+  }
+}
+
+/* ===============
+   Screen strobing
+   =============== */
+function setScreen(on){
+  lamp.style.display = on ? 'block' : 'none';
+  lamp.style.background = on ? '#fff' : '#000';
+  console.log("[A12] setScreen(%s)", on);
+}
+function pulse(on){
+  console.log("[A13] pulse(%s)", on);
+  setScreen(on);
+  setTorch(on);
+}
+
+/* =========================
+   Server-time offset / util
+   ========================= */
+let serverOffsetMs = 0;
+console.log("[A14] Setting up serverTimeOffset listener…");
+onValue(ref(db, '.info/serverTimeOffset'), snap=>{
+  serverOffsetMs = (snap.val()|0) || 0;
+  banner(`Δserver ≈ ${serverOffsetMs} ms`);
+  console.log("[A15] serverOffsetMs =", serverOffsetMs);
+}, err=>{
+  console.error("[A15x] serverTimeOffset error:", err?.code, err?.message);
+  banner(`server offset err: ${err?.code||''}`);
+});
+
+function serverNow(){ return Date.now() + serverOffsetMs; }
+function serverMsToAudioTime(serverMs){
+  const deltaSec = (serverMs - serverNow())/1000;
+  return audioCtx.currentTime + Math.max(0, deltaSec);
+}
+function scheduleAt(serverMs, fn){
+  const when = serverMsToAudioTime(serverMs);
+  const dtMs = Math.max(0, (when - audioCtx.currentTime)*1000);
+  console.log("[A16] scheduleAt(serverMs=%d) -> in %d ms", serverMs, Math.round(dtMs));
+  setTimeout(fn, dtMs);
+}
+
+/* ==============================
+   Pattern runner (bpm or cuesMs)
+   ============================== */
+function buildBeatMs(bpm, bars=64, tsTop=4){
+  const beat = 60000/Math.max(40, Math.min(220, bpm));
+  const total = (bars||64) * tsTop;
+  console.log("[A17] buildBeatMs bpm=%d bars=%d", bpm, bars);
+  return Array.from({length: total}, (_,i)=> Math.round(i*beat));
+}
+
+function runPatterns(cfg){
+  console.log("[A18] runPatterns() cfg=", cfg);
+  const { t0, tempo, grid, patterns } = cfg;
+  const beats = (grid?.mode === 'bpm')
+    ? buildBeatMs(tempo?.bpm ?? 120, grid?.bars ?? 64, 4)
+    : (grid?.cuesMs || []);
+
+  function strobe(startMs, hz=6, duty=0.35, lenBeats=8){
+    const beatMs = 60000/(tempo?.bpm ?? 120);
+    const totalMs = lenBeats*beatMs;
+    const rate = Math.max(0.5, Math.min(8, hz));
+    const period = 1000/rate, onMs = period*(duty??0.35);
+    let t = startMs, end = startMs + totalMs;
+    console.log("[A19] strobe@%d hz=%s duty=%s lenBeats=%s totalMs=%d", startMs, hz, duty, lenBeats, totalMs);
+    while (t < end){
+      scheduleAt(t, ()=> pulse(true));
+      scheduleAt(t + onMs, ()=> pulse(false));
+      t += period;
+    }
+  }
+  function blast(startMs, lenBeats=1){
+    const durMs = lenBeats*(60000/(tempo?.bpm ?? 120));
+    console.log("[A20] blast@%d lenBeats=%d durMs=%d", startMs, lenBeats, durMs);
+    scheduleAt(startMs, ()=> pulse(true));
+    scheduleAt(startMs + Math.min(120, durMs*0.6), ()=> pulse(false));
+  }
+
+  for (const p of (patterns||[])){
+    const start = t0 + (p.atBeat ? (beats[p.atBeat-1]||0) : (p.atMs||0));
+    console.log("[A21] pattern type=%s atRel=%d", p.type, start - t0);
+    if (p.type === 'strobe') strobe(start, p.hz||6, p.duty??0.35, p.lenBeats||8);
+    if (p.type === 'blast')  blast(start, p.lenBeats||1);
+  }
+}
+
+/* ==========================================
+   Subscribe to show doc + optional live cues
+   ========================================== */
+function attachWatchersImmediately(){
+  console.log("[A22] attachWatchersImmediately(): attaching listeners NOW (pre-join).");
+
+  onValue(ref(db, `shows/${showId}`), (snap)=>{
+    const s = snap.val();
+    console.log("[A23] shows value event. exists=%s", !!s);
+    if (!s) return;
+
+    // Always run if t0 exists; scheduler handles past/future
+    if (s.t0){
+      console.log("[A24] t0 present -> runPatterns. t0=%s serverNow=%s",
+        new Date(s.t0).toISOString(), new Date(serverNow()).toISOString());
+      runPatterns({
+        t0: s.t0,
+        tempo: s.tempo || { bpm: 120 },
+        grid:  s.grid  || { mode:'bpm', bars:64 },
+        patterns: s.patterns || []
+      });
+    } else {
+      console.log("[A24b] No t0 in show yet.");
+    }
+  }, (err)=>{
+    console.error("[A23x] shows onValue error:", err?.code, err?.message);
+    banner(`shows err: ${err?.code||''}`);
+  });
+
+  onValue(ref(db, `shows/${showId}/liveTorch`), (snap)=>{
+    const v = snap.val();
+    console.log("[A25] liveTorch value event. exists=%s", !!v);
+    if (!v) return;
+
+    if (v.type === 'torch' && typeof v.at === 'number'){
+      console.log("[A26] Live torch cue received:", v);
+      // scheduleAt expects server ms; do not add offset again
+      scheduleAt(v.at, ()=> pulse(!!v.on));
+    } else {
+      console.log("[A26b] liveTorch payload ignored:", v);
+    }
+  }, (err)=>{
+    console.error("[A25x] liveTorch onValue error:", err?.code, err?.message);
+    banner(`liveTorch err: ${err?.code||''}`);
+  });
+}
+
+/* =============================
+   Minimal “no controls” join UI
+   ============================= */
+async function joinOnce(){
+  console.log("[A27] User gesture -> joinOnce()");
+  join.classList.add('hidden');
+  console.log("[A27.1] Overlay hidden.");
+
+  try {
+    await resumeAudioWithTimeout(800);
+    await safeStartTorch();
+    lamp.style.display = 'block';
+    console.log("[A29] Lamp (screen) layer enabled.");
+    // watchers already attached at boot
+  } catch (e) {
+    console.error("[A30x] joinOnce fatal:", e?.message||e);
+    banner(`join error: ${e?.message||e}`);
+  } finally {
+    console.log("[A31] joinOnce() finished (success/fail).");
+  }
+}
+
+// one-shot wrapper
+const once = (fn)=>{ let done=false; return (...a)=>{ if(!done){ done=true; fn(...a); console.log("[A32] once-wrapper: executed.");} } };
+const doJoin = once(joinOnce);
+
+// gesture listeners
+['pointerdown','touchstart','keydown'].forEach(evt=>{
+  window.addEventListener(evt, doJoin, {passive:true});
+  console.log("[A33] Added listener:", evt);
+});
+
+// attach watchers immediately (critical change)
+attachWatchersImmediately();
+
+document.addEventListener('visibilitychange', ()=>{ 
+  if (document.hidden) { pulse(false); console.log("[A34] visibilitychange -> hidden. Pulses off."); } 
+});
+window.addEventListener('pagehide', ()=>{ try{ track?.stop(); console.log("[A35] pagehide -> track stopped."); }catch{} });
+
+window.addEventListener('unhandledrejection', e=>{
+  console.error("[A36] unhandledrejection:", e.reason);
+  banner(`unhandled: ${e?.reason?.message||e.reason}`);
+});
+window.addEventListener('error', e=>{
+  console.error("[A37] window error:", e.message);
+  banner(`error: ${e.message}`);
+});
+
+console.log("[A38] Final init complete. Awaiting user tap.");
+</script>
+</body>
+</html>

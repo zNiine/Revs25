@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Standings – ALPB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="logo">ALPB</a>
+    <nav class="nav-desktop">
+      <a href="index.html">Home</a>
+      <a href="schedule.html" class="active">Standings</a>
+      <a href="games.html">Games</a>
+      <a href="leaderboards.html">Leaderboards</a>
+      <a href="park-factors.html">Park Factors</a>
+      <a href="fielding.html">Fielding</a>
+      <a href="stolen-bases.html">Base Running</a>
+      <a href="dong.html">Would it Dong?</a>
+    </nav>
+    <div class="hamburger" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></div>
+  </header>
+  <div id="side-menu" class="side-menu">
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="schedule.html" class="active">Standings</a></li>
+        <li><a href="games.html">Games</a></li>
+        <li><a href="leaderboards.html">Leaderboards</a></li>
+        <li><a href="park-factors.html">Park Factors</a></li>
+        <li><a href="fielding.html">Fielding</a></li>
+        <li><a href="stolen-bases.html">Base Running</a></li>
+        <li><a href="dong.html">Would it Dong?</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div id="overlay" class="overlay"></div>
+
+  <main class="main-container">
+    <h1 class="page-title">Season Standings & Rankings</h1>
+    <div class="card standings-card">
+      <div class="table-wrap">
+        <table id="summary-table">
+          <thead>
+            <tr>
+              <th data-key="team">Team</th>
+              <th data-key="W">W</th>
+              <th data-key="L">L</th>
+              <th data-key="pct">Pct</th>
+              <th data-key="RS">RS</th>
+              <th data-key="RA">RA</th>
+              <th data-key="diff">DIFF</th>
+              <th data-key="elo">Power Rankings</th>
+              <th data-key="played">Toughest Schedule Played</th>
+              <th data-key="remaining">Toughest Schedule Remaining</th>
+              <th data-key="expW">Expected W-L</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="explanation">
+        <p><strong>How Power Rankings Work:</strong> Each team starts at 1500. After each game, ratings adjust by:<br>
+        <code>NewR = R + 20 × (Actual − Expected)</code>, where <code>Expected = 1/(1+10^{(Opp−R)/400})</code>.</p>
+        <p><strong>Expected W-L:</strong> Pythagorean expectation <code>W% = RS²/(RS²+RA²)</code> × games played.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    let firstHalfProb = {};
+    function parseDate(str){return new Date(str);}
+    function sortBy(arr,key,desc=false){return arr.sort((a,b)=>(a[key]<b[key]?(desc?1:-1):(a[key]>b[key]?(desc?-1:1):0)));}
+    function renderTable(data){
+      const tbody=document.querySelector('#summary-table tbody');
+      tbody.innerHTML='';
+      data.forEach(o=>{
+        tbody.innerHTML+=`<tr>
+          <td>${o.team}</td>
+          <td>${o.W}</td>
+          <td>${o.L}</td>
+          <td>${o.pct.toFixed(3)}</td>
+          <td>${o.RS}</td>
+          <td>${o.RA}</td>
+          <td>${o.diff}</td>
+          <td>${Math.round(o.elo)} (${o.eloRank})</td>
+          <td>${o.played} (${o.playedRank})</td>
+          <td>${o.remaining} (${o.remainingRank})</td>
+          <td>${Math.round(o.expW)}-${Math.round(o.expL)}</td>
+        </tr>`;
+      });
+    }
+    function applySortHandlers(data){
+      document.querySelectorAll('#summary-table th').forEach(th=>{
+        th.addEventListener('click',()=>{
+          const key=th.dataset.key, desc=!th.classList.contains('sorted-desc');
+          document.querySelectorAll('#summary-table th').forEach(h=>h.classList.remove('sorted-asc','sorted-desc'));
+          th.classList.toggle('sorted-desc',desc);
+          th.classList.toggle('sorted-asc',!desc);
+          renderTable(sortBy(data.slice(),key,desc));
+        });
+      });
+    }
+    Papa.parse('schedule_with_probs.csv', {
+      download: true,
+      header: true,
+      complete(results) {
+        const raw = results.data.sort((a, b) => parseDate(a.Date) - parseDate(b.Date));
+        const games = raw.filter(r => /^[0-9]+\s*-\s*[0-9]+$/.test(r.Result));
+        const teams = {};
+        games.forEach(r => {
+          const [aRuns, hRuns] = r.Result.split('-').map(s => +s.trim());
+          const away = r.Away, home = r.Home;
+          if (r.Away && r.away_prob) firstHalfProb[r.Away] = parseFloat(r.away_prob);
+          if (r.Home && r.home_prob) firstHalfProb[r.Home] = parseFloat(r.home_prob);
+          [away, home].forEach(t => {
+            if (!teams[t]) teams[t] = { team: t, W: 0, L: 0, RS: 0, RA: 0, homeW: 0, homeL: 0, awayW: 0, awayL: 0, results: [], oneRunW: 0, oneRunL: 0 };
+          });
+          if (aRuns > hRuns) { teams[away].W++; teams[away].results.push('W'); teams[home].L++; teams[home].results.push('L'); }
+          else { teams[home].W++; teams[home].results.push('W'); teams[away].L++; teams[away].results.push('L'); }
+          teams[away].RS += aRuns; teams[away].RA += hRuns; teams[home].RS += hRuns; teams[home].RA += aRuns;
+          teams[away][aRuns > hRuns ? 'awayW' : 'awayL']++;
+          teams[home][hRuns > aRuns ? 'homeW' : 'homeL']++;
+          if (Math.abs(aRuns - hRuns) === 1) {
+            if (aRuns > hRuns) { teams[away].oneRunW++; teams[home].oneRunL++; }
+            else { teams[home].oneRunW++; teams[away].oneRunL++; }
+          }
+        });
+        Object.values(teams).forEach(t => {
+          const rev = t.results.slice().reverse(), st = rev[0];
+          t.strk = st + rev.reduce((c, r) => (r === st ? c + 1 : c), 0);
+          const last10 = t.results.slice(-10);
+          t.L10W = last10.filter(r => r === 'W').length;
+          t.L10L = last10.filter(r => r === 'L').length;
+          t.diff = t.RS - t.RA;
+          t.elo = 1500;
+          t.opponentsPlayed = [];
+          t.opponentsRemaining = [];
+        });
+        games.forEach(r => {
+          const [aRuns, hRuns] = r.Result.split('-').map(s => +s.trim());
+          const away = r.Away, home = r.Home, sA = aRuns > hRuns ? 1 : 0;
+          const rA = teams[away].elo, rH = teams[home].elo;
+          const eA = 1 / (1 + 10 ** ((rH - rA) / 400)), eH = 1 - eA;
+          teams[away].elo += 20 * (sA - eA);
+          teams[home].elo += 20 * ((1 - sA) - eH);
+          teams[away].opponentsPlayed.push(home);
+          teams[home].opponentsPlayed.push(away);
+        });
+        raw.filter(r => !/^[0-9]+\s*-\s*[0-9]+$/.test(r.Result)).forEach(r => {
+          teams[r.Away]?.opponentsRemaining.push(r.Home);
+          teams[r.Home]?.opponentsRemaining.push(r.Away);
+        });
+        const summary = Object.values(teams).map(o => {
+          const G = o.W + o.L, expW = G * (o.RS ** 2 / (o.RS ** 2 + o.RA ** 2));
+          return {
+            ...o,
+            pct: o.W / G || 0,
+            played: o.opponentsPlayed.reduce((s, opp) => s + Math.round(teams[opp].elo), 0),
+            remaining: o.opponentsRemaining.reduce((s, opp) => s + Math.round(teams[opp].elo), 0),
+            expW, expL: G - expW
+          };
+        });
+        ['elo', 'played', 'remaining'].forEach(key => sortBy(summary, key, true).forEach((o, i) => (o[key + 'Rank'] = i + 1)));
+        const sorted = sortBy(summary.slice(), 'elo', true);
+        renderTable(sorted);
+        applySortHandlers(summary);
+      }
+    });
+  </script>
+  <script>
+    (function(){
+      var h = document.getElementById('hamburger-btn'), s = document.getElementById('side-menu'), o = document.getElementById('overlay');
+      function openMenu(){ h.classList.add('open'); s.classList.add('open'); o.classList.add('visible'); }
+      function closeMenu(){ h.classList.remove('open'); s.classList.remove('open'); o.classList.remove('visible'); }
+      h.addEventListener('click', function(){ if(s.classList.contains('open')) closeMenu(); else openMenu(); });
+      o.addEventListener('click', closeMenu);
+    })();
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+    const firebaseConfig = { apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw", authDomain: "revs-2c987.firebaseapp.com", projectId: "revs-2c987", storageBucket: "revs-2c987.firebasestorage.app", messagingSenderId: "181256684157", appId: "1:181256684157:web:a9e1c5dfd767658e2ba714", measurementId: "G-2050889X0C" };
+    initializeApp(firebaseConfig);
+    if (typeof firebase !== 'undefined') firebase.initializeApp(firebaseConfig);
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().onAuthStateChanged(function(user) { if (!user) window.location.href = 'login.html'; });
+      }
+    });
+  </script>
+</body>
+</html>

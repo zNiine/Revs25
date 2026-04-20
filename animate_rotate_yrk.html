@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Pitch Trajectory - Catcher's View & Realistic Baseball Field</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: black; }
+        canvas { display: block; }
+        #pitchSpeedHud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.meshline/1.4.0/THREE.MeshLine.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+<div id="pitchSpeedHud" style="opacity: 0">Pitch Speed: -- MPH</div>
+
+<script>
+    // --- Firebase Configuration ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+      authDomain: "revs-2c987.firebaseapp.com",
+      projectId: "revs-2c987",
+      storageBucket: "revs-2c987.appspot.com",
+      messagingSenderId: "181256684157",
+      appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+      measurementId: "G-2050889X0C",
+      databaseURL: "https://revs-2c987-default-rtdb.firebaseio.com"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // --- Scene Setup ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x777777); // A neutral gray
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.01, 800);
+
+    const initialCameraPosition = new THREE.Vector3(0, 17.5, -15); // Catcher's view, slightly further back
+    const initialCameraTarget = new THREE.Vector3(0, 15.5, 2); // Looking directly at home plate (keep this fixed for now)
+
+    camera.position.copy(initialCameraPosition);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.copy(initialCameraTarget); // Set the target
+    controls.update();
+
+    // --- Lighting ---
+    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    directionalLight.position.set(20, 40, 30);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 100;
+    directionalLight.shadow.camera.left = -50;
+    directionalLight.shadow.camera.right = 50;
+    directionalLight.shadow.camera.top = 50;
+    directionalLight.shadow.camera.bottom = -50;
+    scene.add(directionalLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xb1e1ff, 0xb97a20, 1.0);
+    scene.add(hemiLight);
+
+    // --- GLB Model Loading for Baseball Field ---
+    const glbLoader = new THREE.GLTFLoader();
+    const glbModelPath = 'field.glb'; // Changed to your new GLB path
+
+    // *** NEW DEBUGGING: Log the path being requested ***
+    console.log(`DEBUG: Attempting to load GLB model from path: ${glbModelPath}`);
+    // ***
+
+    glbLoader.load(glbModelPath, (gltf) => {
+        scene.add(gltf.scene);
+
+        // --- ADJUSTED GLB SCALE, POSITION, AND ROTATION ---
+        gltf.scene.scale.set(50, 50, 50);
+        gltf.scene.position.set(-3.2, -14, -34);
+        gltf.scene.rotation.y = THREE.MathUtils.degToRad(-2);
+        // **********************************
+
+        gltf.scene.traverse((node) => {
+            if (node.isMesh) {
+                node.castShadow = false;
+                node.receiveShadow = true;
+
+                // Temporary Diagnostic Material (keep this active for now)
+                const tempMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffffff,
+                    side: THREE.DoubleSide,
+                    map: node.material.map || null
+                });
+
+                if (tempMaterial.map) {
+                    tempMaterial.map.encoding = THREE.sRGBEncoding;
+                }
+
+                node.material = tempMaterial;
+            }
+        });
+window.parent.postMessage('GLB_LOADED', '*')
+        console.log("GLB model loaded successfully:", gltf);
+        console.log("GLB scene bounding box (for debugging scale):", new THREE.Box3().setFromObject(gltf.scene));
+    },
+    // *** NEW DEBUGGING: Add progress callback ***
+    (xhr) => {
+        console.log(`DEBUG: GLB loading progress: ${(xhr.loaded / xhr.total * 100).toFixed(2)}% loaded`);
+    },
+    // ***
+    (error) => {
+        console.error("Error loading GLB model:", error);
+        // *** NEW DEBUGGING: Log more details from the error object ***
+        if (error instanceof Error) {
+            console.error("DEBUG: Error name:", error.name);
+            console.error("DEBUG: Error message:", error.message);
+            console.error("DEBUG: Error stack:", error.stack);
+        } else {
+            console.error("DEBUG: Raw error object:", error);
+        }
+        // ***
+    });
+
+    // Strike zone
+    const strikeZoneScaleFactor = 6; // NEW: Define a scale factor
+
+    const strikeZoneWidth = (17 / 12) * strikeZoneScaleFactor; // Scaled
+    const strikeZoneBottom = 1.7541667 * strikeZoneScaleFactor;     // Scaled
+    const strikeZoneTop = 3.3775 * strikeZoneScaleFactor;         // Scaled
+    const strikeZoneHeight = strikeZoneTop - strikeZoneBottom;
+    const strikeZoneYCenter = strikeZoneBottom + (strikeZoneHeight / 2);
+    const strikeZoneDepth = 0.05 * strikeZoneScaleFactor;      // Scaled (effectively Z=0 plane)
+
+    const strikeZoneMeshGeo = new THREE.BoxGeometry(strikeZoneWidth, strikeZoneHeight, strikeZoneDepth);
+    const strikeZoneMeshMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide
+    });
+    const zone = new THREE.Mesh(strikeZoneMeshGeo, strikeZoneMeshMat);
+    zone.position.set(0, strikeZoneYCenter, 0); // Z=0 is the front face of the box, representing the plate plane
+    scene.add(zone);
+
+    const edges = new THREE.EdgesGeometry(strikeZoneMeshGeo);
+    const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        linewidth: 2
+    });
+    const strikeZoneBorder = new THREE.LineSegments(edges, lineMaterial);
+    strikeZoneBorder.position.copy(zone.position);
+    scene.add(strikeZoneBorder);
+
+    // Ball Object
+    const ball = new THREE.Mesh(
+        new THREE.SphereGeometry(0.121 * strikeZoneScaleFactor, 32, 32), // Scaled radius
+        new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.2 })
+    );
+    ball.castShadow = true;
+    scene.add(ball);
+
+    // --- Pitch Speed Display (Sprite on Ball) ---
+    let pitchSpeedTextCanvas;
+    let pitchSpeedTextTexture;
+    let pitchSpeedTextMaterial;
+    let pitchSpeedTextSprite;
+
+    function createPitchSpeedSprite() {
+        pitchSpeedTextCanvas = document.createElement('canvas');
+        const context = pitchSpeedTextCanvas.getContext('2d');
+        pitchSpeedTextCanvas.width = 256;
+        pitchSpeedTextCanvas.height = 128; // Adjust height for text
+
+        context.font = 'Bold 48px Arial';
+        context.fillStyle = 'rgba(1, 1, 1, 1)'; // Black text
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText('0 MPH', pitchSpeedTextCanvas.width / 2, pitchSpeedTextCanvas.height / 2);
+
+        pitchSpeedTextTexture = new THREE.CanvasTexture(pitchSpeedTextCanvas);
+        pitchSpeedTextTexture.needsUpdate = true; // Crucial for initial display
+
+        pitchSpeedTextMaterial = new THREE.SpriteMaterial({ map: pitchSpeedTextTexture });
+        pitchSpeedTextSprite = new THREE.Sprite(pitchSpeedTextMaterial);
+        pitchSpeedTextSprite.scale.set(4.0, 2, 3); // Adjust scale to fit text, consider ball radius
+        pitchSpeedTextSprite.position.set(0, 0, 0); // Positioned relative to ball
+        pitchSpeedTextSprite.visible = false; // Initially hidden
+
+        ball.add(pitchSpeedTextSprite); // Add sprite as child of ball
+    }
+
+    function updatePitchSpeedSprite(speedMPH) {
+        speedMPH = pitch_data.Pitch.Speed
+
+        if (!pitchSpeedTextCanvas) return;
+        const context = pitchSpeedTextCanvas.getContext('2d');
+        context.clearRect(0, 0, pitchSpeedTextCanvas.width, pitchSpeedTextCanvas.height);
+        context.font = 'Bold 48px Arial';
+        context.fillStyle = 'rgba(0, 0, 0, 1)';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(`${speedMPH.toFixed(0)}`, pitchSpeedTextCanvas.width / 2, pitchSpeedTextCanvas.height / 2);
+        pitchSpeedTextTexture.needsUpdate = true;
+    }
+
+    createPitchSpeedSprite(); // Initialize the sprite
+
+    // --- HUD for Pitch Speed ---
+    const pitchSpeedHudElement = document.getElementById('pitchSpeedHud');
+
+    // Trail Object
+// Trail Object (using MeshLine for thickness)
+const trailPoints = [];
+    const meshLine = new MeshLine();
+    meshLine.setPoints(trailPoints); // Initially empty
+
+    const trailMaterial = new MeshLineMaterial({
+        color: new THREE.Color(0xff0066),
+        lineWidth: .2, // Adjust this value for desired thickness (scaled)
+        resolution: new THREE.Vector2(window.innerWidth, window.innerHeight), // Required for material
+        sizeAttenuation: 1, // '1' makes line width independent of camera distance
+        transparent: true,
+        opacity: 0.4,
+        depthTest: false
+    });
+    const trailLine = new THREE.Mesh(meshLine.geometry, trailMaterial);
+    scene.add(trailLine);
+
+    // Pitch Data Placeholder
+    let pitchData = null;
+    let startPos, initialVel, initialAcc, trackManReportedFinalPosAtPlate;
+    let spinRateRPM = 0;
+    let spinAxis = new THREE.Vector3();
+    let verticalCorrectionAcc = 0;
+    let horizontalCorrectionAcc = 0; // New variable for horizontal correction
+
+    const GRAVITY = -32.174; // ft/s^2
+
+    // Original TrackMan units are usually feet and seconds.
+    // Our scene scales assume 1 unit in Three.js is 1 foot for calculations.
+    // strikeZoneScaleFactor is applied to convert TrackMan 'units' into our scene's scaled 'feet'.
+    const MAGNUS_COEFFICIENT_ORIGINAL = 0.00008; // Original coefficient for feet/seconds
+    // MAGNUS_COEFFICIENT is now correctly scaled down by the strikeZoneScaleFactor to effectively work with scaled distances in the simulation.
+    // This is because velocities and accelerations are scaled, so the Magnus force needs to be proportionally smaller.
+    const MAGNUS_COEFFICIENT = MAGNUS_COEFFICIENT_ORIGINAL / strikeZoneScaleFactor;
+
+    let animationCurrentTime = 0;
+    // Removed pitchAnimationSpeed, now controlled by dynamic frame rate
+    const frameRateFast = 100; // Approximately 20 frames per second
+    const frameRateSlow = 2000; // Approximately 1000 frames per second (slower animation)
+    const transitionDistance = 3 * strikeZoneScaleFactor; // 2 feet before the strike zone (scaled)
+    let currentFrameRate = frameRateFast; //
+    let deltaTimePerFrame = 1 / currentFrameRate; //
+
+    const stopDepthZ = 0; // The Z-coordinate of the strike zone plane. The ball's front surface should reach this.
+    let animationComplete = false;
+
+    let cameraRotating = false;
+    let rotationStartTime = 0;
+    const rotationDuration = 3; // seconds for rotation
+    const totalRotationAngle = (180 * Math.PI) / 180; // 180 degrees
+
+    // NEW: Variables for camera transition
+    let initialCameraPositionForRotation = new THREE.Vector3();
+    let initialCameraTargetForRotation = new THREE.Vector3();
+    let finalCameraTargetForRotation = new THREE.Vector3();
+    let initialCameraDistanceForRotation = 0; // Distance from initial target
+    let finalCameraDistanceForRotation = 0; // Desired final distance from ball
+
+    let initialCameraSpherical = new THREE.Spherical(); // To store initial camera spherical coordinates
+    let rotationInitialized = false;
+
+    const startPointMarker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2 * strikeZoneScaleFactor, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0x0000ff })
+    );
+    scene.add(startPointMarker);
+
+    // Global variables to store the original TrackMan values for pre-simulation
+    let originalTmStartPos, originalTmInitialVel, originalTmInitialAcc;
+    let totalFlightTime = 0;
+    const animationStartOffsetSeconds = 3.0; // Animate only the last 3 seconds
+    let pitchInitialSpeedMPH = 0;
+    let currentPitchSpeedMPH = 0;
+
+    function calculateMagnusAcc(velocity, spinRateRPS, spinAxis, outMagnusAcc) {
+        if (spinRateRPS > 0 && spinAxis.lengthSq() > 0.0001) {
+            outMagnusAcc.crossVectors(velocity, spinAxis);
+            outMagnusAcc.multiplyScalar(MAGNUS_COEFFICIENT * spinRateRPS);
+        } else {
+            outMagnusAcc.set(0, 0, 0);
+        }
+    }
+
+    /**
+     * Pre-simulates the pitch to find the exact ball state (position, velocity) at a given time.
+     * This is useful for starting the main animation from a specific point in the trajectory.
+     * @param {THREE.Vector3} sP - Start Position (scaled).
+     * @param {THREE.Vector3} iV - Initial Velocity (scaled).
+     * @param {THREE.Vector3} iA - Initial Acceleration (scaled).
+     * @param {number} sRPM - Spin Rate RPM.
+     * @param {THREE.Vector3} sA - Spin Axis (normalized).
+     * @param {number} targetZ - The Z coordinate where the simulation should ideally end (e.g., home plate).
+     * @param {number} simDt - Delta time for each simulation step.
+     * @param {number} targetTime - The specific time in the trajectory (from the start) to find the ball state.
+     * @returns {{position: THREE.Vector3, velocity: THREE.Vector3, time: number}} The ball's state at the target time.
+     */
+    function findPitchStateAtTime(sP, iV, iA, sRPM, sA, targetZ, simDt, targetTime) {
+        let tempPos = sP.clone();
+        let tempVel = iV.clone();
+        let tempMagnusAcc = new THREE.Vector3();
+        let simTime = 0;
+
+        const trajectoryPoints = []; // Store (pos, vel, time) for interpolation
+
+        const MAX_SIM_STEPS = 5000; // Increased for longer simulations if needed
+        for (let i = 0; i < MAX_SIM_STEPS; i++) {
+            calculateMagnusAcc(tempVel, sRPM * (2 * Math.PI / 60), sA, tempMagnusAcc);
+
+            const totalAccSim = new THREE.Vector3().copy(iA).add(tempMagnusAcc);
+
+            const prevPos = tempPos.clone();
+            const prevVel = tempVel.clone();
+            const prevTime = simTime;
+
+            tempPos.x += tempVel.x * simDt + 0.5 * totalAccSim.x * simDt * simDt;
+            tempPos.y += tempVel.y * simDt + 0.5 * totalAccSim.y * simDt * simDt;
+            tempPos.z += tempVel.z * simDt + 0.5 * totalAccSim.z * simDt * simDt;
+
+            tempVel.x += totalAccSim.x * simDt;
+            tempVel.y += totalAccSim.y * simDt;
+            tempVel.z += totalAccSim.z * simDt;
+
+            simTime += simDt;
+
+            trajectoryPoints.push({
+                position: prevPos.clone(),
+                velocity: prevVel.clone(),
+                time: prevTime
+            });
+
+            if (tempPos.z <= targetZ) {
+                // Interpolate to find exact state at targetZ
+                const fraction = (targetZ - prevPos.z) / (tempPos.z - prevPos.z);
+                const interpolatedPos = new THREE.Vector3().lerpVectors(prevPos, tempPos, fraction);
+                const interpolatedVel = new THREE.Vector3().lerpVectors(prevVel, tempVel, fraction);
+                const interpolatedTime = prevTime + (simDt * fraction);
+                trajectoryPoints.push({
+                    position: interpolatedPos,
+                    velocity: interpolatedVel,
+                    time: interpolatedTime
+                });
+                break; // Reached or passed target Z
+            }
+
+            if (i === MAX_SIM_STEPS - 1) {
+                console.warn("DEBUG: Pre-simulation exceeded MAX_SIM_STEPS. Could not reach target Z (Final Z: " + tempPos.z.toFixed(3) + ").");
+            }
+        }
+
+        // Find the state at targetTime by iterating backward or forward through stored points
+        for (let i = 0; i < trajectoryPoints.length; i++) {
+            const point = trajectoryPoints[i];
+            if (point.time >= targetTime) {
+                if (i === 0) {
+                    console.warn("DEBUG: Target time is before the first simulated point. Returning start point.");
+                    return trajectoryPoints[0];
+                }
+                const prevPoint = trajectoryPoints[i - 1];
+                // Interpolate between prevPoint and point
+                const fraction = (targetTime - prevPoint.time) / (point.time - prevPoint.time);
+                const interpolatedPos = new THREE.Vector3().lerpVectors(prevPoint.position, point.position, fraction);
+                const interpolatedVel = new THREE.Vector3().lerpVectors(prevPoint.velocity, point.velocity, fraction);
+                return {
+                    position: interpolatedPos,
+                    velocity: interpolatedVel,
+                    time: targetTime
+                };
+            }
+        }
+        console.warn("DEBUG: Target time (" + targetTime.toFixed(3) + "s) exceeds total flight time. Returning final simulated state.");
+        return trajectoryPoints[trajectoryPoints.length - 1]; // Return final state if targetTime is too long
+    }
+
+
+    /**
+     * Simulates the pitch to find the exact ball state (position, velocity) at a given Z depth,
+     * including both vertical and horizontal corrections.
+     * @param {THREE.Vector3} sP - Start Position (scaled).
+     * @param {THREE.Vector3} iV - Initial Velocity (scaled).
+     * @param {THREE.Vector3} iA - Base Initial Acceleration (scaled, without corrections).
+     * @param {number} sRPM - Spin Rate RPM.
+     * @param {THREE.Vector3} sA - Spin Axis (normalized).
+     * @param {number} currentVerticalCorrectionAcc - The current vertical correction acceleration.
+     * @param {number} currentHorizontalCorrectionAcc - The current horizontal correction acceleration.
+     * @param {number} targetZ - The target Z coordinate (depth) for the plate.
+     * @param {number} simDt - Delta time for each simulation step.
+     * @returns {{predictedX: number, predictedY: number, flightTime: number}} The predicted X and Y at targetZ and the flight time to get there.
+     */
+    function predictPlateCrossing(sP, iV, iA, sRPM, sA, currentVerticalCorrectionAcc, currentHorizontalCorrectionAcc, targetZ, simDt) {
+        let tempPos = sP.clone();
+        let tempVel = iV.clone();
+        let tempMagnusAcc = new THREE.Vector3();
+        let simTime = 0;
+
+        const MAX_SIM_STEPS = 5000; // Increased for more precision
+
+        for (let i = 0; i < MAX_SIM_STEPS; i++) {
+            calculateMagnusAcc(tempVel, sRPM * (2 * Math.PI / 60), sA, tempMagnusAcc);
+
+            // Apply base initial acceleration, Magnus, and the *current* corrections
+            const totalAccSim = new THREE.Vector3().copy(iA)
+                                                .add(tempMagnusAcc);
+            totalAccSim.y += currentVerticalCorrectionAcc;
+            totalAccSim.x += currentHorizontalCorrectionAcc; // Apply horizontal correction
+
+            const prevPos = tempPos.clone();
+            const prevVel = tempVel.clone();
+            const prevTime = simTime;
+
+            tempPos.x += tempVel.x * simDt + 0.5 * totalAccSim.x * simDt * simDt;
+            tempPos.y += tempVel.y * simDt + 0.5 * totalAccSim.y * simDt * simDt;
+            tempPos.z += tempVel.z * simDt + 0.5 * totalAccSim.z * simDt * simDt;
+
+            tempVel.x += totalAccSim.x * simDt;
+            tempVel.y += totalAccSim.y * simDt;
+            tempVel.z += totalAccSim.z * simDt;
+
+            simTime += simDt;
+
+            if (tempPos.z <= targetZ) {
+                // Interpolate for more accurate X, Y, and time at targetZ
+                const stepRangeZ = tempPos.z - prevPos.z;
+                if (Math.abs(stepRangeZ) < 0.0001) {
+                     // Z-movement too small to interpolate, return current values
+                    return { predictedX: tempPos.x, predictedY: tempPos.y, flightTime: simTime };
+                }
+
+                const fraction = (targetZ - prevPos.z) / stepRangeZ;
+                const predictedXAtTargetZ = prevPos.x + ((tempPos.x - prevPos.x) * fraction);
+                const predictedYAtTargetZ = prevPos.y + ((tempPos.y - prevPos.y) * fraction);
+                const timeAtTargetZ = prevTime + (simDt * fraction);
+
+                return { predictedX: predictedXAtTargetZ, predictedY: predictedYAtTargetZ, flightTime: timeAtTargetZ };
+            }
+        }
+        console.warn("DEBUG: Pre-simulation (predictPlateCrossing) exceeded MAX_SIM_STEPS. Could not reach target Z (Final Z: " + tempPos.z.toFixed(3) + "). Returning last simulated X,Y.");
+        return { predictedX: tempPos.x, predictedY: tempPos.y, flightTime: simTime };
+    }
+
+
+    var pitch_data = null
+    function loadPitch(data) {
+        if (!data || data.Kind !== "Pitch" || !data.Pitch || !data.Pitch.NineP || !data.Pitch.Location) {
+            console.error("Invalid pitch data received or missing core fields (NineP or Location):", data);
+            return;
+        }
+
+        pitchData = data;
+        pitch_data = data
+        console.log("DEBUG: Raw TrackMan NineP.X0:", pitchData.Pitch.NineP.X0.X, pitchData.Pitch.NineP.X0.Y, pitchData.Pitch.NineP.X0.Z);
+        console.log("DEBUG: Raw TrackMan NineP.V0:", pitchData.Pitch.NineP.V0.X, pitchData.Pitch.NineP.V0.Y, pitchData.Pitch.NineP.V0.Z);
+        console.log("DEBUG: Raw TrackMan NineP.A0:", pitchData.Pitch.NineP.A0.X, pitchData.Pitch.NineP.A0.Y, pitchData.Pitch.NineP.A0.Z);
+        console.log("DEBUG: Raw TrackMan Location:", pitchData.Pitch.Location.X, pitchData.Pitch.Location.Y, pitchData.Pitch.Location.Z, pitchData.Pitch.Location.H);
+
+        // Store original TrackMan mapped values for pre-simulation purposes
+        originalTmStartPos = new THREE.Vector3(
+            -pitchData.Pitch.NineP.X0.X * strikeZoneScaleFactor,
+            pitchData.Pitch.NineP.X0.Z * strikeZoneScaleFactor,
+            pitchData.Pitch.NineP.X0.Y * strikeZoneScaleFactor
+        );
+
+        originalTmInitialVel = new THREE.Vector3(
+            -pitchData.Pitch.NineP.V0.X * strikeZoneScaleFactor,
+            pitchData.Pitch.NineP.V0.Z * strikeZoneScaleFactor,
+            pitchData.Pitch.NineP.V0.Y * strikeZoneScaleFactor
+        );
+
+        originalTmInitialAcc = new THREE.Vector3(
+            -pitchData.Pitch.NineP.A0.X * strikeZoneScaleFactor,
+            pitchData.Pitch.NineP.A0.Z * strikeZoneScaleFactor,
+            pitchData.Pitch.NineP.A0.Y * strikeZoneScaleFactor
+        );
+
+        const targetFinalX_TM = pitchData.Pitch.Location.Side * strikeZoneScaleFactor;
+        const targetFinalY_TM = pitchData.Pitch.Location.Height * strikeZoneScaleFactor; // Corrected to use Location.Height for Y
+        const targetFinalZ_TM_Depth = pitchData.Pitch.Location.Z * strikeZoneScaleFactor; // This is the Z from TrackMan, which is usually depth
+
+        trackManReportedFinalPosAtPlate = new THREE.Vector3(targetFinalX_TM, targetFinalY_TM, stopDepthZ); // Always target Z=0 for plate
+
+        console.log("DEBUG: Mapped and Scaled originalTmStartPos (Three.js X, Y, Z):", originalTmStartPos.x.toFixed(3), originalTmStartPos.y.toFixed(3), originalTmStartPos.z.toFixed(3));
+        console.log("DEBUG: Mapped and Scaled originalTmInitialVel (Three.js X, Y, Z):", originalTmInitialVel.x.toFixed(3), originalTmInitialVel.y.toFixed(3), originalTmInitialVel.z.toFixed(3));
+        console.log("DEBUG: Mapped and Scaled originalTmInitialAcc (Three.js X, Y, Z):", originalTmInitialAcc.x.toFixed(3), originalTmInitialAcc.y.toFixed(3), originalTmInitialAcc.z.toFixed(3));
+        console.log("DEBUG: TrackMan Reported Final Location (X, Y, Z_Plate_Target) Scaled:", trackManReportedFinalPosAtPlate.x.toFixed(3), trackManReportedFinalPosAtPlate.y.toFixed(3), trackManReportedFinalPosAtPlate.z.toFixed(3));
+
+
+        if (pitchData.Pitch.Spin && pitchData.Pitch.Spin.SpinRate !== undefined && pitchData.Pitch.Spin.AxisX !== undefined && pitchData.Pitch.Spin.AxisY !== undefined && pitchData.Pitch.Spin.AxisZ !== undefined) {
+            spinRateRPM = pitchData.Pitch.Spin.SpinRate;
+            spinAxis.set(
+                -pitchData.Pitch.Spin.AxisX,
+                pitchData.Pitch.Spin.AxisZ,
+                pitchData.Pitch.Spin.AxisY
+            ).normalize();
+            console.log("DEBUG: Spin Rate (RPM):", spinRateRPM);
+            console.log("DEBUG: Spin Axis (Three.js X, Y, Z):", spinAxis.x.toFixed(3), spinAxis.y.toFixed(3), spinAxis.z.toFixed(3));
+        } else {
+            console.warn("DEBUG: Pitch data missing 'Spin' information. Magnus effect will not be applied for this pitch.");
+            spinRateRPM = 0;
+            spinAxis.set(0, 0, 0);
+        }
+
+        // --- Iterative Correction Loop ---
+        const maxIterations = 50;
+        const tolerance = 0.001 * strikeZoneScaleFactor; // e.g., 1 mm tolerance in scene units
+        let converged = false;
+
+        verticalCorrectionAcc = 0; // Reset for each new pitch
+        horizontalCorrectionAcc = 0; // Reset for each new pitch
+
+        totalFlightTime = 0; // Reset total flight time
+
+        for (let i = 0; i < maxIterations; i++) {
+            const { predictedX, predictedY, flightTime } = predictPlateCrossing(
+                originalTmStartPos,
+                originalTmInitialVel,
+                originalTmInitialAcc,
+                spinRateRPM,
+                spinAxis,
+                verticalCorrectionAcc,
+                horizontalCorrectionAcc, // Pass current horizontal correction
+                stopDepthZ,
+                1 / frameRateFast // Use fast frame rate for prediction
+            );
+
+            const yDiff = targetFinalY_TM - predictedY;
+            const xDiff = targetFinalX_TM - predictedX; // Calculate X difference
+
+            totalFlightTime = flightTime; // Keep track of the flight time
+
+            if (Math.abs(yDiff) < tolerance && Math.abs(xDiff) < tolerance) {
+                converged = true;
+                console.log(`DEBUG: Converged in ${i + 1} iterations. Final Y Diff: ${yDiff.toFixed(5)}, X Diff: ${xDiff.toFixed(5)}`);
+                break;
+            }
+
+            // Adjust correction accelerations. The 'gain' here (0.5 or similar) might need tuning.
+            // A higher gain means faster convergence but potential instability.
+            // A lower gain means slower convergence but more stability.
+            // You might need different gains for X and Y.
+            const correctionGain = 0.5; // Example gain, tune this value!
+
+            if (totalFlightTime > 0.001) {
+                verticalCorrectionAcc += (2 * yDiff) / (totalFlightTime * totalFlightTime) * correctionGain;
+                horizontalCorrectionAcc += (2 * xDiff) / (totalFlightTime * totalFlightTime) * correctionGain; // Apply similar logic for X
+            } else {
+                console.warn("DEBUG: Flight time too short during iteration, skipping acceleration adjustment.");
+                break; // Exit if flight time is negligible
+            }
+
+            // Optional: Clamp correction accelerations to prevent extreme values
+            const maxAccCorrection = 100; // arbitrary max correction (e.g., 100 ft/s^2)
+            verticalCorrectionAcc = Math.max(-maxAccCorrection, Math.min(maxAccCorrection, verticalCorrectionAcc));
+            horizontalCorrectionAcc = Math.max(-maxAccCorrection, Math.min(maxAccCorrection, horizontalCorrectionAcc));
+
+            console.log(`DEBUG: Iteration ${i + 1}: PredictedX: ${predictedX.toFixed(3)}, TargetX: ${targetFinalX_TM.toFixed(3)}, XDiff: ${xDiff.toFixed(3)} | PredictedY: ${predictedY.toFixed(3)}, TargetY: ${targetFinalY_TM.toFixed(3)}, YDiff: ${yDiff.toFixed(3)} | VCorrAcc: ${verticalCorrectionAcc.toFixed(3)}, HCorrAcc: ${horizontalCorrectionAcc.toFixed(3)}`);
+        }
+
+        if (!converged) {
+            console.warn("DEBUG: Correction did not converge within max iterations. Final position may be off.");
+        }
+
+        console.log(`DEBUG: Final Calculated Vertical Correction Acc: ${verticalCorrectionAcc.toFixed(5)} ft/s^2`);
+        console.log(`DEBUG: Final Calculated Horizontal Correction Acc: ${horizontalCorrectionAcc.toFixed(5)} ft/s^2`);
+
+
+        // --- Step 2: Determine animation start point (3 seconds before plate) ---
+        let animationStartTimeFromRelease = Math.max(0, totalFlightTime - animationStartOffsetSeconds);
+        console.log(`DEBUG: Total Flight Time (after correction): ${totalFlightTime.toFixed(3)}s`);
+        console.log(`DEBUG: Animation will start at: ${animationStartTimeFromRelease.toFixed(3)}s (from release)`);
+
+        // Re-simulate to find the exact state at animationStartTimeFromRelease,
+        // incorporating BOTH verticalCorrectionAcc and horizontalCorrectionAcc found for the *full* trajectory.
+        const { position: adjustedStartPos, velocity: adjustedInitialVel } = findPitchStateAtTime(
+            originalTmStartPos,
+            originalTmInitialVel,
+            new THREE.Vector3().copy(originalTmInitialAcc)
+                .setY(originalTmInitialAcc.y + verticalCorrectionAcc)
+                .setX(originalTmInitialAcc.x + horizontalCorrectionAcc), // Apply both corrections for pre-simulation
+            spinRateRPM,
+            spinAxis,
+            stopDepthZ,
+            1 / frameRateFast, // Use fast frame rate for prediction
+            animationStartTimeFromRelease
+        );
+
+        startPos = adjustedStartPos;
+        initialVel = adjustedInitialVel;
+        initialAcc = originalTmInitialAcc.clone(); // InitialAcc remains the base, corrections are handled separately
+        // Note: The corrections `verticalCorrectionAcc` and `horizontalCorrectionAcc`
+        // will now be applied in the `animate` function.
+
+
+        // Calculate initial speed for display
+        // Convert ft/s to MPH (1 ft/s = 0.681818 MPH)
+        pitchInitialSpeedMPH = initialVel.length() * 0.681818;
+        console.log(`DEBUG: Animation will start with calculated speed: ${pitchInitialSpeedMPH.toFixed(2)} MPH`);
+        updatePitchSpeedSprite(pitchInitialSpeedMPH);
+        pitchSpeedHudElement.textContent = `Pitch Speed: ${pitchInitialSpeedMPH.toFixed(1)} MPH`;
+
+
+        startPointMarker.position.copy(startPos); // Update marker to new starting point for animation
+
+        resetPitch();
+        animationComplete = false;
+        cameraRotating = false;
+        rotationInitialized = false;
+        console.log("Pitch data loaded and animation reset.");
+        console.log("Ball animation start point (Three.js X, Y, Z):", startPos.x.toFixed(3), startPos.y.toFixed(3), startPos.z.toFixed(3));
+    }
+
+    database.ref("trackman/pitches")
+            .orderByKey()
+            .limitToLast(10) // Get recent pitches
+            .on('child_added', (snapshot) => {
+        const latestPitch = snapshot.val();
+        if (latestPitch && latestPitch.Kind === "Pitch") {
+            console.log("DEBUG: New pitch detected from Firebase.");
+            loadPitch(latestPitch);
+        } else {
+            console.warn("DEBUG: Latest entry is not a valid pitch or does not have 'Kind: Pitch'.", latestPitch);
+        }
+    }, (error) => {
+        console.error("DEBUG: Firebase read failed:", error);
+    });
+
+    const currentBallVelocity = new THREE.Vector3();
+    const currentBallPosition = new THREE.Vector3();
+    const magnusAcceleration = new THREE.Vector3();
+    const totalAcceleration = new THREE.Vector3();
+
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        if (!startPos || !initialVel || !initialAcc) {
+            controls.update();
+            renderer.render(scene, camera);
+            return;
+        }
+
+        if (!animationComplete) {
+            // --- Dynamic Frame Rate Adjustment ---
+            const distanceToStrikeZone = currentBallPosition.z - stopDepthZ; //
+
+            if (distanceToStrikeZone <= transitionDistance) { //
+                // Linearly interpolate between fast and slow frame rates
+                const progress = 1 - (distanceToStrikeZone / transitionDistance); // 0 at transitionDistance, 1 at stopDepthZ
+                currentFrameRate = frameRateFast + (frameRateSlow - frameRateFast) * progress; //
+            } else { //
+                currentFrameRate = frameRateFast; //
+            }
+            deltaTimePerFrame = 1 / currentFrameRate; //
+            // --- End Dynamic Frame Rate Adjustment ---
+
+            const dt = deltaTimePerFrame; // Removed * pitchAnimationSpeed as it's now dynamic
+
+            calculateMagnusAcc(currentBallVelocity, spinRateRPM * (2 * Math.PI / 60), spinAxis, magnusAcceleration);
+
+            totalAcceleration.copy(initialAcc)
+                             .add(magnusAcceleration);
+            totalAcceleration.y += verticalCorrectionAcc; // Apply the calculated vertical correction
+            totalAcceleration.x += horizontalCorrectionAcc; // Apply the calculated horizontal correction!
+
+
+            // Store previous state for interpolation
+            const prevBallPosition = currentBallPosition.clone();
+            const prevBallVelocity = currentBallVelocity.clone();
+            const prevAnimationTime = animationCurrentTime;
+
+            // Calculate next state
+            currentBallPosition.x += currentBallVelocity.x * dt + 0.5 * totalAcceleration.x * dt * dt;
+            currentBallPosition.y += currentBallVelocity.y * dt + 0.5 * totalAcceleration.y * dt * dt;
+            currentBallPosition.z += currentBallVelocity.z * dt + 0.5 * totalAcceleration.z * dt * dt;
+
+            currentBallVelocity.x += totalAcceleration.x * dt;
+            currentBallVelocity.y += totalAcceleration.y * dt;
+            currentBallVelocity.z += totalAcceleration.z * dt;
+
+            animationCurrentTime += dt;
+
+            // Check if the ball crossed the stopDepthZ in this step
+            if (currentBallPosition.z <= stopDepthZ) {
+                animationComplete = true;
+
+                // --- Interpolate to find the exact crossing point ---
+                // Calculate the fraction of dt at which Z crossed stopDepthZ
+                // Avoid division by zero if velocity in Z is flat or too small
+                if (Math.abs(currentBallVelocity.z - prevBallVelocity.z) < 0.0001 && Math.abs(currentBallVelocity.z) < 0.0001) {
+                    // Z velocity is essentially zero, just snap to stopDepthZ
+                    ball.position.z = stopDepthZ;
+                    ball.position.x = currentBallPosition.x; // Use current x,y if no movement in Z
+                    ball.position.y = currentBallPosition.y;
+                    console.warn("DEBUG: Z velocity too small, snapping directly at stopDepthZ.");
+                } else {
+                    // Quadratic formula for time to reach targetZ: At^2 + Bt + C = 0
+                    // where A = 0.5 * totalAcceleration.z
+                    //       B = prevBallVelocity.z
+                    //       C = prevBallPosition.z - stopDepthZ
+                    const A_z = 0.5 * totalAcceleration.z;
+                    const B_z = prevBallVelocity.z;
+                    const C_z = prevBallPosition.z - stopDepthZ;
+
+                    let t_to_plate;
+                    if (Math.abs(A_z) < 1e-9) { // If acceleration in Z is negligible (linear motion)
+                        if (Math.abs(B_z) < 1e-9) { // If also velocity in Z is negligible
+                            t_to_plate = dt; // Time does not matter much here, already at or past
+                        } else {
+                            t_to_plate = -C_z / B_z; // Linear equation t = -C/B
+                        }
+                    } else {
+                        const discriminant = B_z * B_z - 4 * A_z * C_z;
+                        if (discriminant >= 0) {
+                            const sqrtDiscriminant = Math.sqrt(discriminant);
+                            const t1 = (-B_z + sqrtDiscriminant) / (2 * A_z);
+                            const t2 = (-B_z - sqrtDiscriminant) / (2 * A_z);
+
+                            // Choose the valid time within [0, dt]
+                            if (t1 >= 0 && t1 <= dt) t_to_plate = t1;
+                            else if (t2 >= 0 && t2 <= dt) t_to_plate = t2;
+                            else t_to_plate = dt; // Fallback if no valid root within dt, just use dt
+                        } else {
+                            t_to_plate = dt; // No real roots, probably means it passed without crossing exactly
+                        }
+                    }
+
+                    // Clamp t_to_plate to [0, dt]
+                    t_to_plate = Math.max(0, Math.min(dt, t_to_plate));
+
+                    // Interpolate position and velocity to this exact time
+                    ball.position.x = prevBallPosition.x + prevBallVelocity.x * t_to_plate + 0.5 * totalAcceleration.x * t_to_plate * t_to_plate;
+                    ball.position.y = prevBallPosition.y + prevBallVelocity.y * t_to_plate + 0.5 * totalAcceleration.y * t_to_plate * t_to_plate;
+                    ball.position.z = stopDepthZ; // Ensure it's exactly at stopDepthZ
+
+                    currentBallVelocity.x = prevBallVelocity.x + totalAcceleration.x * t_to_plate;
+                    currentBallVelocity.y = prevBallVelocity.y + totalAcceleration.y * t_to_plate;
+                    currentBallVelocity.z = prevBallVelocity.z + totalAcceleration.z * t_to_plate;
+
+                    // Update currentBallPosition to match ball.position for consistency
+                    currentBallPosition.copy(ball.position);
+
+                    animationCurrentTime = prevAnimationTime + t_to_plate;
+                }
+
+                // Add the final, interpolated point to the trail
+                trailPoints.push(ball.position.clone());
+                meshLine.setPoints(trailPoints); // Update MeshLine
+                console.log("DEBUG: Animation stopped at strike zone plane (Z=0) with interpolation.");
+                console.log("DEBUG: Calculated final position (X, Y, Z):", ball.position.x.toFixed(3), ball.position.y.toFixed(3), ball.position.z.toFixed(3));
+                console.log("DEBUG: TrackMan Reported Final Y (Height):", trackManReportedFinalPosAtPlate.y.toFixed(3));
+                console.log("DEBUG: Difference from target Y:", (ball.position.y - trackManReportedFinalPosAtPlate.y).toFixed(3));
+                console.log("DEBUG: TrackMan Reported Final X (Side):", trackManReportedFinalPosAtPlate.x.toFixed(3));
+                console.log("DEBUG: Difference from target X:", (ball.position.x - trackManReportedFinalPosAtPlate.x).toFixed(3));
+
+
+                cameraRotating = true;
+                rotationInitialized = false;
+
+                // --- MODIFIED: Setup for smooth camera transition ---
+                initialCameraPositionForRotation.copy(camera.position);
+                initialCameraTargetForRotation.copy(controls.target); // This is still initialCameraTarget (0, 5.5, 0)
+                finalCameraTargetForRotation.copy(ball.position); // This is where the ball ended up
+
+                initialCameraDistanceForRotation = camera.position.distanceTo(controls.target);
+                finalCameraDistanceForRotation = 1.2 * strikeZoneScaleFactor; // Target distance from the ball (zoom level)
+
+                // Capture the current camera's spherical phi (vertical angle) relative to its target
+                const currentOffset = camera.position.clone().sub(controls.target);
+                initialCameraSpherical.setFromVector3(currentOffset);
+                // --- END MODIFIED ---
+
+                console.log("DEBUG: Preparing to start camera rotation.");
+
+            } else {
+                // Only update ball position and add trail points if animation is still active
+                ball.position.copy(currentBallPosition);
+
+                // Update pitch speed for display
+                currentPitchSpeedMPH = currentBallVelocity.length() * 0.681818;
+                updatePitchSpeedSprite(currentPitchSpeedMPH);
+                pitchSpeedHudElement.textContent = `Pitch Speed: ${currentPitchSpeedMPH.toFixed(1)} MPH`;
+
+                // Position pitch speed sprite slightly above ball
+                pitchSpeedTextSprite.position.set(1, ball.geometry.parameters.radius, 0);
+
+                trailPoints.push(ball.position.clone());
+                const maxTrailPoints = 100; // Keep trail length reasonable
+                if (trailPoints.length > maxTrailPoints) {
+                    trailPoints.shift();
+                }
+                meshLine.setPoints(trailPoints); // Update MeshLine
+                // Log less frequently to avoid spam
+                if (console.count.lastLogTime && (Date.now() - console.count.lastLogTime) > 500) {
+                    console.log(`DEBUG: Animating: Time: ${animationCurrentTime.toFixed(2)}s | Ball Pos: [${ball.position.x.toFixed(3)}, ${ball.position.y.toFixed(3)}, ${ball.position.z.toFixed(3)}] | Vel: [${currentBallVelocity.x.toFixed(3)}, ${currentBallVelocity.y.toFixed(3)}, ${currentBallVelocity.z.toFixed(3)}] | Total Acc: [${totalAcceleration.x.toFixed(3)}, ${totalAcceleration.y.toFixed(3)}, ${totalAcceleration.z.toFixed(3)}]`);
+                    console.count.lastLogTime = Date.now();
+                } else if (!console.count.lastLogTime) {
+                    console.count.lastLogTime = Date.now();
+                }
+            }
+        }
+
+        // --- MODIFIED: Camera rotation and zoom logic ---
+        if (cameraRotating) {
+            if (!rotationInitialized) {
+                rotationStartTime = performance.now();
+                rotationInitialized = true;
+                console.log("DEBUG: Camera rotation animation officially started at:", rotationStartTime);
+                pitchSpeedTextSprite.visible = false;
+                
+                // Hide sprite during rotation
+            }
+
+            const elapsedTime = (performance.now() - rotationStartTime) / 1000;
+            let rotationProgress = Math.min(elapsedTime / rotationDuration, 1);
+
+            // Ease-in-out effect for smoother animation
+            rotationProgress = 0.5 - 0.5 * Math.cos(Math.PI * rotationProgress);
+
+            // Interpolate the camera target smoothly
+            controls.target.lerpVectors(initialCameraTargetForRotation, finalCameraTargetForRotation, rotationProgress);
+
+            // Interpolate the camera distance (zoom)
+            const currentDistance = initialCameraDistanceForRotation + (finalCameraDistanceForRotation - initialCameraDistanceForRotation) * rotationProgress;
+
+            // Calculate new azimuthal angle for rotation
+            const newAzimuth = initialCameraSpherical.theta + (totalRotationAngle * rotationProgress);
+
+            // Set camera position using the interpolated target, new distance, and original phi
+            const tempSpherical = new THREE.Spherical();
+            tempSpherical.phi = initialCameraSpherical.phi; // Maintain initial vertical angle
+            tempSpherical.theta = newAzimuth;
+            tempSpherical.radius = currentDistance;
+
+            camera.position.setFromSpherical(tempSpherical).add(controls.target);
+
+            controls.update();
+
+            if (rotationProgress >= 1) {
+                cameraRotating = false;
+                rotationInitialized = false;
+                trailMaterial.opacity = 0; // Hide the trail
+
+                console.log("DEBUG: Camera rotation complete.");
+                pitchSpeedTextSprite.visible = true; // Show sprite again after rotation
+                pitchSpeedTextSprite.position.set(0.0, 0.05, 1); // Center the sprite on the ball relative to its new position
+            }
+        } else {
+            controls.update();
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function resetPitch() {
+        animationCurrentTime = 0;
+        animationComplete = false;
+        cameraRotating = false;
+        rotationInitialized = false;
+        trailPoints.length = 0;
+        meshLine.setPoints(trailPoints); // Update MeshLine
+                if (startPos) {
+            ball.position.copy(startPos);
+            currentBallVelocity.copy(initialVel);
+            currentBallPosition.copy(startPos);
+            magnusAcceleration.set(0,0,0);
+        }
+
+        camera.position.copy(initialCameraPosition);
+        controls.target.copy(initialCameraTarget);
+        controls.update();
+        initialCameraSpherical.setFromVector3(camera.position.clone().sub(controls.target)); // Re-capture initial spherical
+        console.log("DEBUG: Pitch reset. Camera spherical (radius, phi, theta):", initialCameraSpherical.radius.toFixed(2), initialCameraSpherical.phi.toFixed(2), (initialCameraSpherical.theta * 180 / Math.PI).toFixed(1) + "deg");
+
+        // Reset speed display
+        pitchSpeedHudElement.textContent = "Pitch Speed: -- MPH";
+        updatePitchSpeedSprite(0);
+        pitchSpeedTextSprite.visible = false;
+    }
+</script>
+</body>
+</html>

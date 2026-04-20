@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>3D Ballpark – Manual Wall Geometry</title>
+  <style>
+    body { margin:0; overflow:hidden; }
+    #stats {
+      position:absolute; top:10px; left:10px;
+      background:rgba(255,255,255,0.9); padding:8px; border-radius:4px;
+      font-family:sans-serif; z-index:10; width:200px;
+    }
+    #stats > * { margin-bottom:6px; width:100%; display:block; }
+    canvas { display:block; }
+    #ballLabel, #apexLabel {
+      position:absolute; transform-origin:50% 100%; pointer-events:none;
+      font-family:sans-serif; background:rgba(255,255,255,0.8);
+      padding:2px 6px; border-radius:4px; z-index:10;
+    }
+    #apexLabel { display:none; }
+  </style>
+</head>
+<body>
+  <div id="stats">
+    <div id="homeInfo">Exit Velo: – mph, Angle: –°</div>
+    <div id="apexInfo">Max Height: – ft</div>
+    <label>Snap View:</label>
+    <button id="resetBtn">Reset</button>
+    <button id="followBtn">Follow Ball: Off</button>
+  </div>
+  <div id="ballLabel">Distance: – ft</div>
+  <div id="apexLabel">Max Height: – ft</div>
+  <canvas id="c"></canvas>
+
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
+  <script>
+    // 0) Park data and helpers
+    const teamParkMap = {
+      'LAN':'Penn Medicine Park','SMD':'Regency Furniture Stadium','YOR':'Wellspan Park',
+      'HAG_FLY':'Meritus Park','LI':'Fairfield Properties BallPark','GAS':'CaroMont Health Park',
+      'STA_YAN':'SIUH Community Park','HP':'Truist Point','LEX_LEG':'Legends Field',
+      'WES_POW':'GoMart BallPark'
+    };
+  const parks = {
+  default: {
+    leftFoul:        325,
+    leftCenter:      (325+400)/2,
+    center:          400,
+    rightCenter:     (400+325)/2,
+    rightFoul:       325,
+    leftFoulHeight:    10,
+    leftCenterHeight:  10,
+    centerHeight:      10,
+    rightCenterHeight: 10,
+    rightFoulHeight:   10
+  },
+
+    "Meritus Park": {
+    leftFoul:325, leftCenter:(400+360)/2, center:400, rightCenter:(346+387)/2, rightFoul:346,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  },
+
+  "Wellspan Park": {
+    leftFoul:326, leftCenter:(405+326)/2, center:405, rightCenter:(300+405)/2, rightFoul:300,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:37.8
+  },
+
+  "CaroMont Health Park": {
+    leftFoul:325, leftCenter:367, center:400, rightCenter:361, rightFoul:315,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  },
+
+  "Penn Medicine Park": {
+    leftFoul:300, leftCenter:363, center:400, rightCenter:409, rightFoul:320,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  },
+
+  "Fairfield Properties BallPark": {
+    leftFoul:325, leftCenter:(400+325)/2, center:400, rightCenter:(325+400)/2, rightFoul:325,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  },
+
+  "SIUH Community Park": {
+    leftFoul:318, leftCenter:(390+318)/2, center:390, rightCenter:(320+390)/2, rightFoul:320,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  },
+
+  "GoMart BallPark": {
+    leftFoul:320, leftCenter:(400+320)/2, center:400, rightCenter:(330+400)/2, rightFoul:330,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  },
+
+  "Truist Point": {
+    leftFoul:339, leftCenter:366, center:400, rightCenter:363, rightFoul:336,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  },
+
+  "Legends Field": {
+    leftFoul:318, leftCenter:(401+318)/2, center:401, rightCenter:(320+401)/2, rightFoul:320,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  },
+
+  "Regency Furniture Stadium": {
+    leftFoul:325, leftCenter:(400+325)/2, center:400, rightCenter:(310+400)/2, rightFoul:310,
+    leftFoulHeight:10, leftCenterHeight:10, centerHeight:10, rightCenterHeight:10, rightFoulHeight:10
+  }
+
+
+
+};
+
+    function getQueryParam(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+    const pitchUID = getQueryParam('pitchUID');
+    let cfg = parks.default;
+
+    // 1) Load CSV first, then init scene
+    Papa.parse('data.csv', {
+      download: true, header: true, dynamicTyping: true,
+      complete(res) {
+        let row = res.data.find(r => String(r.PitchUID) === pitchUID);
+        if (!row) row = res.data[0];
+        const parkName = teamParkMap[row.HomeTeam] || 'default';
+        cfg = parks[parkName] || parks.default;
+        console.log('Using park config:', parkName, cfg);
+        initScene(row);
+      }
+    });
+
+    // 2) initScene: wraps your entire original code
+    function initScene(row) {
+      function degToRad(d){ return d * Math.PI/180; }
+
+      // DOM
+      const canvas   = document.getElementById('c'),
+            renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x87CEEB);
+
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 2000);
+      camera.position.set(0,200,300);
+      camera.lookAt(0,0,0);
+      camera.setViewOffset(window.innerWidth, window.innerHeight*2, 0, window.innerHeight - window.innerHeight, window.innerWidth, window.innerHeight);
+
+      scene.add(new THREE.DirectionalLight(0xffffff,1.2).position.set(-200,300,100));
+      scene.add(new THREE.AmbientLight(0x888888));
+
+      const homeInfo = document.getElementById('homeInfo'),
+            apexInfo = document.getElementById('apexInfo'),
+            resetBtn = document.getElementById('resetBtn'),
+            followBtn= document.getElementById('followBtn'),
+            ballLabel= document.getElementById('ballLabel'),
+            apexLabel= document.getElementById('apexLabel');
+
+      // camera controls
+      let dragMode=null,px=0,py=0,follow=false;
+      canvas.addEventListener('contextmenu',e=>e.preventDefault());
+      canvas.addEventListener('mousedown',e=>{
+        px=e.clientX; py=e.clientY;
+        dragMode = e.button===0?'pan':'orbit';
+      });
+      window.addEventListener('mouseup',()=>dragMode=null);
+      window.addEventListener('mousemove',e=>{
+        if(!dragMode) return;
+        const dx=e.clientX-px, dy=e.clientY-py;
+        px=e.clientX; py=e.clientY;
+        if(dragMode==='orbit'){
+          camera.rotation.y -= dx*0.005;
+          camera.rotation.x -= dy*0.005;
+        } else {
+          camera.translateX(-dx*0.5);
+          camera.translateY(dy*0.5);
+        }
+      });
+      canvas.addEventListener('wheel',e=>{
+        const dir = camera.getWorldDirection(new THREE.Vector3());
+        camera.position.addScaledVector(dir, e.deltaY*0.1);
+        if(camera.position.y<5) camera.position.y=5;
+      });
+
+      // anchors
+      const rawAnchors = [
+        { ang:-45, d:cfg.leftFoul,   h:cfg.leftFoulHeight },
+        { ang:cfg.leftCenter===1?-90:-22.5, d:cfg.leftCenter, h:cfg.leftCenterHeight },
+        { ang:0, d:cfg.center,       h:cfg.centerHeight },
+        { ang:cfg.rightCenter===1?90:22.5,  d:cfg.rightCenter,h:cfg.rightCenterHeight },
+        { ang:45, d:cfg.rightFoul,   h:cfg.rightFoulHeight }
+      ];
+      const anchors = rawAnchors.map(p=>{
+        const theta = degToRad(p.ang-90);
+        return { ang:p.ang, pos:new THREE.Vector3(p.d*Math.cos(theta),0,-p.d*Math.sin(theta)), h:p.h };
+      });
+
+      // 5) turf
+      const fieldGroup = new THREE.Group();
+      fieldGroup.rotation.y = Math.PI;
+      scene.add(fieldGroup);
+
+      const texSize=512, sq=64;
+      const texC=document.createElement('canvas');
+      texC.width=texC.height=texSize;
+      const ctx2=texC.getContext('2d');
+      const cols=['#66cc66','#33aa33'];
+      for(let y=0;y<texSize;y+=sq)for(let x=0;x<texSize;x+=sq){
+        ctx2.fillStyle=cols[((x/sq)+(y/sq))%2];
+        ctx2.fillRect(x,y,sq,sq);
+      }
+      const turfTex=new THREE.CanvasTexture(texC);
+      turfTex.wrapS=turfTex.wrapT=THREE.RepeatWrapping;
+      turfTex.repeat.set(40,40);
+
+      const turfShape=new THREE.Shape();
+      turfShape.moveTo(0,0);
+      if(cfg.leftCenter===0 && cfg.rightCenter===0){
+        const segments=60, startAng=degToRad(135), endAng=degToRad(45);
+        for(let i=0;i<=segments;i++){
+          const a=startAng+(i/segments)*(endAng-startAng);
+          turfShape.lineTo(cfg.center*Math.cos(a),-cfg.center*Math.sin(a));
+        }
+      } else {
+        anchors.forEach(A=> turfShape.lineTo(A.pos.x,-A.pos.z));
+      }
+      turfShape.closePath();
+      const turfGeo=new THREE.ShapeGeometry(turfShape);
+      turfGeo.rotateX(-Math.PI/2);
+      const turfMat=new THREE.MeshLambertMaterial({ map:turfTex, side:THREE.DoubleSide });
+      fieldGroup.add(new THREE.Mesh(turfGeo,turfMat));
+
+      // 6) walls
+      const segmentMeshes=[], segmentBoxes=[];
+      const lineMat=new THREE.LineBasicMaterial({color:0xffffff});
+      if(cfg.leftCenter===0 && cfg.rightCenter===0){
+        const segments=60, startR=degToRad(-135), endR=degToRad(-45), thickness=1;
+        for(let i=0;i<segments;i++){
+          const r0=startR+(i/segments)*(endR-startR),
+                r1=startR+((i+1)/segments)*(endR-startR);
+          const p0=new THREE.Vector3(cfg.center*Math.cos(r0),0,-cfg.center*Math.sin(r0)),
+                p1=new THREE.Vector3(cfg.center*Math.cos(r1),0,-cfg.center*Math.sin(r1));
+          const t0=(r0-startR)/(endR-startR), t1=(r1-startR)/(endR-startR),
+                h0=THREE.MathUtils.lerp(cfg.leftFoulHeight,cfg.rightFoulHeight,t0),
+                h1=THREE.MathUtils.lerp(cfg.leftFoulHeight,cfg.rightFoulHeight,t1);
+          const dir=p1.clone().sub(p0).normalize(),
+                perp=new THREE.Vector3(-dir.z,0,dir.x).multiplyScalar(thickness/2);
+          const pts=[
+            p0.clone().add(perp), p0.clone().sub(perp),
+            p1.clone().sub(perp), p1.clone().add(perp)
+          ];
+          const top=[
+            pts[0].clone().setY(h0), pts[1].clone().setY(h0),
+            pts[2].clone().setY(h1), pts[3].clone().setY(h1)
+          ];
+          const positions=[...pts,...top].flatMap(v=>[v.x,v.y,v.z]);
+          const indices=[
+            0,1,2,2,3,0,4,7,6,6,5,4,
+            0,4,5,5,1,0,1,5,6,6,2,1,
+            2,6,7,7,3,2,3,7,4,4,0,3
+          ];
+          const geo=new THREE.BufferGeometry();
+          geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+          geo.setIndex(indices);
+          geo.computeVertexNormals();
+          const wall=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:0xff7f00}));
+          fieldGroup.add(wall);
+          segmentMeshes.push(wall);
+          segmentBoxes.push(new THREE.Box3().setFromObject(wall));
+        }
+      } else {
+        for(let i=0;i<4;i++){
+          const A=anchors[i], B=anchors[i+1];
+          if(i===0||i===3){
+            const end=(i===0?A.pos:B.pos).clone().setY(1);
+            const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,1,0),end]);
+            fieldGroup.add(new THREE.Line(geo,lineMat));
+          }
+          const dir=B.pos.clone().sub(A.pos).normalize(),
+                perp=new THREE.Vector3(-dir.z,0,dir.x);
+          const p0=A.pos.clone().add(perp.clone().multiplyScalar(0.5)),
+                p1=A.pos.clone().add(perp.clone().multiplyScalar(-0.5)),
+                p2=B.pos.clone().add(perp.clone().multiplyScalar(-0.5)),
+                p3=B.pos.clone().add(perp.clone().multiplyScalar(0.5));
+          const h=(A.h+B.h)/2;
+          const pos=[p0,p1,p2,p3,p0.clone().setY(h),p1.clone().setY(h),p2.clone().setY(h),p3.clone().setY(h)]
+                     .flatMap(v=>[v.x,v.y,v.z]);
+          const idx=[0,1,2,2,3,0,4,7,6,6,5,4,0,4,5,5,1,0,1,5,6,6,2,1,2,6,7,7,3,2,3,7,4,4,0,3];
+          const geo=new THREE.BufferGeometry();
+          geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+          geo.setIndex(idx);
+          geo.computeVertexNormals();
+          const wall=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:0xff7f00}));
+          fieldGroup.add(wall);
+          segmentMeshes.push(wall);
+          segmentBoxes.push(new THREE.Box3().setFromObject(wall));
+        }
+      }
+
+      // 7) infield
+      const infield=new THREE.Group();
+      const BASE=90, EXT=55, R=BASE+EXT;
+      const shape=new THREE.Shape();
+      shape.moveTo(0,0);
+      shape.lineTo(BASE/Math.SQRT2,-BASE/Math.SQRT2);
+      shape.lineTo(R/Math.SQRT2,-R/Math.SQRT2);
+      shape.absarc(0,0,R,-Math.PI/4,-3*Math.PI/4,true);
+      shape.lineTo(-BASE/Math.SQRT2,-BASE/Math.SQRT2);
+      shape.lineTo(0,0);
+      const dirtG=new THREE.ShapeGeometry(shape),
+            dirtM=new THREE.MeshLambertMaterial({color:0xAD8A56}),
+            dirtMesh=new THREE.Mesh(dirtG,dirtM);
+      dirtMesh.rotation.x=-Math.PI/2;
+      infield.add(dirtMesh);
+      const baseGeo=new THREE.BoxGeometry(4,1,4),
+            baseMat=new THREE.MeshLambertMaterial({color:0xffffff});
+      [[BASE/Math.SQRT2,-BASE/Math.SQRT2],[0,-BASE],[-BASE/Math.SQRT2,-BASE/Math.SQRT2]]
+        .forEach(([x,z])=>{
+          const b=new THREE.Mesh(baseGeo,baseMat);
+          b.position.set(x,1,-z);
+          infield.add(b);
+        });
+      [-45,45].forEach(deg=>{
+        const rad=degToRad(deg-90);
+        infield.add(new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0,1,0),
+            new THREE.Vector3(R*Math.cos(rad),1,-R*Math.sin(rad))
+          ]),
+          lineMat
+        ));
+      });
+      infield.traverse(o=>{ if(o.isMesh){ o.renderOrder=1; o.material.depthTest=false;} });
+      fieldGroup.add(infield);
+
+      // 8) ball & animation
+      const ball=new THREE.Mesh(new THREE.SphereGeometry(3,16,16),
+                                new THREE.MeshStandardMaterial({color:0xffffff}));
+      ball.frustumCulled=false; ball.renderOrder=2; ball.material.depthTest=false;
+      scene.add(ball);
+      const tracePts=[], traceG=new THREE.BufferGeometry().setFromPoints(tracePts),
+            trace=new THREE.Line(traceG,lineMat);
+      trace.frustumCulled=false; trace.renderOrder=2; trace.material.depthTest=false;
+      scene.add(trace);
+
+      let D=0,T=1,Dir=0,elapsed=0,stopped=false;
+      const g=32, clock=new THREE.Clock(), apexPos=new THREE.Vector3();
+
+      // initialize from row
+      D   = row.Distance   || D;
+      T   = row.HangTime   || T;
+      Dir = (row.Direction||0)*Math.PI/180;
+      const vy=g*T/2, tA=T/2,
+            maxH=Math.round(vy*tA-0.5*g*tA*tA);
+
+      homeInfo.textContent = `Exit Velo: ${row.ExitSpeed} mph, Angle: ${row.Angle}°`;
+      apexInfo.textContent = `Max Height: ${maxH} ft`;
+      apexLabel.textContent = `Max Height: ${maxH} ft`;
+
+      // apex dot
+      const apexDot=new THREE.Mesh(new THREE.SphereGeometry(2,8,8),
+                                   new THREE.MeshBasicMaterial({color:0xff0000}));
+      const ar=Dir-Math.PI/2;
+      apexPos.set(D/2*Math.cos(ar),vy*tA-0.5*g*tA*tA,D/2*Math.sin(ar));
+      apexDot.position.copy(apexPos);
+      scene.add(apexDot);
+
+      function updateLabel(){
+        const proj=ball.position.clone().project(camera);
+        ballLabel.style.transform=`
+          translate(-50%,-100%)
+          translate(${(proj.x*0.5+0.5)*window.innerWidth}px,
+                    ${(-proj.y*0.5+0.5)*window.innerHeight}px)
+        `;
+      }
+
+      function animate(){
+        requestAnimationFrame(animate);
+        if(!stopped){
+          const dt=clock.getDelta(); elapsed+=dt;
+          const u=Math.min(elapsed/T,1),
+                x=D*u*Math.cos(ar),
+                z=D*u*Math.sin(ar),
+                y=(g*T/2)*elapsed - 0.5*g*elapsed*elapsed;
+          const cand=new THREE.Vector3(x,Math.max(y,0),z);
+          for(const b of segmentBoxes){
+            if(b.containsPoint(cand)){ stopped=true; break; }
+          }
+          if(!stopped){
+            ball.position.copy(cand);
+            tracePts.push(cand.clone());
+            traceG.setFromPoints(tracePts);
+            ballLabel.textContent=`Distance: ${Math.round(Math.hypot(x,z))} ft`;
+          }
+        }
+        updateLabel();
+        renderer.render(scene,camera);
+        if(follow) camera.lookAt(ball.position);
+      }
+      clock.start(); animate();
+
+      // 9) UI
+      resetBtn.onclick=()=>{
+        elapsed=0; stopped=false; clock.start();
+        ball.position.set(0,1,0);
+        tracePts.length=0; traceG.setFromPoints(tracePts);
+      };
+      followBtn.onclick=()=>{
+        follow=!follow;
+        followBtn.textContent=`Follow Ball: ${follow?'On':'Off'}`;
+      };
+      window.addEventListener('resize',()=>{
+        camera.aspect=window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth,window.innerHeight);
+        updateLabel();
+      });
+    }
+  </script>
+</body>
+</html>

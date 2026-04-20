@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>All League Transactions</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:1rem; background:#f4f4f4 }
+    h1 { text-align: center; margin-bottom:1rem }
+    #controls { text-align:center; margin-bottom:1rem }
+    button { padding:.5rem 1rem; font-size:1rem; cursor:pointer }
+    #loading { text-align:center; margin:2rem 0; font-style:italic }
+    #error { color:red; text-align:center; margin:1rem 0 }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; background:white }
+    th, td { border:1px solid #ddd; padding:.5rem; text-align:left }
+    th { background:#333; color:#fff; position:sticky; top:0 }
+    tr:nth-child(even) { background:#f9f9f9 }
+       nav#menu { background: #fff; padding: .5rem 2rem; border-bottom: 1px solid #ddd }
+    nav#menu ul { list-style: none; display: flex; gap: 2rem }
+    nav#menu a { text-decoration: none; color: #333; font-weight: 500 }
+    nav#menu a.active { color: #007bff; text-decoration: underline }
+  </style>
+</head>
+<body>
+  <!-- NAVIGATION -->
+  <nav id="menu">
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="games.html">Games</a></li>
+      <li><a href="leaderboards.html">Leaderboards</a></li>
+      <li><a href="park-factors.html">Park Factors</a></li>
+      <li><a href="fielding.html">Fielding</a></li>
+      <li><a href="lineup.html" >Optimized Lineups</a></li>
+    </ul>
+  </nav>
+
+  <h1>Recent Transactions (MiLB, LMB, AA)</h1>
+  <div id="controls">
+    <button id="scrape-btn">Refresh Data</button>
+    <div id="google_translate_element"></div>
+  </div>
+  <div id="loading">Loading transactions…</div>
+  <div id="error" hidden></div>
+  <table id="tx-table" hidden>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Source</th>
+        <th>Team</th>
+        <th>Transaction</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API_BASE        = 'https://helloworld.idkconflict1.workers.dev';
+    const SCRAPE_ENDPOINT = `${API_BASE}/scrape`;
+
+    document.getElementById('scrape-btn')
+      .addEventListener('click', fetchAndRender);
+
+    // initial load
+    fetchAndRender();
+
+    async function fetchAndRender() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl   = document.getElementById('error');
+      const tableEl   = document.getElementById('tx-table');
+      const btn       = document.getElementById('scrape-btn');
+
+      // reset UI
+      errorEl.hidden = true;
+      tableEl.hidden = true;
+      loadingEl.textContent = 'Refreshing transactions…';
+      loadingEl.hidden = false;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(SCRAPE_ENDPOINT);
+        if (!res.ok) throw new Error(`Worker returned HTTP ${res.status}`);
+        const data = await res.json();
+
+        const rows = [];
+        const values = Object.values(data);
+        const isNested = values.length > 0
+                      && typeof values[0] === 'object'
+                      && ('milb' in values[0] || 'lmb' in values[0] || 'aaAll' in values[0]);
+
+        if (isNested) {
+          // Track which AA dates we've already added
+          const aaDatesSeen = new Set();
+
+          for (const [dateKey, srcs] of Object.entries(data)) {
+            // MiLB: only “Released”
+            (Array.isArray(srcs.milb) ? srcs.milb : []).forEach(tx => {
+              const desc = (tx.transaction || tx.description || '').toLowerCase();
+              if (desc.includes('released')) {
+                rows.push({
+                  date:        dateKey,
+                  source:      'MILB',
+                  team:        tx.team,
+                  transaction: tx.transaction || tx.description || ''
+                });
+              }
+            });
+
+            // LMB: include everything
+            (Array.isArray(srcs.lmb) ? srcs.lmb : []).forEach(tx => {
+              rows.push({
+                date:        dateKey,
+                source:      'LMB',
+                team:        tx.team,
+                transaction: tx.transaction || tx.description || ''
+              });
+            });
+
+            // AA: only once per its own dateKey
+            if (Array.isArray(srcs.aaAll) && !aaDatesSeen.has(dateKey)) {
+              srcs.aaAll
+                .filter(tx => {
+                  // convert "May 17, 2025" → "2025-05-17"
+                  const txDate = new Date(tx.date).toISOString().slice(0,10);
+                  return txDate === dateKey;
+                })
+                .forEach(tx => {
+                  rows.push({
+                    date:        dateKey,
+                    source:      'AA',
+                    team:        tx.team,
+                    transaction: tx.transaction
+                  });
+                });
+              aaDatesSeen.add(dateKey);
+            }
+          }
+
+        } else {
+          // flattened fallback: { 'aa:2025-05-17': [...], ... }
+          Object.entries(data).forEach(([key, txArray]) => {
+            if (!Array.isArray(txArray)) return;
+            const [src, date] = key.split(':');
+            txArray.forEach(tx => {
+              // filter only MiLB “Released”
+              if (src === 'milb') {
+                const desc = (tx.transaction || tx.description || '').toLowerCase();
+                if (!desc.includes('released')) return;
+              }
+              rows.push({
+                date,
+                source:      src.toUpperCase(),
+                team:        tx.team,
+                transaction: tx.transaction || tx.description || ''
+              });
+            });
+          });
+        }
+
+        // remove duplicates
+        const seen = new Set();
+        const unique = rows.filter(r => {
+          const key = [r.date, r.source, r.team, r.transaction].join('|');
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        // sort newest first
+        unique.sort((a,b) => b.date.localeCompare(a.date));
+
+        if (unique.length === 0) {
+          loadingEl.textContent = 'No transactions found.';
+        } else {
+          renderTable(unique);
+          loadingEl.hidden = true;
+          tableEl.hidden   = false;
+        }
+
+      } catch (err) {
+        console.error(err);
+        errorEl.textContent = 'Error: ' + err.message;
+        errorEl.hidden = false;
+        loadingEl.hidden = true;
+
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector('#tx-table tbody');
+      tbody.innerHTML = '';
+      data.forEach(({ date, source, team, transaction }) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${date}</td>
+          <td>${source}</td>
+          <td>${team}</td>
+          <td>${transaction}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'es',
+        includedLanguages: 'en',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+      }, 'google_translate_element');
+    }
+  </script>
+  <script 
+    type="text/javascript" 
+    src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
+  </script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pitch-by-Pitch Summary</title>
+
+<!-- Papa Parse CDN -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+  body{
+    font-family: Arial, sans-serif;
+    margin:0;
+    padding:1rem 2rem;
+    background:#fafafa;
+  }
+  h1{margin-top:0}
+  select{
+    padding:.4rem .6rem;
+    font-size:1rem;
+    margin-bottom:1rem;
+  }
+  .tables-wrapper{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(350px,1fr));
+    gap:1.5rem;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,.07);
+  }
+  caption{
+    font-weight:700;
+    padding:.4rem .6rem;
+    background:#222;
+    color:#fff;
+    text-align:left;
+  }
+  th,td{
+    border:1px solid #ddd;
+    padding:.35rem .6rem;
+    text-align:center;
+    font-size:.88rem;
+  }
+  th{
+    background:#f2f2f2;
+  }
+</style>
+</head>
+<body>
+
+<h1>Pitch Summary by Pitcher</h1>
+
+<label for="teamSelect"><strong>Choose Team:</strong></label>
+<select id="teamSelect"><option value="" disabled selected>Loading teams…</option></select>
+
+<div id="tables" class="tables-wrapper"></div>
+
+<script>
+/* ---------- YOUR ORIGINAL SUMMARY FUNCTION ---------- */
+function renderSummaryTable(rows, tableEl){
+  const stats = {};
+  rows.forEach(r => {
+    const t = r.AutoPitchType || 'undefined';
+    if(!stats[t]) stats[t]={count:0,sumV:0,sumS:0,sumIVB:0,sumH:0,sumE:0,sumZT:0,whiff:0,swing:0};
+    const s = stats[t];
+    s.count++;
+    const v = parseFloat(r.RelSpeed);      if(!isNaN(v))  s.sumV  += v;
+    const sp = parseFloat(r.SpinRate);      if(!isNaN(sp)) s.sumS  += sp;
+    const iv = parseFloat(r.InducedVertBreak); if(!isNaN(iv)) s.sumIVB+= iv;
+    const ho = parseFloat(r.HorzBreak);     if(!isNaN(ho)) s.sumH += ho;
+    const ex = parseFloat(r.Extension);     if(!isNaN(ex)) s.sumE += ex;
+    const zt = parseFloat(r.ZoneTime);      if(!isNaN(zt)) s.sumZT+= zt;
+    const swing = r.PitchCall.startsWith('StrikeSwing')||r.PitchCall==='InPlay';
+    if(swing){
+      s.swing++;
+      if(r.PitchCall==='StrikeSwinging') s.whiff++;
+    }
+  });
+
+  const tbody = tableEl.querySelector('tbody');
+  tbody.innerHTML='';
+  const total = rows.length;
+  Object.entries(stats).forEach(([t,s])=>{
+    const pct   = (s.count/total*100).toFixed(1)+'%';
+    const avgV  = (s.sumV /s.count).toFixed(1);
+    const avgS  = (s.sumS /s.count).toFixed(1);
+    const avgIVB= (s.sumIVB/s.count).toFixed(1);
+    const avgH  = (s.sumH /s.count).toFixed(1);
+    const avgE  = (s.sumE /s.count).toFixed(1);
+    const avgZT = (s.sumZT/s.count).toFixed(2);
+    const pctWh = (s.whiff/s.count*100).toFixed(1)+'%';
+    const pctSw = (s.swing/s.count*100).toFixed(1)+'%';
+    const row = document.createElement('tr');
+    row.innerHTML=`
+      <td>${t}</td><td>${s.count}</td><td>${pct}</td>
+      <td>${avgV}</td><td>${avgS}</td><td>${avgIVB}</td>
+      <td>${avgH}</td><td>${avgE}</td><td>${avgZT}</td>
+      <td>${pctWh}</td><td>${pctSw}</td>`;
+    tbody.appendChild(row);
+  });
+}
+/* ---------------------------------------------------- */
+
+let allRows=[];
+
+/* 1️⃣  Load CSV (header=true so Papa gives objects) */
+Papa.parse('data.csv',{
+  header:true,
+  download:true,
+  skipEmptyLines:true,
+  complete:(res)=>{
+    allRows = res.data;
+    populateTeamDropdown();
+  },
+  error:(err)=>alert('Error loading CSV: '+err)
+});
+
+/* 2️⃣  Populate team <select> */
+function populateTeamDropdown(){
+  const teamSelect = document.getElementById('teamSelect');
+  teamSelect.innerHTML='<option value="" disabled selected>Select a team…</option>';
+  const teams = [...new Set(allRows.map(r=>r.PitcherTeam).filter(Boolean))].sort();
+  teams.forEach(t=>{
+    const opt=document.createElement('option');
+    opt.value=opt.textContent=t;
+    teamSelect.appendChild(opt);
+  });
+  teamSelect.addEventListener('change', buildTablesForTeam);
+}
+
+/* 3️⃣  Build tables when team changes */
+function buildTablesForTeam(){
+  const team = this.value;
+  const wrapper=document.getElementById('tables');
+  wrapper.innerHTML=''; // clear prev
+
+  // group by pitcher within selected team
+  const byPitcher = {};
+  allRows.filter(r=>r.PitcherTeam===team).forEach(r=>{
+    const name = r.Pitcher||'Unknown';
+    if(!byPitcher[name]) byPitcher[name]=[];
+    byPitcher[name].push(r);
+  });
+
+  // Create a table for each pitcher
+  Object.entries(byPitcher).forEach(([pitcher,rows])=>{
+    const table=document.createElement('table');
+    table.innerHTML=`
+      <caption>${pitcher} – ${team}</caption>
+      <thead>
+        <tr>
+          <th>Pitch&nbsp;Type</th><th>#</th><th>%</th>
+          <th>Vel</th><th>Spin</th><th>IVB</th>
+          <th>HB</th><th>Ext</th><th>Zone&nbsp;T</th>
+          <th>Whiff%</th><th>Swing%</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    renderSummaryTable(rows, table);
+    wrapper.appendChild(table);
+  });
+}
+</script>
+</body>
+</html>

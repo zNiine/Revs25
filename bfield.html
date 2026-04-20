@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Baseball Field – Correct Infield / Outfield Geometry</title>
+<style>
+  body {
+    margin: 0;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  }
+
+  svg {
+    width: 100%;
+    max-width: 1200px;
+  }
+
+  .region {
+    stroke: #333;
+    stroke-width: 2;
+  }
+
+  .label rect {
+    fill: #eee;
+    rx: 6;
+    ry: 6;
+  }
+
+  .label text {
+    font-size: 14px;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+</style>
+</head>
+<body>
+
+<svg id="field" viewBox="-600 -520 1200 620"></svg>
+
+<script>
+const svg = document.getElementById("field");
+const NS = "http://www.w3.org/2000/svg";
+
+/* ---------- helpers ---------- */
+function polar(deg, r) {
+  const a = deg * Math.PI / 180;
+  return { x: Math.cos(a) * r, y: Math.sin(a) * r * 0.8 };
+}
+
+function polygon(points, color) {
+  const p = document.createElementNS(NS, "polygon");
+  p.setAttribute("points", points.map(pt => `${pt.x},${pt.y}`).join(" "));
+  p.setAttribute("fill", color);
+  p.setAttribute("class", "region");
+  svg.appendChild(p);
+}
+
+function label(text, deg, r) {
+  const p = polar(deg, r);
+  const g = document.createElementNS(NS, "g");
+  g.setAttribute("class", "label");
+  g.setAttribute("transform", `translate(${p.x},${p.y})`);
+  g.innerHTML = `
+    <rect x="-28" y="-14" width="56" height="28"></rect>
+    <text>${text}</text>
+  `;
+  svg.appendChild(g);
+}
+
+/* ---------- DATA ---------- */
+
+// 5 outfield regions
+const outfieldValues = [26, 26, 26, 37, 11];
+const outfieldColors = ["#f7dada","#e8a9a9","#d47b7b","#b44444","#a10f0f"];
+
+// 4 infield regions (slightly wider fan)
+const infieldValues = [10, 10, 31, 23];
+const infieldColors = ["#7ea9cc","#8bb3d3","#a7c8dd","#bfd8e6"];
+
+/* ---------- ANGLES (THIS IS THE KEY) ---------- */
+
+// Outfield: narrower fan, more slices
+const OUT_START = -110;
+const OUT_END   =  110;
+
+// Infield: slightly wider fan, fewer slices
+const IN_START  = -130;
+const IN_END    =  130;
+
+/* ---------- RADII ---------- */
+const R_INFIELD  = 220;
+const R_OUTFIELD = 520;
+
+/* ---------- DRAW OUTFIELD ---------- */
+for (let i = 0; i < 5; i++) {
+  const a0 = OUT_START + (OUT_END - OUT_START) * (i / 5);
+  const a1 = OUT_START + (OUT_END - OUT_START) * ((i + 1) / 5);
+
+  polygon(
+    [polar(a0, R_INFIELD), polar(a0, R_OUTFIELD), polar(a1, R_OUTFIELD), polar(a1, R_INFIELD)],
+    outfieldColors[i]
+  );
+
+  label(outfieldValues[i] + " %", (a0 + a1) / 2, 400);
+}
+
+/* ---------- DRAW INFIELD (WIDER) ---------- */
+for (let i = 0; i < 4; i++) {
+  const a0 = IN_START + (IN_END - IN_START) * (i / 4);
+  const a1 = IN_START + (IN_END - IN_START) * ((i + 1) / 4);
+
+  polygon(
+    [polar(a0, 0), polar(a0, R_INFIELD), polar(a1, R_INFIELD), polar(a1, 0)],
+    infieldColors[i]
+  );
+
+  label(infieldValues[i] + " %", (a0 + a1) / 2, 150);
+}
+</script>
+
+</body>
+</html>

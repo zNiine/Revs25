@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hitter Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Libraries -->
+  <script src="libs/plotly.min.js"></script>
+  <script src="libs/papaparse.min.js"></script>
+  <!-- Your main logic -->
+  <script>
+    document.write('<script src="script.js?ts=' + Date.now() + '"><\/script>');
+  </script></head>
+<body>
+  <div class="sidebar">
+    <button id="homeButton" onclick="window.location.href='index.html'">Home</button>
+    <h2 id="playerName"></h2>
+
+    <div class="filters">
+      <label for="startDate">Start Date:</label>
+      <input type="date" id="startDate" min="2025-04-27" onchange="applyFilters()" />
+
+      <label for="endDate">End Date:</label>
+      <input type="date" id="endDate" min="2025-04-27"  onchange="applyFilters()" />
+
+      <label>
+        <input type="checkbox" id="showAllDates" />
+        Show All
+      </label>
+
+      <label for="handFilter">Pitcher Throw:</label>
+      <select id="handFilter" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="L">Left</option>
+        <option value="R">Right</option>
+      </select>
+
+      <label for="runnersFilter">Runners On Base:</label>
+      <select id="runnersFilter" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="true">Only With Runners</option>
+      </select>
+
+      <label for="pitcherFilter">Pitcher:</label>
+      <select id="pitcherFilter" onchange="applyFilters()">
+        <option value="">All</option>
+      </select>
+
+      <label for="pitchTypeFilter">Pitch Type:</label>
+      <select id="pitchTypeFilter" onchange="applyFilters()">
+        <option value="">All</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="plateContainer">
+      <div id="plateChart"></div>
+      <div id="legendDiv"></div>
+    </div>
+    <h2>Spray Chart</h2>
+    <div id="sprayChart" style="width:600px; height:600px; margin:auto;"></div>
+    <div id="trajectoryChart"></div>
+    <div id="battedBallTable"></div>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      startDashboard();
+    });
+  </script>
+</body>
+</html>

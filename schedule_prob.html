@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Division Probabilities Over Time</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .line {
+            fill: none;
+            stroke-width: 2px;
+            transition: stroke-dashoffset 0.5s ease-out; /* For line drawing animation */
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #ccc;
+            shape-rendering: crispEdges;
+        }
+        .axis text {
+            font-size: 10px;
+            fill: #666;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 8px;
+            font: 12px sans-serif;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            pointer-events: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 1000;
+        }
+        .team-legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: #4a5568; /* gray-700 */
+        }
+        .team-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-right: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div id="app" class="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-100 font-inter">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Team Division Probabilities Over Time</h1>
+        <div id="chart-container" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl relative">
+            <div id="current-game-info" class="text-lg font-semibold text-gray-700 mb-4 text-center">Loading...</div>
+            <svg id="probability-chart"></svg>
+            <div id="legend" class="absolute top-6 right-6 p-4 bg-white rounded-lg shadow-md max-h-64 overflow-y-auto">
+                <h3 class="font-bold text-gray-800 mb-2">Teams</h3>
+                <!-- Legend items will be appended here by JS -->
+            </div>
+        </div>
+        <div class="mt-6 flex flex-wrap justify-center items-center space-x-4 space-y-2 md:space-y-0">
+            <button id="playPauseBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300">Play</button>
+            <button id="resetBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300">Reset</button>
+            <label for="speedSlider" class="flex items-center text-gray-700">
+                Speed: <input type="range" id="speedSlider" min="50" max="2000" value="500" class="ml-2">
+            </label>
+            <span id="speedValue" class="text-gray-600">500ms</span>
+        </div>
+        <textarea id="data-input" class="mt-6 w-full max-w-4xl h-40 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Paste your generated JSON data here from historical_probabilities.json..."></textarea>
+        <button id="loadDataBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 mt-4">Load Data</button>
+    </div>
+
+    <script>
+        // Set up the D3 chart dimensions and margins
+        const margin = { top: 20, right: 150, bottom: 50, left: 60 };
+        let width = 900 - margin.left - margin.right;
+        let height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("#probability-chart")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const xScale = d3.scaleLinear();
+        const yScale = d3.scaleLinear().range([height, 0]);
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+        const line = d3.line()
+            .x(d => xScale(d.game_index))
+            .y(d => yScale(d.probability));
+
+        let chartData = [];
+        let currentSnapshotIndex = 0;
+        let animationInterval;
+        let animationSpeed = 500; // ms
+
+        const playPauseBtn = document.getElementById("playPauseBtn");
+        const resetBtn = document.getElementById("resetBtn");
+        const speedSlider = document.getElementById("speedSlider");
+        const speedValueSpan = document.getElementById("speedValue");
+        const dataInput = document.getElementById("data-input");
+        const loadDataBtn = document.getElementById("loadDataBtn");
+        const currentGameInfo = document.getElementById("current-game-info");
+        const legendDiv = document.getElementById("legend");
+
+        // Tooltip element
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Function to update chart dimensions on resize
+        function updateChartDimensions() {
+            const container = document.getElementById("chart-container");
+            width = container.clientWidth - margin.left - margin.right;
+            height = Math.min(500, container.clientHeight * 0.7) - margin.top - margin.bottom; // Responsive height, max 500px
+
+            if (width < 0) width = 0; // Prevent negative width
+            if (height < 0) height = 0; // Prevent negative height
+
+            svg.attr("width", width + margin.left + margin.right)
+               .attr("height", height + margin.top + margin.bottom);
+
+            xScale.range([0, width]);
+            yScale.range([height, 0]);
+
+            // Update axes
+            svg.select(".x-axis").call(d3.axisBottom(xScale));
+            svg.select(".y-axis").call(d3.axisLeft(yScale).tickFormat(d3.format(".0%")));
+
+            // Update lines
+            svg.selectAll(".line")
+                .attr("d", d => line(d.data));
+            
+            // Update current game indicator line
+            svg.select(".current-game-indicator")
+                .attr("x1", xScale(currentSnapshotIndex))
+                .attr("x2", xScale(currentSnapshotIndex))
+                .attr("y1", 0)
+                .attr("y2", height);
+
+            // Update team labels
+            svg.selectAll(".team-label")
+                .attr("transform", function(d) {
+                    const lastPoint = d.data[d.data.length - 1];
+                    return `translate(${xScale(lastPoint.game_index)},${yScale(lastPoint.probability)})`;
+                });
+        }
+
+
+        // Add axes groups
+        const xAxisGroup = svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0,${height})`);
+
+        const yAxisGroup = svg.append("g")
+            .attr("class", "y-axis");
+
+        // Add y-axis label
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left + 15)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .attr("class", "axis-label")
+            .style("text-anchor", "middle")
+            .style("font-size", "12px")
+            .style("fill", "#666")
+            .text("Division Win Probability");
+
+        // Add x-axis label
+        svg.append("text")
+            .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 10})`)
+            .attr("class", "axis-label")
+            .style("text-anchor", "middle")
+            .style("font-size", "12px")
+            .style("fill", "#666")
+            .text("Game Number");
+
+        // Line to indicate current game
+        const currentGameIndicator = svg.append("line")
+            .attr("class", "current-game-indicator")
+            .attr("stroke", "#ff5722") /* Deep Orange */
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", "4 4")
+            .attr("y1", 0)
+            .attr("y2", height)
+            .style("opacity", 0); // Start hidden
+
+        function initializeChart() {
+            if (chartData.length === 0) {
+                currentGameInfo.textContent = "Please load data to start visualization.";
+                return;
+            }
+
+            // Get all unique team names from the data
+            const allTeams = Array.from(new Set(chartData.flatMap(d => Object.keys(d.teams_probs))));
+            colorScale.domain(allTeams); // Set domain for color scale
+
+            // Prepare data for D3 line generator
+            const teamLinesData = allTeams.map(team => {
+                const dataPoints = [];
+                let lastProb = 0.5; // Default starting probability
+
+                chartData.forEach(snapshot => {
+                    const prob = snapshot.teams_probs[team];
+                    if (prob !== undefined) {
+                        lastProb = prob; // Update last probability if available
+                    }
+                    dataPoints.push({
+                        game_index: snapshot.game_index,
+                        probability: lastProb,
+                        date: snapshot.date
+                    });
+                });
+                return { team: team, data: dataPoints };
+            });
+
+            // Update scale domains
+            xScale.domain([0, d3.max(chartData, d => d.game_index)]);
+            yScale.domain([0, 1]); // Probabilities from 0 to 1
+
+            // Draw axes
+            xAxisGroup.call(d3.axisBottom(xScale));
+            yAxisGroup.call(d3.axisLeft(yScale).tickFormat(d3.format(".0%")));
+
+            // Clear previous lines and labels
+            svg.selectAll(".line").remove();
+            svg.selectAll(".team-label").remove();
+            legendDiv.innerHTML = '<h3 class="font-bold text-gray-800 mb-2">Teams</h3>'; // Clear legend
+
+            // Draw lines for each team
+            svg.selectAll(".line")
+                .data(teamLinesData)
+                .enter().append("path")
+                .attr("class", "line")
+                .attr("id", d => `line-${d.team.replace(/\s/g, '-')}`) // Assign ID for updates
+                .attr("d", d => line(d.data))
+                .style("stroke", d => colorScale(d.team))
+                .on("mouseover", function(event, d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html(`<strong>${d.team}</strong><br/>`)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mousemove", function(event, d) {
+                    // Update tooltip content with current probability if needed
+                    const currentDataPoint = d.data.find(p => p.game_index === currentSnapshotIndex);
+                    if (currentDataPoint) {
+                        tooltip.html(`<strong>${d.team}</strong><br/>Prob: ${d3.format(".1%")(currentDataPoint.probability)}`);
+                    } else {
+                        tooltip.html(`<strong>${d.team}</strong>`);
+                    }
+                    tooltip.style("left", (event.pageX + 10) + "px")
+                           .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function(d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+
+            // Add team labels at the end of the lines
+            svg.selectAll(".team-label")
+                .data(teamLinesData)
+                .enter().append("text")
+                .attr("class", "team-label")
+                .attr("transform", function(d) {
+                    const lastPoint = d.data[d.data.length - 1];
+                    return `translate(${xScale(lastPoint.game_index)},${yScale(lastPoint.probability)})`;
+                })
+                .attr("x", 10) // offset from line end
+                .attr("dy", "0.35em")
+                .style("font-size", "10px")
+                .style("fill", d => colorScale(d.team))
+                .text(d => d.team);
+
+            // Populate legend
+            allTeams.forEach(team => {
+                const legendItem = d3.select("#legend").append("div")
+                    .attr("class", "team-legend-item");
+                legendItem.append("div")
+                    .attr("class", "team-legend-color")
+                    .style("background-color", colorScale(team));
+                legendItem.append("span").text(team);
+            });
+
+            updateChartDimensions(); // Initial sizing
+            window.addEventListener('resize', updateChartDimensions); // Listen for resize events
+        }
+
+        // Function to update the chart for a given snapshot index
+        function updateChart(index) {
+            currentSnapshotIndex = index;
+            if (currentSnapshotIndex >= chartData.length) {
+                clearInterval(animationInterval);
+                playPauseBtn.textContent = "Play";
+                currentGameInfo.textContent = `Simulation Finished!`;
+                currentGameIndicator.style("opacity", 0);
+                return;
+            }
+
+            const currentSnapshot = chartData[currentSnapshotIndex];
+            currentGameInfo.innerHTML = `Game: #${currentSnapshot.game_index + 1} (${currentSnapshot.date})<br/>
+                                         Current Game: ${currentSnapshot.away_team} vs ${currentSnapshot.home_team}`;
+
+            // Update line indicator position
+            currentGameIndicator.style("opacity", 1)
+                                .transition()
+                                .duration(animationSpeed / 2)
+                                .attr("x1", xScale(currentSnapshot.game_index))
+                                .attr("x2", xScale(currentSnapshot.game_index));
+
+
+            const allTeams = Array.from(new Set(chartData.flatMap(d => Object.keys(d.teams_probs))));
+            const teamLinesData = allTeams.map(team => {
+                const dataPoints = [];
+                let lastProb = 0.5; // Default starting probability
+
+                for (let i = 0; i <= currentSnapshotIndex; i++) {
+                    const snapshot = chartData[i];
+                    const prob = snapshot.teams_probs[team];
+                    if (prob !== undefined) {
+                        lastProb = prob;
+                    }
+                    dataPoints.push({
+                        game_index: snapshot.game_index,
+                        probability: lastProb,
+                        date: snapshot.date
+                    });
+                }
+                return { team: team, data: dataPoints };
+            });
+
+            // Update existing lines
+            svg.selectAll(".line")
+                .data(teamLinesData, d => d.team) // Use team name as key for data join
+                .join(
+                    enter => enter.append("path")
+                        .attr("class", "line")
+                        .attr("id", d => `line-${d.team.replace(/\s/g, '-')}`)
+                        .style("stroke", d => colorScale(d.team))
+                        .attr("d", d => line(d.data))
+                        .on("mouseover", function(event, d) {
+                            tooltip.transition().duration(200).style("opacity", .9);
+                            tooltip.html(`<strong>${d.team}</strong><br/>Prob: ${d3.format(".1%")(d.data[d.data.length - 1].probability)}`)
+                                .style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 28) + "px");
+                        })
+                        .on("mousemove", function(event, d) {
+                            tooltip.style("left", (event.pageX + 10) + "px")
+                                   .style("top", (event.pageY - 28) + "px");
+                        })
+                        .on("mouseout", function(d) {
+                            tooltip.transition().duration(500).style("opacity", 0);
+                        }),
+                    update => update.transition()
+                        .duration(animationSpeed)
+                        .ease(d3.easeLinear)
+                        .attr("d", d => line(d.data)),
+                    exit => exit.remove()
+                );
+
+            // Update team labels
+            svg.selectAll(".team-label")
+                .data(teamLinesData, d => d.team)
+                .join(
+                    enter => enter.append("text")
+                        .attr("class", "team-label")
+                        .attr("x", 10)
+                        .attr("dy", "0.35em")
+                        .style("font-size", "10px")
+                        .style("fill", d => colorScale(d.team))
+                        .text(d => d.team)
+                        .attr("transform", function(d) {
+                            const lastPoint = d.data[d.data.length - 1];
+                            return `translate(${xScale(lastPoint.game_index)},${yScale(lastPoint.probability)})`;
+                        }),
+                    update => update.transition()
+                        .duration(animationSpeed)
+                        .ease(d3.easeLinear)
+                        .attr("transform", function(d) {
+                            const lastPoint = d.data[d.data.length - 1];
+                            return `translate(${xScale(lastPoint.game_index)},${yScale(lastPoint.probability)})`;
+                        }),
+                    exit => exit.remove()
+                );
+
+        }
+
+        function toggleAnimation() {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+                playPauseBtn.textContent = "Play";
+            } else {
+                if (currentSnapshotIndex >= chartData.length -1) { // If already at end, reset
+                    currentSnapshotIndex = 0;
+                    initializeChart(); // Re-draw initial state
+                }
+                animationInterval = setInterval(() => {
+                    updateChart(currentSnapshotIndex + 1);
+                }, animationSpeed);
+                playPauseBtn.textContent = "Pause";
+            }
+        }
+
+        function resetAnimation() {
+            clearInterval(animationInterval);
+            animationInterval = null;
+            currentSnapshotIndex = 0;
+            playPauseBtn.textContent = "Play";
+            currentGameInfo.textContent = "Loading...";
+            initializeChart(); // Re-initialize the chart to its first state
+            currentGameIndicator.style("opacity", 0);
+        }
+
+        function loadData() {
+            try {
+                const dataString = dataInput.value;
+                if (!dataString) {
+                    alert("Please paste your JSON data into the textarea.");
+                    return;
+                }
+                chartData = JSON.parse(dataString);
+
+                // Sort data by game_index to ensure proper progression
+                chartData.sort((a, b) => a.game_index - b.game_index);
+
+                resetAnimation(); // Reset and initialize with new data
+                alert("Data loaded successfully! Click Play to start the simulation.");
+            } catch (error) {
+                console.error("Error parsing JSON data:", error);
+                alert("Error loading data. Please ensure it's valid JSON. Check console for details.");
+            }
+        }
+
+        // Event Listeners
+        playPauseBtn.addEventListener("click", toggleAnimation);
+        resetBtn.addEventListener("click", resetAnimation);
+        loadDataBtn.addEventListener("click", loadData);
+        speedSlider.addEventListener("input", (event) => {
+            animationSpeed = parseInt(event.target.value);
+            speedValueSpan.textContent = `${animationSpeed}ms`;
+            if (animationInterval) { // If animation is running, restart with new speed
+                toggleAnimation(); // Pause
+                toggleAnimation(); // Play with new speed
+            }
+        });
+
+        // Initial setup for responsiveness
+        updateChartDimensions();
+        // Load initial mock data if no real data is provided
+        if (chartData.length === 0 && dataInput.value === "") {
+             // You can paste some mock data here for initial load if you don't use the textarea
+             // Example: chartData = [{...}, {...}];
+             currentGameInfo.textContent = "Paste your JSON data and click 'Load Data'.";
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Team Profile – ALPB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="logo">ALPB</a>
+    <nav class="nav-desktop">
+      <a href="index.html">Home</a>
+      <a href="schedule.html">Standings</a>
+      <a href="games.html">Games</a>
+      <a href="leaderboards.html">Leaderboards</a>
+      <a href="park-factors.html">Park Factors</a>
+      <a href="fielding.html">Fielding</a>
+      <a href="stolen-bases.html">Base Running</a>
+      <a href="dong.html">Would it Dong?</a>
+    </nav>
+    <div class="hamburger" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></div>
+  </header>
+  <div id="side-menu" class="side-menu">
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="schedule.html">Standings</a></li>
+        <li><a href="games.html">Games</a></li>
+        <li><a href="leaderboards.html">Leaderboards</a></li>
+        <li><a href="park-factors.html">Park Factors</a></li>
+        <li><a href="fielding.html">Fielding</a></li>
+        <li><a href="stolen-bases.html">Base Running</a></li>
+        <li><a href="dong.html">Would it Dong?</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div id="overlay" class="overlay"></div>
+
+  <main class="main-container">
+    <h1 class="page-title" id="team-name"></h1>
+    <div class="filters-panel">
+      <label for="player-filter">Filter by player</label>
+      <input type="text" id="player-filter" placeholder="Enter player name" />
+    </div>
+    <p class="section-title" style="font-size:0.85rem; color:var(--text-muted); margin-top:0;">wOBA weights: BB=0.69, HBP=0.72, 1B=0.88, 2B=1.24, 3B=1.56, HR=2.10, SF=0.73</p>
+    <div class="card">
+      <div class="table-wrap">
+        <table id="profile-table">
+      <thead>
+        <tr>
+          <th data-key="Player">Player</th>
+          <th data-key="wOBA">wOBA</th>
+          <th data-key="HardHitPct">HardHit%</th>
+          <th data-key="AvgExitVel">Avg Exit Vel</th>
+          <th data-key="AvgLaunchAng">Avg Launch Ang</th>
+          <th data-key="PullPct">Pull%</th>
+          <th data-key="StraightPct">Straight%</th>
+          <th data-key="OppoPct">Oppo%</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+      </div>
+    </div>
+    <h2 class="section-title">Pitchers</h2>
+    <div class="card">
+      <div class="table-wrap">
+        <table id="pitcher-table">
+      <thead>
+        <tr>
+          <th data-key="Pitcher">Pitcher</th>
+          <th data-key="MaxRelSpeed">Top Release Speed</th>
+          <th data-key="AvgRelSpeed">Avg Release Speed</th>
+          <th data-key="AvgSpinRate">Avg Spin Rate</th>
+          <th data-key="MostUsedPitch">Most Used Pitch</th>
+          <th data-key="Handedness">Handedness</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+      </div>
+    </div>
+  </main>
+  <script>
+    (function(){
+      var h=document.getElementById('hamburger-btn'), s=document.getElementById('side-menu'), o=document.getElementById('overlay');
+      h.addEventListener('click', function(){ if(s.classList.contains('open')){ h.classList.remove('open'); s.classList.remove('open'); o.classList.remove('visible'); }else{ h.classList.add('open'); s.classList.add('open'); o.classList.add('visible'); } });
+      o.addEventListener('click', function(){ h.classList.remove('open'); s.classList.remove('open'); o.classList.remove('visible'); });
+    })();
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    function getParam(name) {
+      return new URLSearchParams(window.location.search).get(name) || '';
+    }
+
+    // wOBA weights map
+    const w = { BB:0.69, HBP:0.72, Single:0.88, Double:1.24, Triple:1.56, HomeRun:2.10, Sacrifice:0.73 };
+
+    let sortKey = 'Player', sortAsc = true, currentFilter = '';
+
+    function renderTable(tableId, data, keys) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      tbody.innerHTML = '';
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        keys.forEach(key => {
+          const td = document.createElement('td');
+          // Make player/pitcher names clickable with separate batter/pitcher pages
+          if (key === 'Player') {
+            td.innerHTML = 
+              `<a href="batter-profiles.html?player=${encodeURIComponent(row.Player)}">${row.Player} (Batter)</a>`;
+          } else if (key === 'Pitcher') {
+            td.innerHTML = 
+              `<a href="pitcher-profiles.html?player=${encodeURIComponent(row.Pitcher)}">${row.Pitcher} (Pitcher)</a>`;
+          } else {
+            const val = row[key];
+            td.textContent = (typeof val === 'number')
+              ? (key === 'wOBA' ? val.toFixed(3) : val.toFixed(1))
+              : val;
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    (function() {
+      var team = getParam('team');
+      if (!team) {
+        document.getElementById('team-name').textContent = 'No team specified';
+        return;
+      }
+      document.getElementById('team-name').textContent = team;
+      var data = [];
+      // Stream data.csv and keep only rows for this team (low memory)
+      Papa.parse('./data.csv', {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        step: function(results) {
+          var r = results.data;
+          if (r && (r.HomeNameFull === team || r.AwayNameFull === team)) data.push(r);
+        },
+        complete: function() {
+        // determine team abbreviation
+        const ref = data.find(r => r.HomeNameFull === team) ||
+                    data.find(r => r.AwayNameFull === team);
+        const abbr = ref
+          ? (ref.HomeNameFull === team ? ref.HomeTeam : ref.AwayTeam)
+          : null;
+
+        // --- Batter profiles ---
+        // filter rows where this team is batting
+        const teamBatRows = data.filter(r =>
+          (r.HomeNameFull === team && r.BatterTeam === abbr) ||
+          (r.AwayNameFull === team && r.BatterTeam === abbr)
+        );
+
+        // accumulate per-player stats
+        const players = {}, pas = {};
+        teamBatRows.forEach(r => {
+          const paKey = `${r.GameID}-${r.PAofInning}-${r.Inning}-${r['Top/Bottom']}`;
+          pas[paKey] = pas[paKey] || [];
+          pas[paKey].push(r);
+          if (!players[r.Batter]) {
+            players[r.Batter] = {
+              pa:0, bb:0, hbp:0, sf:0,
+              hr:0, triples:0, doubles:0, singles:0,
+              exitSum:0, exitCount:0, hardHits:0,
+              angleSum:0, angleCount:0,
+              pullCount:0, straightCount:0, oppoCount:0
+            };
+          }
+        });
+        Object.values(pas).forEach(pa => {
+          const last = pa.reduce((a,b) => +a.PitchofPA > +b.PitchofPA ? a : b);
+          const p = players[last.Batter]; p.pa++;
+          if (last.KorBB === 'Walk') p.bb++;
+          else if (last.PitchCall === 'HitByPitch') p.hbp++;
+          else if (last.PlayResult === 'Sacrifice') p.sf++;
+          else if (last.PlayResult === 'HomeRun') p.hr++;
+          else if (last.PlayResult === 'Triple') p.triples++;
+          else if (last.PlayResult === 'Double') p.doubles++;
+          else if (last.PlayResult === 'Single') p.singles++;
+        });
+        const isHit = r => ['Single','Double','Triple','HomeRun'].includes(r.PlayResult);
+        const pull = r => {
+          const d = parseFloat(r.Direction);
+          return r.BatterSide==='R'? d <= -8 : d >= 8;
+        };
+        const oppo = r => {
+          const d = parseFloat(r.Direction);
+          return r.BatterSide==='R'? d >= 8 : d <= -8;
+        };
+        const straight = r => {
+          const d = parseFloat(r.Direction);
+          return d > -8 && d < 8;
+        };
+        teamBatRows.forEach(r => {
+          const p = players[r.Batter];
+          if (r.PitchCall === 'InPlay') {
+            const v = parseFloat(r.ExitSpeed);
+            if (!isNaN(v)) {
+              p.exitSum += v; p.exitCount++;
+              if (v >= 95) p.hardHits++;
+            }
+            const ang = parseFloat(r.Angle);
+            if (!isNaN(ang)) { p.angleSum += ang; p.angleCount++; }
+          }
+          if (isHit(r)) {
+            if (pull(r)) p.pullCount++;
+            else if (straight(r)) p.straightCount++;
+            else if (oppo(r)) p.oppoCount++;
+          }
+        });
+        const profiles = Object.entries(players).map(([name,stats]) => {
+          const woba = (
+            w.BB*stats.bb + w.HBP*stats.hbp +
+            w.Single*stats.singles + w.Double*stats.doubles +
+            w.Triple*stats.triples + w.HomeRun*stats.hr +
+            w.Sacrifice*stats.sf
+          ) / stats.pa;
+          const sprayTotal = stats.pullCount + stats.straightCount + stats.oppoCount;
+          return {
+            Player: name,
+            wOBA: woba,
+            HardHitPct: stats.exitCount ? stats.hardHits / stats.exitCount * 100 : 0,
+            AvgExitVel: stats.exitCount ? stats.exitSum / stats.exitCount : 0,
+            AvgLaunchAng: stats.angleCount ? stats.angleSum / stats.angleCount : 0,
+            PullPct: sprayTotal ? stats.pullCount / sprayTotal * 100 : 0,
+            StraightPct: sprayTotal ? stats.straightCount / sprayTotal * 100 : 0,
+            OppoPct: sprayTotal ? stats.oppoCount / sprayTotal * 100 : 0
+          };
+        });
+
+        renderTable('profile-table', profiles, [
+          'Player','wOBA','HardHitPct','AvgExitVel','AvgLaunchAng','PullPct','StraightPct','OppoPct'
+        ]);
+
+        // --- Pitcher profiles (only those ON this team) ---
+        const teamPitchRows = data.filter(r =>
+          (r.HomeNameFull === team && r.PitcherTeam === abbr) ||
+          (r.AwayNameFull === team && r.PitcherTeam === abbr)
+        );
+
+        const pitchers = {};
+        teamPitchRows.forEach(r => {
+          const nm = r.Pitcher;
+          if (!pitchers[nm]) pitchers[nm] = {
+            speeds: [], spins: [], counts: {}, throws: r.PitcherThrows
+          };
+          const spd = parseFloat(r.RelSpeed);
+          if (!isNaN(spd)) pitchers[nm].speeds.push(spd);
+          const spin = parseFloat(r.SpinRate);
+          if (!isNaN(spin)) pitchers[nm].spins.push(spin);
+          const type = r.AutoPitchType || 'Unknown';
+          pitchers[nm].counts[type] = (pitchers[nm].counts[type] || 0) + 1;
+        });
+
+        const pitcherStats = Object.entries(pitchers).map(([name,vals]) => {
+          const maxSpeed = Math.max(...vals.speeds);
+          const avgSpeed = vals.speeds.reduce((a,b)=>a+b,0)/vals.speeds.length;
+          const avgSpin  = vals.spins.reduce((a,b)=>a+b,0)/vals.spins.length;
+          const mostUsed = Object.entries(vals.counts)
+            .sort((a,b)=>b[1]-a[1])[0][0];
+          return {
+            Pitcher: name,
+            MaxRelSpeed: maxSpeed,
+            AvgRelSpeed: avgSpeed,
+            AvgSpinRate: avgSpin,
+            MostUsedPitch: mostUsed,
+            Handedness: vals.throws
+          };
+        });
+
+        renderTable('pitcher-table', pitcherStats, [
+          'Pitcher','MaxRelSpeed','AvgRelSpeed','AvgSpinRate','MostUsedPitch','Handedness'
+        ]);
+        },
+        error: function() {
+          document.body.insertAdjacentHTML('afterbegin', '<p class="error-msg">Failed to load data.csv.</p>');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

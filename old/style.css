@@ -1,0 +1,31 @@
+body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh;}.centered{margin:auto;text-align:center;}.sidebar{width:250px;background:#f5f5f5;padding:20px;box-shadow:2px 0 5px rgba(0,0,0,0.1);}.main{flex:1;padding:20px;overflow-y:scroll;}.filters label{display:block;margin-top:10px;font-weight:bold;}.filters select{width:100%;padding:5px;margin-top:5px;}
+#legendDiv div { margin: 2px 0; font-size: 0.9em; }
+#battedBallTable table {
+  width: 100%; border-collapse: collapse; margin-top: 20px;
+}
+#battedBallTable th, #battedBallTable td {
+  border: 1px solid #ccc; padding: 4px; text-align: center;
+}
+/* make the plate chart container 80% width of its parent */
+/* wrap plate chart + legend side-by-side */
+#plateContainer {
+  display: flex;
+  align-items: center;    /* was flex-start; now centers legend & chart vertically */
+  margin-bottom: 20px;
+}
+
+#plateChart {
+  width: 60%;
+}
+
+#legendDiv {
+  width: 40%;
+  padding-left: 20px;
+  box-sizing: border-box;
+}
+  
+  /* ensure table stretches full width below */
+  #battedBallTable table {
+    width: 100%;
+  }
+  

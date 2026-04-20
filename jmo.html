@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Morales Release Height Analysis</title>
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1, h2 { text-align: center; }
+    .chart { width: 100%; max-width: 800px; margin: 40px auto; }
+    table { width: 100%; border-collapse: collapse; margin: 20px auto; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>Jordan Morales - Release Height Analysis</h1>
+
+  <h2>Average Release Height by Pitch Type</h2>
+  <div id="type-chart" class="chart"></div>
+
+  <h2>Average Release Height by Rounded Release Speed</h2>
+  <div id="speed-chart" class="chart"></div>
+
+  <h2>Average Release Height by Induced Vertical Break (Sinker & Four-Seam)</h2>
+  <div id="induced-table"></div>
+
+  <script>
+    const neededFields = ["Pitcher", "RelHeight", "RelSpeed", "InducedVertBreak", "AutoPitchType"];
+    const dataRows = [];
+
+    Papa.parse('data.csv', {
+      download: true,
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      chunk: results => {
+        results.data.forEach(raw => {
+          if (raw.Pitcher !== 'Morales, Jordan') return;
+          const row = {};
+          neededFields.forEach(f => row[f] = raw[f]);
+          dataRows.push(row);
+        });
+      },
+      complete: () => analyze(dataRows)
+    });
+
+    function analyze(rows) {
+      if (!rows.length) {
+        document.body.insertAdjacentHTML('beforeend', '<p>No data found for Morales, Jordan.</p>');
+        return;
+      }
+
+      // 1) Avg release height by pitch type
+      const byType = {};
+      rows.forEach(r => {
+        const type = r.AutoPitchType || 'Unknown';
+        if (!byType[type]) byType[type] = { sum: 0, count: 0 };
+        byType[type].sum += r.RelHeight;
+        byType[type].count += 1;
+      });
+      const types = Object.keys(byType);
+      const typeAvgs = types.map(t => byType[t].sum / byType[t].count);
+      Plotly.newPlot('type-chart', [
+        { x: types, y: typeAvgs, type: 'bar' }
+      ], {
+        title: 'Avg Release Height by Pitch Type',
+        xaxis: { title: 'Pitch Type' },
+        yaxis: { title: 'Release Height (ft)' }
+      });
+
+      // 2) Avg release height by rounded RelSpeed 89-96
+      const speedBuckets = [89,90,91,92,93,94,95,96];
+      const speedData = speedBuckets.map(speed => {
+        const match = rows.filter(r => Math.round(r.RelSpeed) === speed);
+        return match.length
+          ? match.reduce((sum, r) => sum + r.RelHeight, 0) / match.length
+          : null;
+      });
+      Plotly.newPlot('speed-chart', [
+        { x: speedBuckets, y: speedData, type: 'bar' }
+      ], {
+        title: 'Avg Release Height by Release Speed',
+        xaxis: { title: 'Release Speed (mph)' },
+        yaxis: { title: 'Release Height (ft)' }
+      });
+
+      // 3) Table for InducedVertBreak 12-22 for Sinker & Four-Seam
+      const breaks = Array.from({length: 11}, (_, i) => i + 12);
+      const typeFilter = ['Sinker', 'Four-Seam'];
+      const table = document.createElement('table');
+      table.innerHTML = '<tr><th>Break (in)</th><th>Avg Release Height (ft)</th></tr>';
+
+      breaks.forEach(b => {
+        const match = rows.filter(r => typeFilter.includes(r.AutoPitchType)
+          && Math.round(r.InducedVertBreak) === b);
+        if (!match.length) return;
+        const avg = match.reduce((sum, r) => sum + r.RelHeight, 0) / match.length;
+        table.innerHTML += `<tr><td>${b}</td><td>${avg.toFixed(2)}</td></tr>`;
+      });
+      document.getElementById('induced-table').appendChild(table);
+    }
+  </script>
+</body>
+</html>

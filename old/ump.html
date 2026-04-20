@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Umpire Evaluation Dashboard</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    h1 { text-align: center; margin-bottom: 1rem; }
+    #filters { text-align: center; margin-bottom: 1rem; }
+    #filters label { margin: 0 1rem; font-size: 0.9rem; }
+    section { margin-top: 2rem; }
+    #legend-scatter.legend {
+      display: flex; justify-content: center; margin-bottom: 0.5rem;
+    }
+    .legend-item {
+      display: flex; align-items: center; margin: 0 1rem; font-size: 0.9rem;
+    }
+    .legend-color {
+      width: 12px; height: 12px; margin-right: 6px;
+    }
+    #strike-zone-chart,
+    #heatmap-chart {
+      width: 600px; height: 450px; margin: auto;
+    }
+    /* Accuracy container no longer fixes height—SVG will size itself */
+    #accuracy-bar {
+      width: 600px; margin: auto;
+    }
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      opacity: 0;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <h1>Umpire Evaluation Dashboard</h1>
+
+  <div id="filters">
+    <label>
+      Pitcher Throw:
+      <select id="filter-throw"><option>All</option></select>
+    </label>
+    <label>
+      Handedness:
+      <select id="filter-handedness"><option>All</option></select>
+    </label>
+    <label>
+      Umpire:
+      <select id="filter-ump"><option>All</option></select>
+    </label>
+  </div>
+
+  <section>
+    <h2>1. Strike-Zone Scatter</h2>
+    <div id="legend-scatter" class="legend"></div>
+    <div id="strike-zone-chart"></div>
+  </section>
+
+  <section>
+    <h2>2. Miss Heatmap (Full Area)</h2>
+    <div id="heatmap-chart"></div>
+  </section>
+
+  <section>
+    <h2>3. Overall Accuracy</h2>
+    <div id="accuracy-bar"></div>
+  </section>
+
+  <script>
+  let dataAll = [], cols = {}, tooltip;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // create tooltip div
+    tooltip = d3.select('body')
+      .append('div')
+      .attr('class','tooltip');
+
+    Papa.parse('Ump.csv', {
+      header: true, download: true, dynamicTyping: true,
+      complete: results => {
+        dataAll = results.data;
+        const fields = results.meta.fields;
+
+        // auto-detect key columns
+        cols.pitchCol    = fields.find(f => /^pitch$/i.test(f));
+        cols.sideCol     = fields.find(f => /location.*side/i.test(f));
+        cols.htCol       = fields.find(f => /location.*height/i.test(f));
+        cols.throwCol    = fields.find(f => /pitcher_throw/i.test(f)) ||
+                          fields.find(f => /pitcher.*throw/i.test(f));
+        cols.handedCol   = fields.find(f => /handed/i.test(f));
+        cols.umpCol      = fields.find(f => /umpire/i.test(f));
+        cols.inningCol   = fields.find(f => /^inning$/i.test(f));
+        cols.halfCol     = fields.find(f => /^half$/i.test(f));
+        cols.batterCol   = fields.find(f => /^batter$/i.test(f));
+        cols.ballCol     = fields.find(f => /^ball[_ ]?count$/i.test(f));
+        cols.strikeCol   = fields.find(f => /^strike[_ ]?count$/i.test(f));
+
+        // populate filters
+        populateFilter('filter-throw', cols.throwCol);
+        populateFilter('filter-handedness', cols.handedCol);
+        populateFilter('filter-ump', cols.umpCol);
+
+        drawLegend();
+        ['filter-throw','filter-handedness','filter-ump']
+          .forEach(id => document.getElementById(id)
+            .addEventListener('change', drawAll));
+
+        drawAll();
+      }
+    });
+  });
+
+  function populateFilter(selId, col) {
+    const sel = document.getElementById(selId);
+    Array.from(new Set(dataAll.map(d => d[col]).filter(v => v != null)))
+      .sort()
+      .forEach(v => {
+        const o = document.createElement('option');
+        o.text = o.value = v;
+        sel.add(o);
+      });
+  }
+
+  function drawLegend() {
+    const legendData = [
+      { label: 'Ball', color: 'blue' },
+      { label: 'Called Strike', color: 'red' }
+    ];
+    const container = d3.select('#legend-scatter').html('');
+    const items = container.selectAll('.legend-item')
+      .data(legendData)
+      .join('div')
+        .attr('class','legend-item');
+    items.append('span')
+      .attr('class','legend-color')
+      .style('background', d => d.color);
+    items.append('span')
+      .text(d => d.label);
+  }
+
+  function drawAll() {
+    // clear
+    ['strike-zone-chart','heatmap-chart','accuracy-bar']
+      .forEach(id => document.getElementById(id).innerHTML = '');
+
+    // base filter
+    let filtered = dataAll.filter(d => {
+      const c = String(d[cols.pitchCol]||'').toLowerCase().trim();
+      return (c==='ball'||c==='called strike')
+        && d[cols.sideCol]!=null && d[cols.htCol]!=null;
+    });
+
+    // UI filters
+    ['throw','handedness','ump'].forEach(key => {
+      const val = document.getElementById(`filter-${key}`).value;
+      if (val !== 'All') {
+        const col = cols[ key==='throw' ? 'throwCol'
+                          : key==='handedness' ? 'handedCol'
+                          : 'umpCol' ];
+        filtered = filtered.filter(d => String(d[col]) === val);
+      }
+    });
+
+    if (!filtered.length) return;
+
+    const pitches = filtered.map(d => {
+      const call     = String(d[cols.pitchCol]).toLowerCase().trim();
+      const x        = +d[cols.sideCol], y = +d[cols.htCol];
+      const inZone   = x>=-0.85 && x<=0.85 && y>=1.5 && y<=3.5;
+      const isStrike = call==='called strike';
+      return {
+        x, y,
+        correct: (inZone&&isStrike)||(!inZone&&!isStrike),
+        callType: call,
+        raw: d
+      };
+    });
+
+    drawStrikeZone(pitches);
+    drawHeatmap(pitches);
+    drawAccuracyBar(pitches);
+  }
+
+  function drawStrikeZone(data) {
+    const m={t:20,r:20,b:30,l:30}, W=600-m.l-m.r, H=450-m.t-m.b;
+    const svg = d3.select('#strike-zone-chart')
+      .append('svg').attr('width',600).attr('height',450)
+      .append('g').attr('transform',`translate(${m.l},${m.t})`);
+    const x = d3.scaleLinear().domain([-1.5,1.5]).range([0,W]);
+    const y = d3.scaleLinear().domain([0.5,4.5]).range([H,0]);
+    svg.append('g').attr('transform',`translate(0,${H})`).call(d3.axisBottom(x));
+    svg.append('g').call(d3.axisLeft(y));
+    svg.append('rect')
+      .attr('x',x(-0.85)).attr('y',y(3.5))
+      .attr('width',x(0.85)-x(-0.85))
+      .attr('height',y(1.5)-y(3.5))
+      .attr('fill','none').attr('stroke','black');
+    svg.selectAll('circle').data(data).join('circle')
+      .attr('cx',d=>x(d.x)).attr('cy',d=>y(d.y)).attr('r',4)
+      .attr('fill',d=> d.callType==='called strike'?'red':'blue')
+      .attr('opacity',0.8)
+      .on('mouseover',(e,d)=> {
+        const r = d.raw;
+        tooltip.html(
+          `Inning: ${r[cols.inningCol]} ${r[cols.halfCol]}<br/>
+           Batter: ${r[cols.batterCol]}<br/>
+           Count: ${r[cols.ballCol]}-${r[cols.strikeCol]}`
+        )
+        .style('left', (e.pageX+12)+'px')
+        .style('top',  (e.pageY-28)+'px')
+        .transition().duration(100).style('opacity',1);
+      })
+      .on('mouseout',()=>
+        tooltip.transition().duration(200).style('opacity',0)
+      );
+  }
+
+  function drawHeatmap(data) {
+    const misses = data.filter(d=>!d.correct);
+    const binsX=25,binsY=25, xDom=[-1.5,1.5], yDom=[0.5,4.5];
+    const xScale = d3.scaleLinear().domain(xDom).nice(binsX);
+    const yScale = d3.scaleLinear().domain(yDom).nice(binsY);
+    const xBins = d3.bin().domain(xScale.domain())
+                    .thresholds(binsX).value(d=>d.x)(misses);
+    let heat=[];
+    xBins.forEach(xb=>{
+      const yBins = d3.bin().domain(yScale.domain())
+                      .thresholds(binsY).value(d=>d.y)(xb);
+      yBins.forEach(yb=>heat.push({
+        x0: xb.x0, x1: xb.x1,
+        y0: yb.x0, y1: yb.x1,
+        count: yb.length
+      }));
+    });
+    heat = heat.filter(d=>![d.x0,d.x1,d.y0,d.y1].some(v=>isNaN(v)));
+
+    const m={t:20,r:20,b:30,l:30}, W=600-m.l-m.r, H=450-m.t-m.b;
+    const svg = d3.select('#heatmap-chart')
+      .append('svg').attr('width',600).attr('height',450)
+      .append('g').attr('transform',`translate(${m.l},${m.t})`);
+    const x = d3.scaleLinear().domain(xDom).range([0,W]);
+    const y = d3.scaleLinear().domain(yDom).range([H,0]);
+    const c = d3.scaleSequential(d3.interpolateOrRd)
+                .domain([0, d3.max(heat,d=>d.count)||1]);
+    svg.selectAll('rect').data(heat).join('rect')
+      .attr('x',d=>x(d.x0)).attr('y',d=>y(d.y1))
+      .attr('width',d=>x(d.x1)-x(d.x0))
+      .attr('height',d=>y(d.y0)-y(d.y1))
+      .attr('fill',d=>d.count?c(d.count):'#eee');
+    svg.append('rect')
+      .attr('x',x(-0.85)).attr('y',y(3.5))
+      .attr('width',x(0.85)-x(-0.85))
+      .attr('height',y(1.5)-y(3.5))
+      .attr('fill','none').attr('stroke','black').attr('stroke-width',2);
+    svg.append('g').attr('transform',`translate(0,${H})`).call(d3.axisBottom(x));
+    svg.append('g').call(d3.axisLeft(y));
+  }
+
+  function drawAccuracyBar(data) {
+    const total = data.length; if (!total) return;
+    const correct = data.filter(d=>d.correct).length;
+    const pctC = correct/total, pctM = (total-correct)/total;
+
+    const chartW = 600, chartH = 200;
+    const margin = { top:20, bottom:30, left:40, right:20 };
+
+    const svg = d3.select('#accuracy-bar')
+      .append('svg')
+        .attr('width',  chartW)
+        .attr('height', chartH);
+
+    const x = d3.scaleBand()
+      .domain(['Correct','Miss'])
+      .range([margin.left, chartW - margin.right])
+      .padding(0.4);
+
+    const y = d3.scaleLinear()
+      .domain([0,1])
+      .range([chartH - margin.bottom, margin.top]);
+
+    // X axis
+    svg.append('g')
+      .attr('transform', `translate(0,${chartH - margin.bottom})`)
+      .call(d3.axisBottom(x))
+      .selectAll("text")
+        .style("font-size","12px");
+
+    // Y axis
+    svg.append('g')
+      .attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).tickFormat(d3.format('.0%')))
+      .selectAll("text")
+        .style("font-size","12px");
+
+    // bars
+    svg.selectAll('rect')
+      .data([
+        { label:'Correct', value:pctC },
+        { label:'Miss',    value:pctM }
+      ])
+      .join('rect')
+        .attr('x',    d => x(d.label))
+        .attr('y',    d => y(d.value))
+        .attr('width',x.bandwidth())
+        .attr('height', d => (chartH - margin.bottom) - y(d.value))
+        .attr('fill', d => d.label==='Correct' ? 'green' : 'red');
+  }
+  </script>
+</body>
+</html>

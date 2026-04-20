@@ -1,0 +1,123 @@
+row_number,inning,half,pitcher,batter,ball_count,strike_count,pitch,result,outs,runner_1B,runner_2B,runner_3B,score,away_score,home_score,pitcher_pitch_count,gameid,game_date,pitcher_throw,batter_hit,batter_height,batter_position,Pitch Type,Release Speed (mph),Launch Angle (°),Batter Name,Hit Time,Direction (°),Bearing (°),Distance (ft),Exit Velocity (mph),Location Side (ft),Location Height (ft),Hit Type,Hit Type,Hit Time
+135,4,Bottom,Keylan Killgore,Jairus Richards,0,0,Called Strike,,0,FALSE,FALSE,FALSE,0-0,0,0,54,624477,,L,L,Jun-00,OF,Four-Seam,91,,Jairus Richards,,,,,,,,,,4/29/2025
+136,4,Bottom,Keylan Killgore,Jairus Richards,0,1,Ball,,0,FALSE,FALSE,FALSE,0-0,0,0,55,624477,,L,L,Jun-00,OF,ChangeUp,86,,Jairus Richards,,,,,,,,,,4/29/2025
+137,4,Bottom,Keylan Killgore,Jairus Richards,1,1,Ball,,0,FALSE,FALSE,FALSE,0-0,0,0,56,624477,,L,L,Jun-00,OF,Four-Seam,92,,Jairus Richards,,,,,,,,,,4/29/2025
+138,4,Bottom,Keylan Killgore,Jairus Richards,2,1,,fly out to left field,0,FALSE,FALSE,FALSE,0-0,0,0,57,624477,,L,L,Jun-00,OF,Four-Seam,92,33.26,Jairus Richards,,,,320,88,,,,,4/29/2025
+139,4,Bottom,Keylan Killgore,Jeffrey Wehler,0,0,Ball,,1,FALSE,FALSE,FALSE,0-0,0,0,58,624477,,L,R,Jun-00,IF,ChangeUp,86,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+140,4,Bottom,Keylan Killgore,Jeffrey Wehler,1,0,Ball,,1,FALSE,FALSE,FALSE,0-0,0,0,59,624477,,L,R,Jun-00,IF,Slider,85,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+141,4,Bottom,Keylan Killgore,Jeffrey Wehler,2,0,Foul,,1,FALSE,FALSE,FALSE,0-0,0,0,60,624477,,L,R,Jun-00,IF,Four-Seam,92,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+142,4,Bottom,Keylan Killgore,Jeffrey Wehler,2,1,Called Strike,,1,FALSE,FALSE,FALSE,0-0,0,0,61,624477,,L,R,Jun-00,IF,Four-Seam,91,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+143,4,Bottom,Keylan Killgore,Jeffrey Wehler,2,2,,single,1,FALSE,FALSE,FALSE,0-0,0,0,62,624477,,L,R,Jun-00,IF,,86,-5.22,Jeffrey Wehler,,,,21,101,,,,,4/29/2025
+144,4,Bottom,Keylan Killgore,Michael Berglund,0,0,Ball,,1,TRUE,FALSE,FALSE,0-0,0,0,63,624477,,L,L,1-Jun,C,Four-Seam,92,,Michael Berglund,,,,,,,,,,4/29/2025
+145,4,Bottom,Keylan Killgore,Michael Berglund,1,0,Swinging Strike,,1,TRUE,FALSE,FALSE,0-0,0,0,64,624477,,L,L,1-Jun,C,Slider,84,,Michael Berglund,,,,,,,,,,4/29/2025
+146,4,Bottom,Keylan Killgore,Michael Berglund,1,1,Ball,,1,TRUE,FALSE,FALSE,0-0,0,0,65,624477,,L,L,1-Jun,C,Slider,86,,Michael Berglund,,,,,,,,,,4/29/2025
+148,4,Bottom,Keylan Killgore,Michael Berglund,2,1,,fly out,2,TRUE,FALSE,FALSE,0-0,0,0,67,624477,,L,L,1-Jun,C,Four-Seam,92,,Michael Berglund,,,,,,,,,,4/29/2025
+181,5,Bottom,A.J. Alexy,Tomo Otosaka,0,0,Called Strike,,0,FALSE,FALSE,FALSE,0-0,0,0,1,624477,,R,L,11-May,OF,Four-Seam,90,,Tomo Otosaka,,,,,,,,,,4/29/2025
+182,5,Bottom,A.J. Alexy,Tomo Otosaka,0,1,Foul,,0,FALSE,FALSE,FALSE,0-0,0,0,2,624477,,R,L,11-May,OF,Slider,83,,Tomo Otosaka,,,,,,,,,,4/29/2025
+183,5,Bottom,A.J. Alexy,Tomo Otosaka,0,2,Ball,,0,FALSE,FALSE,FALSE,0-0,0,0,3,624477,,R,L,11-May,OF,Four-Seam,91,,Tomo Otosaka,,,,,,,,,,4/29/2025
+184,5,Bottom,A.J. Alexy,Tomo Otosaka,1,2,,single,0,FALSE,FALSE,FALSE,0-0,0,0,4,624477,,R,L,11-May,OF,,85,7.4,Tomo Otosaka,,,,160,99,,,,,4/29/2025
+185,5,Bottom,A.J. Alexy,Jalen Miller,0,0,Foul,,0,TRUE,FALSE,FALSE,0-0,0,0,5,624477,,R,R,Jun-00,2B,Four-Seam,91,,Jalen Miller,,,,,,,,,,4/29/2025
+186,5,Bottom,A.J. Alexy,Jalen Miller,0,1,Foul,,0,TRUE,FALSE,FALSE,0-0,0,0,6,624477,,R,R,Jun-00,2B,ChangeUp,85,,Jalen Miller,,,,,,,,,,4/29/2025
+187,5,Bottom,A.J. Alexy,Jalen Miller,0,2,Foul,,0,TRUE,FALSE,FALSE,0-0,0,0,7,624477,,R,R,Jun-00,2B,Slider,80,,Jalen Miller,,,,,,,,,,4/29/2025
+188,5,Bottom,A.J. Alexy,Jalen Miller,0,2,,double,0,TRUE,FALSE,FALSE,0-0,0,0,8,624477,,R,R,Jun-00,2B,Four-Seam,91,17,Jalen Miller,,,,352,106,,,,,4/29/2025
+189,5,Bottom,A.J. Alexy,Frankie Tostado,0,0,Ball,,0,FALSE,TRUE,FALSE,0-0,0,0,9,624477,,R,L,2-Jun,1B,Slider,86,,Frankie Tostado,,,,,,,,,,4/29/2025
+190,5,Bottom,A.J. Alexy,Frankie Tostado,1,0,Ball,,0,FALSE,TRUE,FALSE,0-0,0,0,10,624477,,R,L,2-Jun,1B,Four-Seam,93,,Frankie Tostado,,,,,,,,,,4/29/2025
+191,5,Bottom,A.J. Alexy,Frankie Tostado,2,0,,fly out to left field,0,FALSE,TRUE,FALSE,0-0,0,0,11,624477,,R,L,2-Jun,1B,Four-Seam,92,22,Frankie Tostado,,,,286,86,,,,,4/29/2025
+192,5,Bottom,A.J. Alexy,Alerick Soularie,0,0,Called Strike,,1,FALSE,TRUE,FALSE,0-0,0,0,12,624477,,R,R,Jun-00,OF,Slider,78,,Alerick Soularie,,,,,,,,,,4/29/2025
+193,5,Bottom,A.J. Alexy,Alerick Soularie,0,1,,single,1,FALSE,TRUE,FALSE,0-0,0,0,13,624477,,R,R,Jun-00,OF,Slider,79,20,Alerick Soularie,,,,322,107,,,,,4/29/2025
+194,5,Bottom,A.J. Alexy,Osvaldo Tovalin,0,0,Foul,,1,TRUE,FALSE,FALSE,0-0,0,0,14,624477,,R,L,2-Jun,IF,,89,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+195,5,Bottom,A.J. Alexy,Osvaldo Tovalin,0,1,Foul,,1,TRUE,FALSE,FALSE,0-0,0,0,15,624477,,R,L,2-Jun,IF,,82,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+196,5,Bottom,A.J. Alexy,Osvaldo Tovalin,0,2,Ball,,1,TRUE,FALSE,FALSE,0-0,0,0,16,624477,,R,L,2-Jun,IF,Curveball,76,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+197,5,Bottom,A.J. Alexy,Osvaldo Tovalin,1,2,Ball,,1,TRUE,FALSE,FALSE,0-0,0,0,17,624477,,R,L,2-Jun,IF,Four-Seam,89,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+198,5,Bottom,A.J. Alexy,Osvaldo Tovalin,2,2,Foul,,1,TRUE,FALSE,FALSE,0-0,0,0,18,624477,,R,L,2-Jun,IF,,78,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+199,5,Bottom,A.J. Alexy,Osvaldo Tovalin,2,2,Ball,,1,TRUE,FALSE,FALSE,0-0,0,0,19,624477,,R,L,2-Jun,IF,,82,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+200,5,Bottom,A.J. Alexy,Osvaldo Tovalin,3,2,Foul,,1,TRUE,FALSE,FALSE,0-0,0,0,20,624477,,R,L,2-Jun,IF,Four-Seam,90,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+201,5,Bottom,A.J. Alexy,Osvaldo Tovalin,3,2,,fly out,1,FALSE,TRUE,FALSE,0-0,0,0,21,624477,,R,L,2-Jun,IF,Slider,76,5.67,Osvaldo Tovalin,,,,115,98,,,,,4/29/2025
+202,5,Bottom,A.J. Alexy,Justin Connell,0,0,Called Strike,,2,FALSE,TRUE,FALSE,0-0,0,0,22,624477,,R,R,2-Jun,OF,Slider,78,,Justin Connell,,,,,,,,,,4/29/2025
+203,5,Bottom,A.J. Alexy,Justin Connell,0,1,Ball,,2,FALSE,TRUE,FALSE,0-0,0,0,23,624477,,R,R,2-Jun,OF,Slider,78,,Justin Connell,,,,,,,,,,4/29/2025
+204,5,Bottom,A.J. Alexy,Justin Connell,1,1,Ball,,2,FALSE,TRUE,FALSE,0-0,0,0,24,624477,,R,R,2-Jun,OF,Four-Seam,88,,Justin Connell,,,,,,,,,,4/29/2025
+205,5,Bottom,A.J. Alexy,Justin Connell,2,1,Called Strike,,2,FALSE,TRUE,FALSE,0-0,0,0,25,624477,,R,R,2-Jun,OF,Slider,78,,Justin Connell,,,,,,,,,,4/29/2025
+206,5,Bottom,A.J. Alexy,Justin Connell,2,2,Ball,,2,FALSE,TRUE,FALSE,0-0,0,0,26,624477,,R,R,2-Jun,OF,Slider,79,,Justin Connell,,,,,,,,,,4/29/2025
+207,5,Bottom,A.J. Alexy,Justin Connell,3,2,,Walk,2,FALSE,TRUE,FALSE,0-0,0,0,27,624477,,R,R,2-Jun,OF,Slider,79,,Justin Connell,,,,,,,,,,4/29/2025
+208,5,Bottom,A.J. Alexy,Jairus Richards,0,0,Ball,,2,TRUE,TRUE,FALSE,0-0,0,0,28,624477,,R,L,Jun-00,OF,Four-Seam,89,,Jairus Richards,,,,,,,,,,4/29/2025
+209,5,Bottom,A.J. Alexy,Jairus Richards,1,0,Ball,,2,TRUE,TRUE,FALSE,0-0,0,0,29,624477,,R,L,Jun-00,OF,Curveball,78,,Jairus Richards,,,,,,,,,,4/29/2025
+210,5,Bottom,A.J. Alexy,Jairus Richards,2,0,Foul,,2,TRUE,TRUE,FALSE,0-0,0,0,30,624477,,R,L,Jun-00,OF,Four-Seam,89,,Jairus Richards,,,,,,,,,,4/29/2025
+211,5,Bottom,A.J. Alexy,Jairus Richards,2,1,Ball,,2,TRUE,TRUE,FALSE,0-0,0,0,31,624477,,R,L,Jun-00,OF,Curveball,76,,Jairus Richards,,,,,,,,,,4/29/2025
+212,5,Bottom,A.J. Alexy,Jairus Richards,3,1,Foul,,2,TRUE,FALSE,TRUE,0-0,0,0,32,624477,,R,L,Jun-00,OF,Slider,88,,Jairus Richards,,,,,,,,,,4/29/2025
+213,5,Bottom,A.J. Alexy,Jairus Richards,3,2,,fly out to left field,2,TRUE,FALSE,TRUE,0-0,0,0,33,624477,,R,L,Jun-00,OF,Four-Seam,90,33.7,Jairus Richards,,,,252,77,,,,,4/29/2025
+246,6,Bottom,Michael McAvene,Jeffrey Wehler,0,0,Foul,,0,FALSE,FALSE,FALSE,0-0,0,0,1,624477,,R,R,Jun-00,IF,Four-Seam,94,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+247,6,Bottom,Michael McAvene,Jeffrey Wehler,0,1,Ball,,0,FALSE,FALSE,FALSE,0-0,0,0,2,624477,,R,R,Jun-00,IF,Slider,84,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+248,6,Bottom,Michael McAvene,Jeffrey Wehler,1,1,Swinging Strike,,0,FALSE,FALSE,FALSE,0-0,0,0,3,624477,,R,R,Jun-00,IF,Slider,84,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+249,6,Bottom,Michael McAvene,Jeffrey Wehler,1,2,Ball,,0,FALSE,FALSE,FALSE,0-0,0,0,4,624477,,R,R,Jun-00,IF,Slider,85,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+250,6,Bottom,Michael McAvene,Jeffrey Wehler,2,2,Ball,,0,FALSE,FALSE,FALSE,0-0,0,0,5,624477,,R,R,Jun-00,IF,Slider,85,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+251,6,Bottom,Michael McAvene,Jeffrey Wehler,3,2,,double,0,FALSE,FALSE,FALSE,0-0,0,0,6,624477,,R,R,Jun-00,IF,Four-Seam,93,14,Jeffrey Wehler,,,,244,107,,,,,4/29/2025
+252,6,Bottom,Michael McAvene,Michael Berglund,0,0,Ball,,0,FALSE,TRUE,FALSE,0-0,0,0,7,624477,,R,L,1-Jun,C,Four-Seam,92,,Michael Berglund,,,,,,,,,,4/29/2025
+253,6,Bottom,Michael McAvene,Michael Berglund,1,0,,L9,0,FALSE,TRUE,FALSE,0-0,0,0,8,624477,,R,L,1-Jun,C,Four-Seam,93,18,Michael Berglund,,,,284,103,,,,,4/29/2025
+254,6,Bottom,Michael McAvene,Tomo Otosaka,0,0,Ball,,1,FALSE,TRUE,FALSE,0-0,0,0,9,624477,,R,L,11-May,OF,Four-Seam,93,,Tomo Otosaka,,,,,,,,,,4/29/2025
+255,6,Bottom,Michael McAvene,Tomo Otosaka,1,0,Ball,,1,FALSE,TRUE,FALSE,0-0,0,0,10,624477,,R,L,11-May,OF,Four-Seam,93,,Tomo Otosaka,,,,,,,,,,4/29/2025
+256,6,Bottom,Michael McAvene,Tomo Otosaka,2,0,,single,1,FALSE,TRUE,FALSE,0-0,0,0,11,624477,,R,L,11-May,OF,Four-Seam,93,17,Tomo Otosaka,,,,277,97,,,,,4/29/2025
+257,6,Bottom,Michael McAvene,Jalen Miller,0,0,Foul,,1,TRUE,FALSE,TRUE,0-0,0,0,12,624477,,R,R,Jun-00,2B,Four-Seam,93,,Jalen Miller,,,,,,,,,,4/29/2025
+258,6,Bottom,Michael McAvene,Jalen Miller,0,1,Swinging Strike,,1,TRUE,FALSE,TRUE,0-0,0,0,13,624477,,R,R,Jun-00,2B,Slider,84,,Jalen Miller,,,,,,,,,,4/29/2025
+259,6,Bottom,Michael McAvene,Jalen Miller,0,2,Ball,,1,TRUE,FALSE,TRUE,0-0,0,0,14,624477,,R,R,Jun-00,2B,Slider,83,,Jalen Miller,,,,,,,,,,4/29/2025
+260,6,Bottom,Michael McAvene,Jalen Miller,1,2,Swinging Strike,strike out,1,FALSE,TRUE,TRUE,0-0,0,0,15,624477,,R,R,Jun-00,2B,Slider,84,,Jalen Miller,,,,,,,,,,4/29/2025
+261,6,Bottom,Michael McAvene,Frankie Tostado,0,0,Foul,,2,FALSE,TRUE,TRUE,0-0,0,0,16,624477,,R,L,2-Jun,1B,Four-Seam,94,,Frankie Tostado,,,,,,,,,,4/29/2025
+262,6,Bottom,Michael McAvene,Frankie Tostado,0,1,Ball,,2,FALSE,TRUE,TRUE,0-0,0,0,17,624477,,R,L,2-Jun,1B,Slider,85,,Frankie Tostado,,,,,,,,,,4/29/2025
+263,6,Bottom,Michael McAvene,Frankie Tostado,1,1,Ball,,2,FALSE,TRUE,TRUE,0-0,0,0,18,624477,,R,L,2-Jun,1B,Four-Seam,91,,Frankie Tostado,,,,,,,,,,4/29/2025
+264,6,Bottom,Michael McAvene,Frankie Tostado,2,1,Ball,,2,FALSE,TRUE,TRUE,0-0,0,0,19,624477,,R,L,2-Jun,1B,Four-Seam,91,,Frankie Tostado,,,,,,,,,,4/29/2025
+265,6,Bottom,Michael McAvene,Frankie Tostado,3,1,Foul,,2,FALSE,TRUE,TRUE,0-0,0,0,20,624477,,R,L,2-Jun,1B,Four-Seam,93,,Frankie Tostado,,,,,,,,,,4/29/2025
+266,6,Bottom,Michael McAvene,Frankie Tostado,3,2,Called Strike,strike out,2,FALSE,TRUE,TRUE,0-0,0,0,21,624477,,R,L,2-Jun,1B,,88,,Frankie Tostado,,,,275,81,,,,,4/29/2025
+278,7,Bottom,Steven Lacey,Alerick Soularie,0,0,Ball,,0,FALSE,FALSE,FALSE,0-0,0,0,1,624477,,R,R,Jun-00,OF,ChangeUp,85,,Alerick Soularie,,,,,,,,,,4/29/2025
+279,7,Bottom,Steven Lacey,Alerick Soularie,1,0,,fly out to right field,0,FALSE,FALSE,FALSE,0-0,0,0,2,624477,,R,R,Jun-00,OF,Four-Seam,92,33,Alerick Soularie,,,,,,,,,,4/29/2025
+280,7,Bottom,Steven Lacey,Osvaldo Tovalin,0,0,Called Strike,,1,FALSE,FALSE,FALSE,0-0,0,0,3,624477,,R,L,2-Jun,IF,Slider,84,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+281,7,Bottom,Steven Lacey,Osvaldo Tovalin,0,1,Ball,,1,FALSE,FALSE,FALSE,0-0,0,0,4,624477,,R,L,2-Jun,IF,Four-Seam,92,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+282,7,Bottom,Steven Lacey,Osvaldo Tovalin,1,1,Ball,,1,FALSE,FALSE,FALSE,0-0,0,0,5,624477,,R,L,2-Jun,IF,Slider,83,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+283,7,Bottom,Steven Lacey,Osvaldo Tovalin,2,1,Swinging Strike,,1,FALSE,FALSE,FALSE,0-0,0,0,6,624477,,R,L,2-Jun,IF,,84,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+284,7,Bottom,Steven Lacey,Osvaldo Tovalin,2,2,Ball,,1,FALSE,FALSE,FALSE,0-0,0,0,7,624477,,R,L,2-Jun,IF,,87,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+285,7,Bottom,Steven Lacey,Osvaldo Tovalin,3,2,,Walk,1,FALSE,FALSE,FALSE,0-0,0,0,8,624477,,R,L,2-Jun,IF,Slider,83,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+286,7,Bottom,Steven Lacey,Justin Connell,0,0,Called Strike,,1,TRUE,FALSE,FALSE,0-0,0,0,9,624477,,R,R,2-Jun,OF,Four-Seam,93,,Justin Connell,,,,,,,,,,4/29/2025
+287,7,Bottom,Steven Lacey,Justin Connell,0,1,Ball,,1,TRUE,FALSE,FALSE,0-0,0,0,10,624477,,R,R,2-Jun,OF,Slider,83,,Justin Connell,,,,,,,,,,4/29/2025
+288,7,Bottom,Steven Lacey,Justin Connell,1,1,Ball,,1,TRUE,FALSE,FALSE,0-0,0,0,11,624477,,R,R,2-Jun,OF,Slider,80,,Justin Connell,,,,,,,,,,4/29/2025
+289,7,Bottom,Steven Lacey,Justin Connell,2,1,Ball,,1,TRUE,FALSE,FALSE,0-0,0,0,12,624477,,R,R,2-Jun,OF,Four-Seam,91,,Justin Connell,,,,,,,,,,4/29/2025
+290,7,Bottom,Steven Lacey,Justin Connell,3,1,,Walk,1,TRUE,FALSE,FALSE,0-0,0,0,13,624477,,R,R,2-Jun,OF,Four-Seam,93,,Justin Connell,,,,,,,,,,4/29/2025
+291,7,Bottom,Steven Lacey,Jairus Richards,0,0,Ball,,1,TRUE,TRUE,FALSE,0-0,0,0,14,624477,,R,L,Jun-00,OF,Slider,83,,Jairus Richards,,,,,,,,,,4/29/2025
+292,7,Bottom,Steven Lacey,Jairus Richards,1,0,Ball,,1,TRUE,TRUE,FALSE,0-0,0,0,15,624477,,R,L,Jun-00,OF,Four-Seam,93,,Jairus Richards,,,,,,,,,,4/29/2025
+293,7,Bottom,Steven Lacey,Jairus Richards,2,0,Ball,,1,TRUE,TRUE,FALSE,0-0,0,0,16,624477,,R,L,Jun-00,OF,Four-Seam,94,,Jairus Richards,,,,,,,,,,4/29/2025
+294,7,Bottom,Steven Lacey,Jairus Richards,3,0,Called Strike,,1,TRUE,TRUE,FALSE,0-0,0,0,17,624477,,R,L,Jun-00,OF,Four-Seam,94,,Jairus Richards,,,,,,,,,,4/29/2025
+295,7,Bottom,Steven Lacey,Jairus Richards,3,1,,fielders choice,1,TRUE,TRUE,FALSE,0-0,0,0,18,624477,,R,L,Jun-00,OF,Four-Seam,94,,Jairus Richards,,,,,,,,,,4/29/2025
+297,7,Bottom,Steven Lacey,Jeffrey Wehler,0,0,Ball,,2,TRUE,FALSE,TRUE,0-0,0,0,20,624477,,R,R,Jun-00,IF,Slider,80,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+298,7,Bottom,Steven Lacey,Jeffrey Wehler,1,0,Foul,,2,FALSE,TRUE,TRUE,0-0,0,0,21,624477,,R,R,Jun-00,IF,Four-Seam,94,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+299,7,Bottom,Steven Lacey,Jeffrey Wehler,1,1,Ball,,2,FALSE,TRUE,TRUE,0-0,0,0,22,624477,,R,R,Jun-00,IF,Slider,83,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+300,7,Bottom,Steven Lacey,Jeffrey Wehler,2,1,Ball,,2,FALSE,TRUE,TRUE,0-0,0,0,23,624477,,R,R,Jun-00,IF,Four-Seam,94,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+301,7,Bottom,Steven Lacey,Jeffrey Wehler,3,1,Called Strike,,2,FALSE,TRUE,TRUE,0-0,0,0,24,624477,,R,R,Jun-00,IF,Four-Seam,93,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+302,7,Bottom,Steven Lacey,Jeffrey Wehler,3,2,,Walk,2,FALSE,TRUE,TRUE,0-0,0,0,25,624477,,R,R,Jun-00,IF,Four-Seam,94,,Jeffrey Wehler,,,,,,,,,,4/29/2025
+303,7,Bottom,Steven Lacey,Michael Berglund,0,0,Foul,,2,TRUE,TRUE,TRUE,0-0,0,0,26,624477,,R,L,1-Jun,C,Four-Seam,94,,Michael Berglund,,,,,,,,,,4/29/2025
+304,7,Bottom,Steven Lacey,Michael Berglund,0,1,Ball,,2,TRUE,TRUE,TRUE,0-0,0,0,27,624477,,R,L,1-Jun,C,,82,,Michael Berglund,,,,,,,,,,4/29/2025
+305,7,Bottom,Steven Lacey,Michael Berglund,1,1,Ball,,2,TRUE,TRUE,TRUE,0-0,0,0,28,624477,,R,L,1-Jun,C,Slider,80,,Michael Berglund,,,,,,,,,,4/29/2025
+306,7,Bottom,Steven Lacey,Michael Berglund,2,1,Ball,,2,TRUE,TRUE,TRUE,0-0,0,0,29,624477,,R,L,1-Jun,C,Four-Seam,94,,Michael Berglund,,,,,,,,,,4/29/2025
+307,7,Bottom,Steven Lacey,Michael Berglund,3,1,Foul,,2,TRUE,TRUE,TRUE,0-0,0,0,30,624477,,R,L,1-Jun,C,Four-Seam,93,,Michael Berglund,,,,,,,,,,4/29/2025
+308,7,Bottom,Steven Lacey,Michael Berglund,3,2,Foul,,2,TRUE,TRUE,TRUE,0-0,0,0,31,624477,,R,L,1-Jun,C,Four-Seam,94,,Michael Berglund,,,,,,,,,,4/29/2025
+309,7,Bottom,Steven Lacey,Michael Berglund,3,2,,single,2,TRUE,TRUE,TRUE,0-0,0,0,32,624477,,R,L,1-Jun,C,Four-Seam,94,4.49,Michael Berglund,,,,98,104,,,,,4/29/2025
+310,7,Bottom,Steven Lacey,Tomo Otosaka,0,0,Ball,,2,TRUE,FALSE,TRUE,0-0,0,0,33,624477,,R,L,11-May,OF,Four-Seam,93,,Tomo Otosaka,,,,,,,,,,4/29/2025
+311,7,Bottom,Steven Lacey,Tomo Otosaka,1,0,Called Strike,,2,TRUE,FALSE,TRUE,0-0,0,0,34,624477,,R,L,11-May,OF,Four-Seam,92,,Tomo Otosaka,,,,,,,,,,4/29/2025
+312,7,Bottom,Steven Lacey,Tomo Otosaka,1,1,Called Strike,,2,TRUE,FALSE,TRUE,0-0,0,0,35,624477,,R,L,11-May,OF,,79,,Tomo Otosaka,,,,,,,,,,4/29/2025
+313,7,Bottom,Steven Lacey,Tomo Otosaka,1,2,Ball,,2,TRUE,FALSE,TRUE,0-0,0,0,36,624477,,R,L,11-May,OF,Slider,83,,Tomo Otosaka,,,,,,,,,,4/29/2025
+314,7,Bottom,Steven Lacey,Tomo Otosaka,2,2,Foul,,2,TRUE,FALSE,TRUE,0-0,0,0,37,624477,,R,L,11-May,OF,Four-Seam,92,,Tomo Otosaka,,,,,,,,,,4/29/2025
+315,7,Bottom,Steven Lacey,Tomo Otosaka,2,2,Ball,,2,TRUE,FALSE,TRUE,0-0,0,0,38,624477,,R,L,11-May,OF,-,78,,Tomo Otosaka,,,,,,,,,,4/29/2025
+316,7,Bottom,Steven Lacey,Tomo Otosaka,3,2,,double,2,TRUE,FALSE,TRUE,0-0,0,0,39,624477,,R,L,11-May,OF,Four-Seam,92,25.7,Tomo Otosaka,,,,391,102,,,,,4/29/2025
+317,7,Bottom,Steven Lacey,Jalen Miller,0,0,Called Strike,,2,FALSE,TRUE,FALSE,0-0,0,0,40,624477,,R,R,Jun-00,2B,Slider,80,,Jalen Miller,,,,,,,,,,4/29/2025
+318,7,Bottom,Steven Lacey,Jalen Miller,0,1,Foul,,2,FALSE,TRUE,FALSE,0-0,0,0,41,624477,,R,R,Jun-00,2B,,78,,Jalen Miller,,,,,,,,,,4/29/2025
+319,7,Bottom,Steven Lacey,Jalen Miller,0,2,,P4,2,FALSE,TRUE,FALSE,0-0,0,0,42,624477,,R,R,Jun-00,2B,,82,48,Jalen Miller,,,,141,55,,,,,4/29/2025
+337,8,Bottom,Christian Scafidi,Frankie Tostado,0,0,Foul,,0,FALSE,FALSE,FALSE,0-0,0,0,1,624477,,R,L,2-Jun,1B,Curveball,75,,Frankie Tostado,,,,,,,,,,4/29/2025
+338,8,Bottom,Christian Scafidi,Frankie Tostado,0,1,Ball,,0,FALSE,FALSE,FALSE,0-0,0,0,2,624477,,R,L,2-Jun,1B,Four-Seam,91,,Frankie Tostado,,,,,,,,,,4/29/2025
+339,8,Bottom,Christian Scafidi,Frankie Tostado,1,1,,single,0,FALSE,FALSE,FALSE,0-0,0,0,3,624477,,R,L,2-Jun,1B,Slider,84,13,Frankie Tostado,,,,180,83,,,,,4/29/2025
+340,8,Bottom,Christian Scafidi,Alerick Soularie,0,0,Swinging Strike,,0,TRUE,FALSE,FALSE,0-0,0,0,4,624477,,R,R,Jun-00,OF,,82,,Alerick Soularie,,,,,,,,,,4/29/2025
+341,8,Bottom,Christian Scafidi,Alerick Soularie,0,1,Called Strike,,0,TRUE,FALSE,FALSE,0-0,0,0,5,624477,,R,R,Jun-00,OF,Four-Seam,89,,Alerick Soularie,,,,,,,,,,4/29/2025
+342,8,Bottom,Christian Scafidi,Alerick Soularie,0,2,Swinging Strike,strike out,0,TRUE,FALSE,FALSE,0-0,0,0,6,624477,,R,R,Jun-00,OF,Curveball,76,,Alerick Soularie,,,,,,,,,,4/29/2025
+343,8,Bottom,Christian Scafidi,Osvaldo Tovalin,0,0,Called Strike,,1,TRUE,FALSE,FALSE,0-0,0,0,7,624477,,R,L,2-Jun,IF,Four-Seam,89,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+344,8,Bottom,Christian Scafidi,Osvaldo Tovalin,0,1,Swinging Strike,,1,TRUE,FALSE,FALSE,0-0,0,0,8,624477,,R,L,2-Jun,IF,Curveball,75,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+345,8,Bottom,Christian Scafidi,Osvaldo Tovalin,0,2,Called Strike,strike out,1,TRUE,FALSE,FALSE,0-0,0,0,9,624477,,R,L,2-Jun,IF,Four-Seam,92,,Osvaldo Tovalin,,,,,,,,,,4/29/2025
+346,8,Bottom,Christian Scafidi,Justin Connell,0,0,Ball,,2,TRUE,FALSE,FALSE,0-0,0,0,10,624477,,R,R,2-Jun,OF,Slider,89,,Justin Connell,,,,,,,,,,4/29/2025
+347,8,Bottom,Christian Scafidi,Justin Connell,1,0,Called Strike,,2,TRUE,FALSE,FALSE,0-0,0,0,11,624477,,R,R,2-Jun,OF,Slider,82,,Justin Connell,,,,,,,,,,4/29/2025
+348,8,Bottom,Christian Scafidi,Justin Connell,1,1,,fly out to center field,2,TRUE,FALSE,FALSE,0-0,0,0,12,624477,,R,R,2-Jun,OF,Four-Seam,89,30,Justin Connell,,,,281,79,,,,,4/29/2025
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

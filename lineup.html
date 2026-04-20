@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Optimized Lineup Generator</title>
+  <script src="https://unpkg.com/papaparse@5.3.2/papaparse.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; max-width: 900px; margin: auto; }
+    select, button { margin: 0 .5rem .5rem 0; padding: .5rem; }
+    button.active { background: #007bff; color: #fff; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: .5rem; text-align: left; }
+    th { background: #f4f4f4; }
+    tr.excluded { opacity: 0.4; text-decoration: line-through; }
+    #excludedList { margin-top:1rem; color: #a00; }
+    #excludedList span { cursor: pointer; margin-right: .5rem; }
+       nav#menu { background: #fff; padding: .5rem 2rem; border-bottom: 1px solid #ddd }
+    nav#menu ul { list-style: none; display: flex; gap: 2rem }
+    nav#menu a { text-decoration: none; color: #333; font-weight: 500 }
+    nav#menu a.active { color: #007bff; text-decoration: underline }
+  </style>
+</head>
+<body>
+<nav id="menu">
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="games.html">Games</a></li>
+      <li><a href="leaderboards.html">Leaderboards</a></li>
+      <li><a href="park-factors.html">Park Factors</a></li>
+      <li><a href="fielding.html">Fielding</a></li>
+      <li><a href="transactions.html" >Transactions</a></li>
+    </ul>
+  </nav>
+  <h1>Optimized Lineup Generator</h1>
+
+  <div>
+    <label for="teamSelect">Team:</label>
+    <select id="teamSelect"></select>
+    <button id="btnLeft" class="active">Vs Left</button>
+    <button id="btnRight">Vs Right</button>
+  </div>
+
+  <div id="excludedList"></div>
+
+  <table id="lineupTbl">
+    <thead>
+      <tr>
+        <th>Slot</th><th>Name</th><th>PA</th><th>AB</th>
+        <th>BB</th><th>H</th><th>OBP</th><th>SLG</th>
+        <th>OPS</th><th>In-Play %</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+  let allRows = [], rosterMap = {}, stats = {}, excluded = new Set();
+
+  Papa.parse('data.csv', {
+    download: true,
+    header: true,
+    complete: ({ data }) => {
+      allRows = data.filter(r =>
+        r.BatterId &&
+        (r.PitcherThrows==='Left'||r.PitcherThrows==='Right')
+      );
+      init();
+    }
+  });
+
+  function init() {
+    rosterMap = {};
+    allRows.forEach(r => rosterMap[r.BatterId] = {
+      id: r.BatterId, name: r.Batter, team: r.BatterTeam
+    });
+    stats = computeStats(allRows);
+    const teams = [...new Set(Object.values(rosterMap).map(p=>p.team))].sort();
+    const sel   = document.getElementById('teamSelect');
+    teams.forEach(t=>sel.add(new Option(t,t)));
+    document.getElementById('btnLeft').onclick  = ()=> toggleHand('Left');
+    document.getElementById('btnRight').onclick = ()=> toggleHand('Right');
+    renderLineup();
+  }
+
+function computeStats(rows) {
+  // 1) one entry per PA (GameUID+Inning+Top/Bottom+PAofInning+BatterId)
+  const paMap = {};
+  rows.forEach(r => {
+    const key = [r.GameUID, r.Inning, r['Top/Bottom'], r.PAofInning, r.BatterId].join('|');
+    const seq = +r.PitchofPA || 0;
+    if (!paMap[key] || seq > paMap[key].seq) {
+      paMap[key] = { row: r, seq };
+    }
+  });
+
+  // 2) stats container
+  const S = {};
+  Object.values(paMap).forEach(({ row: r }) => {
+    const id   = r.BatterId;
+    const hand = r.PitcherThrows;
+    if (!S[id]) S[id] = {
+      Left:  { PA:0, AB:0, BB:0, H:0, TB:0, inPlay:0 },
+      Right: { PA:0, AB:0, BB:0, H:0, TB:0, inPlay:0 }
+    };
+    const st = S[id][hand];
+    st.PA++;
+
+    // a) walks
+    if (r.KorBB === 'Walk') {
+      st.BB++;
+    }
+    // b) HBP
+    else if (r.PitchCall === 'HitByPitch') {
+      /* no AB, no BB */
+    }
+    // c) sac
+    else if (r.PlayResult === 'Sacrifice') {
+      /* no AB */
+    }
+    else {
+      // true AB
+      st.AB++;
+
+      // hits & total bases from PlayResult
+      switch (r.PlayResult) {
+        case 'Single':
+          st.H++; st.TB += 1;
+          break;
+        case 'Double':
+          st.H++; st.TB += 2;
+          break;
+        case 'Triple':
+          st.H++; st.TB += 3;
+          break;
+        case 'HomeRun':
+          st.H++; st.TB += 4;
+          break;
+      }
+
+      // in-play if last pitch was put in play
+      if (r.PitchCall === 'InPlay') {
+        st.inPlay++;
+      }
+    }
+  });
+
+  // 3) derive rates
+  Object.values(S).forEach(byHand => {
+    ['Left','Right'].forEach(h => {
+      const s = byHand[h];
+      s.OBP       = (s.H + s.BB) / Math.max(s.AB + s.BB, 1);
+      s.SLG       = s.TB    / Math.max(s.AB,        1);
+      s.OPS       = s.OBP + s.SLG;
+      s.inPlayPct = s.inPlay/ Math.max(s.PA,        1);
+    });
+  });
+
+  return S;
+}
+
+
+
+  function toggleHand(hand) {
+    document.getElementById('btnLeft').classList.toggle('active',  hand==='Left');
+    document.getElementById('btnRight').classList.toggle('active', hand==='Right');
+    renderLineup();
+  }
+
+  function buildLineupForHand(hand) {
+    const team = document.getElementById('teamSelect').value;
+    const cand = Object.entries(stats)
+      .filter(([id])=>{
+        const p = rosterMap[id];
+        return p && p.team===team && !excluded.has(id);
+      })
+      .map(([id,byHand])=>{
+        const s = byHand[hand];
+        return { id, name: rosterMap[id].name, ...s };
+      });
+
+    const byOBP = [...cand].sort((a,b)=>b.OBP - a.OBP);
+    const byOPS = [...cand].sort((a,b)=>b.OPS - a.OPS);
+    const bySLG = [...cand].sort((a,b)=>b.SLG - a.SLG);
+    const byINP = [...cand].sort((a,b)=>b.inPlayPct - a.inPlayPct);
+
+    const used = new Set();
+    const pick = arr=>{
+      const p = arr.find(x=>!used.has(x.id));
+      used.add(p.id);
+      return p;
+    };
+
+    const slots = [];
+    slots.push(pick(byOBP));
+    slots.push(pick(byOPS));
+    slots.push(pick(byOPS));
+    slots.push(pick(bySLG));
+    slots.push(pick(byINP));
+    slots.push(pick(byOPS));
+
+    const rem  = cand.filter(x=>!used.has(x.id));
+    const top3 = rem.sort((a,b)=>b.OPS - a.OPS).slice(0,3);
+    top3.sort((a,b)=>a.OPS - b.OPS);
+    slots.push(top3[0], top3[1], top3[2]);
+
+    return slots;
+  }
+
+  function renderLineup() {
+    const hand   = document.getElementById('btnLeft').classList.contains('active') ? 'Left':'Right';
+    const lineup = buildLineupForHand(hand);
+    const tbody  = document.querySelector('#lineupTbl tbody');
+    tbody.innerHTML='';
+
+    lineup.forEach((p,i)=>{
+      const tr = document.createElement('tr');
+      tr.dataset.id = p.id;
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${p.name}</td>
+        <td>${p.PA}</td>
+        <td>${p.AB}</td>
+        <td>${p.BB}</td>
+        <td>${p.H}</td>
+        <td>${p.OBP.toFixed(3)}</td>
+        <td>${p.SLG.toFixed(3)}</td>
+        <td>${p.OPS.toFixed(3)}</td>
+        <td>${(p.inPlayPct*100).toFixed(1)}%</td>
+      `;
+      tr.onclick = ()=>{
+        excluded.has(p.id) ? excluded.delete(p.id) : excluded.add(p.id);
+        updateExcludedList();
+        renderLineup();
+      };
+      if (excluded.has(p.id)) tr.classList.add('excluded');
+      tbody.appendChild(tr);
+    });
+    updateExcludedList();
+  }
+
+  function updateExcludedList() {
+    const div = document.getElementById('excludedList');
+    if (!excluded.size) return div.innerHTML='';
+    div.innerHTML = 'Excluded: '+[...excluded].map(id=>{
+      const name = rosterMap[id]?.name||id;
+      return `<span data-id="${id}">${name} ✕</span>`;
+    }).join('');
+    div.querySelectorAll('span[data-id]').forEach(el=>{
+      el.onclick = ()=>{
+        excluded.delete(el.dataset.id);
+        renderLineup();
+      };
+    });
+  }
+  </script>
+</body>
+</html>

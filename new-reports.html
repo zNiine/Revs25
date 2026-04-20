@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scouting Reports</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    /* ─── Reset ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ─── Base ──────────────────────────────────── */
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 13px;
+      color: #111827;
+      background: #eef0f4;
+      padding: 24px;
+    }
+
+    /* ─── Controls (screen only) ────────────────── */
+    #controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.12);
+      margin-bottom: 28px;
+    }
+    #controls label { font-weight: 600; color: #374151; }
+    #controls select {
+      padding: 6px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+      margin: 0;
+    }
+    #controls button {
+      padding: 7px 20px;
+      background: #111827;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0;
+      transition: background .15s;
+    }
+    #controls button:hover:not(:disabled) { background: #374151; }
+    #controls button:disabled { opacity: .45; cursor: default; }
+
+    /* ─── Page ──────────────────────────────────── */
+    @page { size: letter landscape; margin: .35in; }
+
+    .page {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 14px rgba(0,0,0,.1);
+      padding: 22px 28px;
+      margin-bottom: 28px;
+      position: relative;
+      page-break-after: always;
+      overflow: hidden;
+    }
+    .page:last-child { page-break-after: auto; }
+    .page:empty { display: none; }
+
+    /* ─── Report Header ─────────────────────────── */
+    .report-header {
+      text-align: center;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #111827;
+      margin-bottom: 8px;
+    }
+    .report-header h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: .02em;
+    }
+
+    /* ─── Jersey Number ─────────────────────────── */
+    .jersey-number {
+      position: absolute;
+      top: 14px;
+      right: 20px;
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: #111827;
+      opacity: .07;
+      line-height: 1;
+      user-select: none;
+    }
+
+    /* ─── Tables ────────────────────────────────── */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 11.5px;
+      margin-bottom: 14px;
+    }
+    th, td { padding: 5px 9px; border: 1px solid #e5e7eb; }
+    th {
+      background: #111827;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    td { text-align: center; color: #374151; }
+    td:first-child { text-align: left; font-weight: 600; color: #111827; }
+    tbody tr:nth-child(even) td {
+      background: #f9fafb;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Color swatch in type column */
+    .pitch-swatch {
+      display: inline-block;
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Summary table footnote */
+    .table-note {
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: -10px;
+      margin-bottom: 14px;
+      text-align: right;
+    }
+
+    /* ─── Usage Tree ────────────────────────────── */
+    .usage-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 18px;
+    }
+    .usage-chart {
+      width: 640px;
+      height: 590px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .stats-side {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding-bottom: 2px;
+    }
+    .stats-side table { margin-bottom: 0; font-size: 11px; }
+    .stats-side th { font-size: 9.5px; padding: 4px 7px; }
+    .stats-side td { padding: 4px 7px; }
+
+
+    /* ─── Legend ────────────────────────────────── */
+    .legend {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      font-size: .82rem;
+      line-height: 1.8;
+    }
+
+    /* ─── No-data message ───────────────────────── */
+    .no-content {
+      text-align: center;
+      color: #9ca3af;
+      font-style: italic;
+      margin-top: 60px;
+      font-size: .9rem;
+    }
+
+    /* ─── Print ─────────────────────────────────── */
+    @media print {
+      body { background: white; padding: 0; }
+      #controls { display: none !important; }
+      .page {
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0;
+        padding: .28in .35in;
+      }
+
+      th {
+        background: #111827 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      tbody tr:nth-child(even) td {
+        background: #f9fafb !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .report-header { border-bottom: 2px solid #111827 !important; }
+      .pitch-swatch {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label for="teamFilter">Select Team:</label>
+    <select id="teamFilter" disabled></select>
+    <button id="generateBtn" disabled>Generate Reports</button>
+  </div>
+  <div id="reportContainer"></div>
+
+  <script>
+    function sanitize(str) { return str.replace(/\W+/g, '_'); }
+
+    const USED_FIELDS = [
+      'PitcherTeam','Pitcher','PitcherThrows','BatterSide',
+      'Balls','Strikes','AutoPitchType',
+      'RelSpeed','SpinRate','InducedVertBreak','HorzBreak',
+      'Extension','RelHeight','SpinAxis',
+      'PlateLocSide','PlateLocHeight',
+      'GameID','Date','PAofInning','PitchofPA',
+      'PlayResult','KorBB','PitchCall','OutsOnPlay','RunsScored',
+      'ZoneTime'
+    ];
+    function pickUsed(row) {
+      const out = {};
+      for (const k of USED_FIELDS) if (k in row) out[k] = row[k];
+      return out;
+    }
+
+    const PTYPE_COLORS = {
+      'Four-Seam': '#1d4ed8',
+      'Sinker':    '#ec4899',
+      'Slider':    '#7c3aed',
+      'Changeup':  '#16a34a',
+      'Curveball': '#ea580c',
+      'Cutter':    '#0891b2',
+      'Splitter':  '#ca8a04',
+      'undefined': '#9ca3af'
+    };
+
+    const allData = [];
+
+    Papa.parse('data.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      worker: false,
+      step: (res) => allData.push(pickUsed(res.data)),
+      complete: () => initUI()
+    });
+
+    const rosterMap = {};
+    Papa.parse('rosters.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: results => {
+        results.data.forEach(row => {
+          const fullName = row.Player.trim();
+          const jersey   = row.Number.trim();
+          const parts = fullName.split(/\s+/);
+          const last  = parts.pop();
+          const first = parts.join(' ');
+          rosterMap[`${last}, ${first}`] = jersey;
+        });
+      }
+    });
+
+    function initUI() {
+      const teamFilter = document.getElementById('teamFilter'),
+            generateBtn = document.getElementById('generateBtn');
+      const teams = [...new Set(allData.map(r => r.PitcherTeam).filter(Boolean))].sort();
+      teamFilter.innerHTML = '';
+      teams.forEach(team => {
+        const opt = document.createElement('option');
+        opt.value = team; opt.textContent = team;
+        teamFilter.appendChild(opt);
+      });
+      teamFilter.disabled = false;
+      generateBtn.disabled = false;
+      generateBtn.onclick = () => generateReports(teamFilter.value);
+    }
+
+    const excludedPitchers = [
+      "Martinez, Jorge",
+      "Rivera, Eduardo",
+      "Quintana, Franky",
+      "Colon, Rabel",
+      "Corcino, Daniel",
+      'King, Thomas',
+      'Stem, Craig',
+      'Firoved, Graham',
+      'Boss, Jackson',
+      'Kruglewicz, Parker',
+      'Lantigua, John',
+    ];
+
+  
+
+    const includedPitchers = [
+        "Smith, Adam",
+        "Alexy, AJ",
+        "Garbrick, Alex",
+        "Sullivan, Billy",
+        "Patten, Cole",
+        "Bollman, Jason",
+        "Needles, Justin",
+        "Albright, Luke",
+        "McCollough, Luke",
+        "Stil, Matt",
+        "Bremer, Noah",
+        "Diehl, Phillip",
+        "Martinez, Quinton",
+        "Voacolo, Ronnie",
+    ];
+
+    function generateReports(team) {
+      const container = document.getElementById('reportContainer');
+      container.innerHTML = '';
+      let pitchers = [...new Set(
+        allData.filter(r => r.PitcherTeam === team).map(r => r.Pitcher)
+      )];
+      if (includedPitchers.length > 0) {
+        // case-insensitive match so "Alexy, AJ" matches "Alexy, Aj" in data
+        const included = includedPitchers.map(n => n.trim().toLowerCase());
+        pitchers = pitchers.filter(name => included.includes((name || '').trim().toLowerCase()));
+      } else {
+        const excluded = excludedPitchers.map(n => n.trim().toLowerCase());
+        pitchers = pitchers.filter(name => !excluded.includes((name || '').trim().toLowerCase()));
+      }
+      pitchers.sort((a, b) => {
+        const numA = rosterMap[a] ? parseInt(rosterMap[a], 10) : Infinity;
+        const numB = rosterMap[b] ? parseInt(rosterMap[b], 10) : Infinity;
+        return numA - numB;
+      });
+      pitchers.forEach(pitcher => {
+        ['Left','Right'].forEach(side => {
+          try {
+            const rows = allData.filter(r => {
+              if (r.Pitcher !== pitcher) return false;
+              const bs = (r.BatterSide || '').trim();
+              return side === 'Left'  ? (bs === 'Left'  || bs === 'L') :
+                     side === 'Right' ? (bs === 'Right' || bs === 'R') : false;
+            });
+            if (!rows.length) return;
+            createReportsForPitcher(container, pitcher, side, rows);
+          } catch(e) {
+            console.error(`Error generating ${pitcher} vs ${side}:`, e);
+          }
+        });
+      });
+    }
+
+    function createReportsForPitcher(container, pitcher, side, rows) {
+      if (!Array.isArray(rows)) rows = Array.from(rows);
+      const hand = rows[0].PitcherThrows === 'Right' ? 'RHP' : 'LHP';
+      const parts = pitcher.split(' ');
+      const displayName = `${parts.slice(-1)} ${parts.slice(0,-1).join(' ')} (${hand}) vs ${side}`;
+      const jerseyNum = rosterMap[pitcher] || '—';
+      const pages = [
+        ['UsageStats', () => renderUsageStatsPage(container, displayName, pitcher, side, rows, jerseyNum)],
+        ['Runners',    () => renderRunnersPage   (container, displayName, pitcher, side, rows, jerseyNum)],
+        ['Summary',    () => renderSummaryPage   (container, displayName, pitcher, side, rows, jerseyNum)],
+      ];
+      pages.forEach(([name, fn]) => {
+        try { fn(); }
+        catch(e) { console.error(`${pitcher} vs ${side} — ${name} page error:`, e); }
+      });
+    }
+
+    /* ── Page renderers ────────────────────────── */
+
+    function renderUsageStatsPage(container, displayName, pitcher, side, rows, jerseyNum) {
+      const pg = newPage(container);
+      addJersey(pg, jerseyNum);
+      pg.appendChild(makeHeader(displayName));
+
+      const usageCont = document.createElement('div');
+      usageCont.className = 'usage-container';
+
+      const uDiv = document.createElement('div');
+      uDiv.id = `usage_${sanitize(pitcher)}_${side}_usage`;
+      uDiv.className = 'usage-chart';
+      usageCont.appendChild(uDiv);
+
+      const statsId = `stats_${sanitize(pitcher)}_${side}_usage`;
+      const statsSide = document.createElement('div');
+      statsSide.className = 'stats-side';
+      statsSide.innerHTML = `
+        <table>
+          <thead><tr><th>Type</th><th>#</th><th>Velo</th><th>Std</th></tr></thead>
+          <tbody id="${statsId}"></tbody>
+        </table>
+      `;
+      usageCont.appendChild(statsSide);
+
+      pg.appendChild(usageCont);
+      renderUsageTree(rows, uDiv.id);
+      renderStats(rows, statsId);
+    }
+
+    function renderRunnersPage(container, displayName, pitcher, side, rows) {
+      const pg = newPage(container);
+      pg.appendChild(makeHeader(displayName + ' — Runners On'));
+
+      const runnerRows = filterRowsWithRunners(rows);
+      if (!runnerRows.length) {
+        const msg = document.createElement('p');
+        msg.className = 'no-content';
+        msg.textContent = 'No plate appearances with a runner on base.';
+        pg.appendChild(msg);
+        return;
+      }
+
+      const usageCont = document.createElement('div');
+      usageCont.className = 'usage-container';
+
+      const uDiv = document.createElement('div');
+      uDiv.id = `usage_${sanitize(pitcher)}_${side}_runners`;
+      uDiv.className = 'usage-chart';
+      usageCont.appendChild(uDiv);
+
+      const statsId = `stats_${sanitize(pitcher)}_${side}_runners`;
+      const statsSide = document.createElement('div');
+      statsSide.className = 'stats-side';
+      statsSide.innerHTML = `
+        <table>
+          <thead><tr><th>Type</th><th>#</th><th>Velo</th><th>Std</th></tr></thead>
+          <tbody id="${statsId}"></tbody>
+        </table>
+      `;
+      usageCont.appendChild(statsSide);
+
+      pg.appendChild(usageCont);
+      renderUsageTree(runnerRows, uDiv.id);
+      renderStats(runnerRows, statsId);
+    }
+
+    function renderSummaryPage(container, displayName, pitcher, side, rows, jerseyNum) {
+      const pg = newPage(container);
+      addJersey(pg, jerseyNum);
+      pg.appendChild(makeHeader(displayName));
+
+      const sumId = `sum_${sanitize(pitcher)}_${side}`;
+      const sumTable = document.createElement('table');
+      sumTable.id = sumId;
+      sumTable.innerHTML = `
+        <thead>
+          <tr>
+            <th>Type</th><th>#</th><th>%</th>
+            <th>Velo</th><th>Spin</th><th>IVB</th><th>HB</th>
+            <th>Ext</th><th>Zone T</th><th>Whiff%</th><th>Swing%</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      pg.appendChild(sumTable);
+      renderSummaryTable(rows, sumId);
+
+      const note = document.createElement('p');
+      note.className = 'table-note';
+      note.textContent = 'IVB = Induced Vertical Break  ·  HB = Horizontal Break  ·  Ext = Extension  ·  Zone T = Zone Time';
+      pg.appendChild(note);
+    }
+
+    /* ── Utilities ─────────────────────────────── */
+
+    function newPage(container) {
+      const d = document.createElement('div');
+      d.className = 'page';
+      container.appendChild(d);
+      return d;
+    }
+
+    function makeHeader(text) {
+      const h = document.createElement('div');
+      h.className = 'report-header';
+      h.innerHTML = `<h1>${text}</h1>`;
+      return h;
+    }
+
+    function addJersey(pg, num) {
+      const d = document.createElement('div');
+      d.className = 'jersey-number';
+      d.textContent = `#${num}`;
+      pg.appendChild(d);
+    }
+
+    /* ── Runners filter ─────────────────────────── */
+
+    function filterRowsWithRunners(rows) {
+      const str = v => (v == null ? '' : String(v));
+      const num = v => parseInt(v) || 0;
+
+      const sorted = rows.slice().sort((a, b) =>
+        str(a.GameID).localeCompare(str(b.GameID)) ||
+        str(a.Date).localeCompare(str(b.Date)) ||
+        num(a.PAofInning) - num(b.PAofInning) ||
+        num(a.PitchofPA)  - num(b.PitchofPA)
+      );
+
+      let runnersOnBase = 0, prevGame = null, prevDate = null, prevPA = null;
+      const output = [];
+
+      sorted.forEach(row => {
+        const pa     = num(row.PAofInning);
+        const prevPAn = num(prevPA);
+        // reset on new game, new date, or PA counter reset to 1 (new half-inning)
+        if (str(row.GameID) !== str(prevGame) ||
+            str(row.Date)   !== str(prevDate)  ||
+            (pa === 1 && prevPAn !== 1 && prevPA !== null)) {
+          runnersOnBase = 0;
+        }
+
+        if (runnersOnBase > 0) output.push(row);
+
+        const pr     = str(row.PlayResult);
+        const kb     = str(row.KorBB);
+        const pb     = str(row.PitchCall);
+        const outs   = num(row.OutsOnPlay);
+        const scored = num(row.RunsScored);
+
+        if (kb === 'Walk' || kb === 'HitByPitch') {
+          runnersOnBase++;
+        } else if (['Single','Double','Triple','Error'].includes(pr)) {
+          runnersOnBase++;
+        }
+
+        if (scored > 0) runnersOnBase = Math.max(0, runnersOnBase - scored);
+        if (kb === 'Undefined' && ['BallCalled','StrikeSwinging'].includes(pb) && outs === 1)
+          runnersOnBase = Math.max(0, runnersOnBase - 1);
+        if (outs === 2) runnersOnBase = Math.max(0, runnersOnBase - 1);
+
+        prevGame = row.GameID; prevDate = row.Date; prevPA = row.PAofInning;
+      });
+
+      return output;
+    }
+
+    /* ── Usage Tree ─────────────────────────────── */
+
+    function renderUsageTree(rows, containerId) {
+      const tree = {};
+      rows.forEach(row => {
+        const countKey = `${Math.round(row.Balls)}-${Math.round(row.Strikes)}`;
+        const pt = row.AutoPitchType || 'undefined';
+        if (!tree[countKey]) tree[countKey] = {};
+        tree[countKey][pt] = (tree[countKey][pt] || 0) + 1;
+      });
+
+      const countKeys = Object.keys(tree);
+      const maxTier = countKeys.map(k => k.split('-').map(Number))
+        .reduce((max, [b,s]) => Math.max(max, b+s), 0);
+
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      container.style.position = 'relative';
+
+      const BOX_SIZE     = 110;
+      const X_SPACING    = 130;
+      const Y_SPACING    = 100;
+      const LEGEND_PAD   = 320;
+
+      for (let sum = 0; sum <= maxTier; sum++) {
+        const tierCells = [];
+        for (let balls = 0; balls <= 3; balls++) {
+          const strikes = sum - balls;
+          if (strikes < 0 || strikes > 2) continue;
+          tierCells.push({ balls, strikes, distMap: tree[`${balls}-${strikes}`] || {} });
+        }
+        tierCells.sort((a, b) => b.balls - a.balls);
+
+        const rowWidth = (tierCells.length - 1) * X_SPACING + BOX_SIZE;
+        const startX   = (container.clientWidth - rowWidth) / 2;
+
+        tierCells.forEach((cell, index) => {
+          const cellDiv = document.createElement('div');
+          cellDiv.style.cssText = `
+            position: absolute;
+            left: ${startX + index * X_SPACING}px;
+            top: ${sum * Y_SPACING}px;
+            width: ${BOX_SIZE}px;
+            height: ${BOX_SIZE}px;
+          `;
+          container.appendChild(cellDiv);
+
+          const labels = Object.keys(cell.distMap).length ? Object.keys(cell.distMap) : ['none'];
+          const values = labels.map(l => cell.distMap[l] || 0);
+
+          Plotly.newPlot(cellDiv, [{
+            type: 'pie', labels, values, hole: 0.55,
+            marker: { colors: labels.map(l => PTYPE_COLORS[l] || PTYPE_COLORS.undefined) },
+            textinfo: 'percent', textposition: 'inside',
+            textfont: { color: '#fff', size: 9 },
+            hoverinfo: 'label+value'
+          }], {
+            margin: { t:0, b:0, l:0, r:0 },
+            showlegend: false,
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor:  'rgba(0,0,0,0)'
+          }, { displayModeBar: false });
+
+          const totalCount = values.reduce((s,v) => s+v, 0);
+          const labelDiv = document.createElement('div');
+          labelDiv.innerHTML = `${cell.balls}-${cell.strikes}<br><span style="font-size:10px;color:#6b7280">${totalCount}</span>`;
+          labelDiv.style.cssText = `
+            position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; font-size: 11px; font-weight: 700;
+            color: #111827; pointer-events: none;
+          `;
+          cellDiv.appendChild(labelDiv);
+        });
+      }
+
+      const usedTypes = new Set();
+      Object.values(tree).forEach(dm => Object.keys(dm).forEach(t => { if (dm[t] > 0) usedTypes.add(t); }));
+
+      const legend = document.createElement('div');
+      legend.className = 'legend';
+      legend.style.cssText = `
+        position: absolute; right: 4px; top: ${LEGEND_PAD}px;
+        padding: 6px 10px; background: rgba(255,255,255,.9);
+        border: 1px solid #e5e7eb; border-radius: 6px;
+        font-size: .78rem; line-height: 1.9;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      `;
+      usedTypes.forEach(type => {
+        legend.innerHTML += `
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;
+              background:${PTYPE_COLORS[type] || PTYPE_COLORS.undefined};
+              -webkit-print-color-adjust:exact;print-color-adjust:exact;flex-shrink:0;"></span>
+            <span style="color:#111827;font-weight:600;">${type}</span>
+          </div>`;
+      });
+      container.appendChild(legend);
+    }
+
+    /* ── Stats table ────────────────────────────── */
+
+    function renderStats(rows, tbodyId) {
+      const stats = {};
+      rows.forEach(r => {
+        const type = r.AutoPitchType || 'undefined';
+        const speed = parseFloat(r.RelSpeed);
+        if (isNaN(speed)) return;
+        if (!stats[type]) stats[type] = { count:0, sum:0, sumSq:0 };
+        stats[type].count++;
+        stats[type].sum += speed;
+        stats[type].sumSq += speed * speed;
+      });
+      const tbody = document.getElementById(tbodyId);
+      tbody.innerHTML = '';
+      Object.entries(stats)
+        .sort(([,a],[,b]) => b.count - a.count)
+        .forEach(([type, {count, sum, sumSq}]) => {
+          const mean = sum / count;
+          const std  = Math.sqrt(Math.max(0, sumSq/count - mean*mean));
+          const color = PTYPE_COLORS[type] || PTYPE_COLORS.undefined;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><span class="pitch-swatch" style="background:${color}"></span>${type}</td>
+            <td>${count}</td>
+            <td>${mean.toFixed(1)}</td>
+            <td>${std.toFixed(1)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+    }
+
+    /* ── Summary Table ──────────────────────────── */
+
+    function renderSummaryTable(rows, tableId) {
+      const stats = {};
+      rows.forEach(r => {
+        const t = r.AutoPitchType || 'undefined';
+        if (!stats[t]) stats[t] = { count:0, sumV:0, sumS:0, sumIVB:0, sumH:0, sumE:0, sumZT:0, whiff:0, swing:0 };
+        const s = stats[t];
+        s.count++;
+        const v  = parseFloat(r.RelSpeed);        if (!isNaN(v))  s.sumV   += v;
+        const sp = parseFloat(r.SpinRate);        if (!isNaN(sp)) s.sumS   += sp;
+        const iv = parseFloat(r.InducedVertBreak); if (!isNaN(iv)) s.sumIVB += iv;
+        const ho = parseFloat(r.HorzBreak);        if (!isNaN(ho)) s.sumH   += ho;
+        const ex = parseFloat(r.Extension);        if (!isNaN(ex)) s.sumE   += ex;
+        const zt = parseFloat(r.ZoneTime);         if (!isNaN(zt)) s.sumZT  += zt;
+        const pc = r.PitchCall || '';
+        const swing = pc.startsWith('StrikeSwing') || pc === 'InPlay';
+        if (swing && pc === 'StrikeSwinging') s.whiff++;
+        if (swing) s.swing++;
+      });
+      const tbody = document.getElementById(tableId).querySelector('tbody');
+      tbody.innerHTML = '';
+      const total = rows.length;
+      Object.entries(stats)
+        .sort(([,a],[,b]) => b.count - a.count)
+        .forEach(([t, s]) => {
+          const color = PTYPE_COLORS[t] || PTYPE_COLORS.undefined;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><span class="pitch-swatch" style="background:${color}"></span>${t}</td>
+            <td>${s.count}</td>
+            <td>${(s.count/total*100).toFixed(1)}%</td>
+            <td>${(s.sumV/s.count).toFixed(1)}</td>
+            <td>${(s.sumS/s.count).toFixed(0)}</td>
+            <td>${(s.sumIVB/s.count).toFixed(1)}</td>
+            <td>${(s.sumH/s.count).toFixed(1)}</td>
+            <td>${(s.sumE/s.count).toFixed(1)}</td>
+            <td>${(s.sumZT/s.count).toFixed(2)}</td>
+            <td>${(s.whiff/s.count*100).toFixed(1)}%</td>
+            <td>${(s.swing/s.count*100).toFixed(1)}%</td>
+          `;
+          tbody.appendChild(tr);
+        });
+    }
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+      authDomain: "revs-2c987.firebaseapp.com",
+      projectId: "revs-2c987",
+      storageBucket: "revs-2c987.firebasestorage.app",
+      messagingSenderId: "181256684157",
+      appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+      measurementId: "G-2050889X0C"
+    };
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+
+    const auth = firebase.auth();
+    auth.onAuthStateChanged(user => {
+      if (!user) window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Advantage Count Batting Dashboard (Print Optimized)</title>
+<style>
+    @media print {
+        .page-break { page-break-before: always; }
+    }
+    body { font-family: sans-serif; background: #fff; color: #000; padding: 20px; }
+    .player-card {
+        background: #f0f0f0;
+        padding: 15px;
+        margin: 10px;
+        border-radius: 8px;
+        display: inline-block;
+        width: 230px;
+        vertical-align: top;
+        height: 170px;
+    }
+    .player-card h3 { margin: 0 0 10px 0; font-size: 1.1em; }
+</style>
+</head>
+<body>
+
+<div id="cardsContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+const cardsContainer = document.getElementById('cardsContainer');
+
+const TEAM = "YOR"; // <--- SET YOUR TEAM HERE
+
+let data = [];
+
+const advantageCounts = [
+    { label: "1-0", balls: 1, strikes: 0 },
+    { label: "2-0", balls: 2, strikes: 0 },
+    { label: "3-0", balls: 3, strikes: 0 },
+    { label: "2-1", balls: 2, strikes: 1 },
+    { label: "3-1", balls: 3, strikes: 1 },
+    { label: "3-2", balls: 3, strikes: 2 },
+    { label: "1-2", balls: 1, strikes: 2 },
+    { label: "0-2", balls: 0, strikes: 2 },
+];
+
+fetch('data.csv')
+    .then(response => response.text())
+    .then(text => {
+        Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                data = results.data;
+                displayPlayerStats(TEAM);
+                window.print(); // Auto-print on load
+            }
+        });
+    });
+
+function displayPlayerStats(team) {
+    cardsContainer.innerHTML = '';
+    const players = {};
+    const paMap = {};
+
+    data.forEach(row => {
+        if (!row.BatterTeam) return;
+        const paKey = `${row.BatterTeam}|${row.Batter}|${row.Inning}|${row["Top/Bottom"]}|${row.PAofInning}`;
+        if (!paMap[paKey]) paMap[paKey] = [];
+        paMap[paKey].push(row);
+    });
+
+    for (const [paKey, pitches] of Object.entries(paMap)) {
+        const [batterTeam, batter] = paKey.split('|');
+        if (batterTeam !== team) continue;
+
+        let countsInPA = new Set();
+        pitches.forEach(p => {
+            const balls = parseInt(p.Balls);
+            const strikes = parseInt(p.Strikes);
+            advantageCounts.forEach(count => {
+                if (count.balls === balls && count.strikes === strikes) {
+                    countsInPA.add(count.label);
+                }
+            });
+        });
+
+        if (countsInPA.size === 0) continue;
+
+        const lastPitch = pitches[pitches.length - 1];
+        let isAB = true, isH = false, isBB = false, isHBP = false, isSF = false, TB = 0;
+
+        if (["Walk"].includes(lastPitch.KorBB)) { isAB = false; isBB = true; }
+        else if (["HitByPitch"].includes(lastPitch.KorBB)) { isAB = false; isHBP = true; }
+        else if (["SacFly"].includes(lastPitch.PlayResult)) { isSF = true; }
+
+        if (["Single", "Double", "Triple", "HomeRun"].includes(lastPitch.PlayResult)) {
+            isH = true;
+            TB = { "Single": 1, "Double": 2, "Triple": 3, "HomeRun": 4 }[lastPitch.PlayResult];
+        }
+
+        countsInPA.forEach(countLabel => {
+            if (!players[batter]) players[batter] = {};
+            if (!players[batter][countLabel]) players[batter][countLabel] = { AB: 0, H: 0, BB: 0, HBP: 0, SF: 0, TB: 0 };
+            const stats = players[batter][countLabel];
+            if (isAB) stats.AB += 1;
+            if (isH) stats.H += 1;
+            if (isBB) stats.BB += 1;
+            if (isHBP) stats.HBP += 1;
+            if (isSF) stats.SF += 1;
+            stats.TB += TB;
+        });
+    }
+
+    Object.entries(players).forEach(([batter, counts], index) => {
+        advantageCounts.forEach(count => {
+            const stats = counts[count.label];
+            if (stats) {
+                const BA = stats.AB > 0 ? (stats.H / stats.AB).toFixed(3) : "0.000";
+                const SLG = stats.AB > 0 ? (stats.TB / stats.AB).toFixed(3) : "0.000";
+                const OBP_Denominator = stats.AB + stats.BB + stats.HBP + stats.SF;
+                const OBP = OBP_Denominator > 0 ? ((stats.H + stats.BB + stats.HBP) / OBP_Denominator).toFixed(3) : "0.000";
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.innerHTML = `
+                    <h3>${batter} (${count.label})</h3>
+                    <p><strong>BA:</strong> ${BA}</p>
+                    <p><strong>SLG:</strong> ${SLG}</p>
+                    <p><strong>OBP:</strong> ${OBP}</p>
+                    <p>AB: ${stats.AB}, H: ${stats.H}, BB: ${stats.BB}, HBP: ${stats.HBP}, SF: ${stats.SF}</p>
+                `;
+                cardsContainer.appendChild(card);
+            } else {
+                const blankCard = document.createElement('div');
+                blankCard.className = 'player-card';
+                blankCard.innerHTML = `
+                    <h3>${batter} (${count.label})</h3>
+                    <p>No data for this count.</p>
+                `;
+                cardsContainer.appendChild(blankCard);
+            }
+        });
+
+        // Page break after each player except the last
+        if (index < Object.keys(players).length - 1) {
+            const pageBreak = document.createElement('div');
+            pageBreak.className = 'page-break';
+            cardsContainer.appendChild(pageBreak);
+        }
+    });
+}
+</script>
+</body>
+</html>

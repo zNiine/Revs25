@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Game Dashboard</title>
+  <style>
+    
+    body { margin:0; padding:0; font-family:sans-serif; display:flex; flex-direction:column; height:100vh; }
+    header { background:#222; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:.5em 1em; }
+    header button { background:#fff; color:#000; border:none; padding:.3em .6em; cursor:pointer; border-radius:3px; font-size:1.2em; }
+    header button:disabled { opacity:.4; cursor:default; }
+    main { flex:1; overflow:auto; padding:1em; }
+    .view { max-width:1000px; margin:0 auto 2em; }
+
+    /* Box‐score */
+    table { border-collapse:collapse; width:100%; margin-bottom:1em; }
+    th, td { border:1px solid #ddd; padding:.4em .6em; text-align:center; }
+    th { background:#f4f4f4; }
+
+    /* Detail tables */
+    .scrollTable { overflow-x:auto; margin-bottom:1em; }
+    .scrollTable table { border-collapse:collapse; width:max-content; min-width:100%; }
+    .scrollTable th, .scrollTable td { border:1px solid #ddd; padding:.3em .6em; white-space:nowrap; }
+    .scrollTable th { background:#eee; }
+
+    .canvas-container { position:relative; width:100%; height:400px; margin-bottom:1em; border:1px solid #ccc; }
+    canvas { width:100%; height:100%; display:block; }
+
+    /* Add to your existing <style> block (or external stylesheet) */
+#menu {
+    
+  background: #333;
+  font-family: sans-serif;
+}
+#menu ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  justify-content: center;     /* centers the menu items */
+}
+#menu li {
+  margin: 0;
+}
+#menu a {
+  display: block;
+  padding: 0.75em 1.5em;
+  color: #eee;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+#menu a:hover {
+  background: #444;
+  color: #fff;
+}
+#menu a.active {
+  background: #0066cc;
+  color: #fff;
+}
+@media (max-width: 600px) {
+  /* stack vertically on small screens */
+  #menu ul {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #menu a {
+    text-align: center;
+    border-top: 1px solid #444;
+  }
+  #menu a:first-child {
+    border-top: none;
+  }
+}
+
+  </style>
+</head>
+<body>
+    
+  <header>
+    <nav id="menu">
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="leaderboards.html">Leaderboards</a></li>
+  </ul>
+  
+</nav>
+<br />
+    <button id="prevPitch" disabled>&lt;</button>
+    <h1 id="title">Loading…</h1>
+    <button id="nextPitch" disabled>&gt;</button>
+  </header>
+  <main>
+    <div id="boxScore" class="view"></div>
+    <div id="pitchDetail" class="view"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+  // —— Config —— 
+  const DATA_CSV    = 'data.csv';
+  const FIELDER_CSV = 'fielder_positions.csv';
+
+  const teamParkMap = {
+    'LAN'     : 'Penn Medicine Park',
+    'SMD'     : 'Regency Furniture Stadium',
+    'YOR'     : 'Wellspan Park',
+    'HAG_FLY' : 'Meritus Park',
+    'LI'      : 'Fairfield Properties BallPark',
+    'GAS'     : 'CaroMont Health Park',
+    'STA_YAN' : 'SIUH Community Park',
+    'HP'      : 'Truist Point',
+    'LEX_LEG' : 'Legends Field',
+    'WES_POW' : 'GoMart BallPark'
+  };
+
+  const parks = {
+    default: { leftFoul:325, leftCenter:(325+400)/2, center:400, rightCenter:(400+325)/2, rightFoul:325 },
+    "Meritus Park":              { leftFoul:346, leftCenter:(346+387)/2, center:400, rightCenter:(400+360)/2, rightFoul:325 },
+    "Wellspan Park":             { leftFoul:300, leftCenter:(300+405)/2, center:405, rightCenter:(405+326)/2, rightFoul:326 },
+    "CaroMont Health Park":      { leftFoul:315, leftCenter:361,            center:400, rightCenter:367,            rightFoul:325 },
+    "Penn Medicine Park":        { leftFoul:320, leftCenter:409,            center:400, rightCenter:363,            rightFoul:300 },
+    "Fairfield Properties BallPark": { leftFoul:325, leftCenter:(325+400)/2, center:400, rightCenter:(400+325)/2, rightFoul:325 },
+    "SIUH Community Park":       { leftFoul:320, leftCenter:(320+390)/2, center:390, rightCenter:(390+318)/2, rightFoul:318 },
+    "GoMart BallPark":           { leftFoul:330, leftCenter:(330+400)/2, center:400, rightCenter:(400+320)/2, rightFoul:320 },
+    "Truist Point":              { leftFoul:336, leftCenter:363,            center:400, rightCenter:366,            rightFoul:339 },
+    "Legends Field":             { leftFoul:320, leftCenter:(320+401)/2, center:401, rightCenter:(401+318)/2, rightFoul:318 },
+    "Regency Furniture Stadium": { leftFoul:310, leftCenter:(310+400)/2, center:400, rightCenter:(400+325)/2, rightFoul:325 }
+  };
+
+  // —— State —— 
+  let allPitches = [], fPositions = [], gamePitches = [];
+  let gameUID = null,
+      startPID = new URLSearchParams(location.search).get('pitchUID'),
+      urlGame  = new URLSearchParams(location.search).get('gameUID'),
+      idxCurrent = 0,
+      currentPark = parks.default;
+
+  const $ = id => document.getElementById(id);
+  const toNum = s => parseFloat(s)||0;
+
+  // —— Load CSVs —— 
+  Papa.parse(DATA_CSV, {
+    header:true, download:true,
+    complete: res => {
+      allPitches = res.data;
+      Papa.parse(FIELDER_CSV, {
+        header:true, download:true,
+        complete: res2 => {
+          fPositions = res2.data;
+          init();
+        }
+      });
+    }
+  });
+  
+function drawPlateView(canvas, p) {
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+
+  // Real dimensions in feet
+  const zone = {
+    left:   -17/24,   // −0.708 ft
+    right:   17/24,   // +0.708 ft
+    bottom:  1.5,     // 1.5 ft
+    top:     3.5      // 3.5 ft
+  };
+  const zoneW = zone.right - zone.left;   // ≈1.416 ft
+  const zoneH = zone.top   - zone.bottom; // 2 ft
+
+  // Compute base scale to fit zone
+  const margin = 20;
+  const availW = canvas.width  - 2*margin;
+  const availH = canvas.height - 2*margin;
+  const baseScale = Math.min(availW/zoneW, availH/zoneH);
+
+  // Shrink factor (70%)
+  const shrink = 0.7;
+  const scale  = baseScale * shrink;
+
+  // Pixel size of zone
+  const pixW = zoneW * scale;
+  const pixH = zoneH * scale;
+
+  // Center zone
+  const originX = (canvas.width  - pixW) / 2;
+  const originY = (canvas.height + pixH) / 2; // y of zone bottom
+
+  // Mapping functions
+  const mapX = x => originX + (x - zone.left) * scale;
+  const mapY = y => originY - (y - zone.bottom) * scale;
+
+  // Clear
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw strike zone
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth   = 2;
+  ctx.strokeRect(
+    mapX(zone.left),
+    mapY(zone.top),
+    pixW,
+    pixH
+  );
+
+  // Plot crossing point
+  const px = parseFloat(p.PlateLocSide);
+  const py = parseFloat(p.PlateLocHeight);
+  if (!isNaN(px) && !isNaN(py)) {
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.arc(mapX(px), mapY(py), 5, 0, 2*Math.PI);
+    ctx.fill();
+  }
+
+
+
+}
+
+
+  function init(){
+    // find gameUID
+    if (startPID){
+      const p = allPitches.find(r=>r.PitchUID===startPID);
+      if (!p){ $('title').innerText='⚠ pitchUID not found'; return; }
+      gameUID = p.GameUID;
+    }
+    else if (urlGame){
+      gameUID = urlGame;
+    } else {
+      $('title').innerText = '⚠ provide ?gameUID or ?pitchUID'; return;
+    }
+
+    // filter + sort
+    gamePitches = allPitches
+      .filter(r=>r.GameUID===gameUID)
+      .sort((a,b)=>{
+        let d = +a.Inning - +b.Inning; if(d) return d;
+        if(a['Top/Bottom']!==b['Top/Bottom'])
+          return a['Top/Bottom']==='Top'? -1:1;
+        return +a.PitchNo - +b.PitchNo;
+      });
+
+    if (!gamePitches.length){
+      $('title').innerText = `⚠ no pitches for ${gameUID}`; return;
+    }
+
+    // start index
+    if (startPID){
+      const i = gamePitches.findIndex(p=>p.PitchUID===startPID);
+      if (i>=0) idxCurrent = i;
+    }
+
+    // pick park
+    const homeAbbr = gamePitches[0].HomeTeam;
+    const parkName = teamParkMap[homeAbbr]||'default';
+    currentPark = parks[parkName]||parks.default;
+
+    // render
+    renderBoxScore();
+    renderPitch();
+
+    $('prevPitch').onclick = ()=>{ if(idxCurrent>0){ idxCurrent--; renderPitch(); }};
+    $('nextPitch').onclick = ()=>{ if(idxCurrent<gamePitches.length-1){ idxCurrent++; renderPitch(); }};
+  }
+
+  // —— Box‐score up to this pitch —— 
+  function renderBoxScore(){
+    const bs = $('boxScore'); bs.innerHTML='';
+    // accumulate runs per half-inning up to current pitch
+    const runs={away:{}, home:{}};
+    const cp = gamePitches[idxCurrent];
+    gamePitches.slice(0, idxCurrent+1).forEach(p=>{
+      const inn = +p.Inning;
+      runs.away[inn] = runs.away[inn]||0;
+      runs.home[inn] = runs.home[inn]||0;
+      const r = toNum(p.RunsScored);
+      if (p['Top/Bottom']==='Top')    runs.away[inn]+=r;
+      else                            runs.home[inn]+=r;
+    });
+
+    // determine last inning to show
+    const lastInn = +cp.Inning;
+
+    // build table
+    const tbl = document.createElement('table');
+    let hdr = `<tr><th>Team</th>`;
+    for(let i=1;i<=lastInn;i++) hdr += `<th>${i}</th>`;
+    hdr += `<th>Total</th></tr>`;
+    tbl.innerHTML = hdr;
+
+    const away = gamePitches[0].AwayNameFull,
+          home = gamePitches[0].HomeNameFull;
+
+    function makeRow(name, side){
+      let tot=0, cells='';
+      for(let i=1;i<=lastInn;i++){
+        const v = runs[side][i]||0;
+        tot += v;
+        cells += `<td>${v}</td>`;
+      }
+      return `<tr><td><b>${name}</b></td>${cells}<td><b>${tot}</b></td></tr>`;
+    }
+
+    tbl.innerHTML += makeRow(away,'away') + makeRow(home,'home');
+    bs.appendChild(tbl);
+  }
+
+  
+function renderPitch() {
+  const p = gamePitches[idxCurrent];
+
+  const paPitchNum = p.PitchofPA || p.PitchNo;          // fallback to game pitch if missing
+  const pitcherSide = (p.PitcherThrows === 'Left' ? 'LHP' : 'RHP');
+  const batterSide  = (p.BatterSide   === 'Left' ? 'LHB' : 'RHB');
+
+  // Update header and nav buttons
+  $('title').innerText =
+    `PA Pitch ${paPitchNum} (${p.Inning} ${p['Top/Bottom']})  —  ` +
+    `${p.Pitcher} (${pitcherSide})  vs  ${p.Batter} (${batterSide})`;
+
+  $('prevPitch').disabled = idxCurrent === 0;
+  $('nextPitch').disabled = idxCurrent === gamePitches.length - 1;
+
+  // Clear previous content
+  const pd = $('pitchDetail');
+  pd.innerHTML = '';
+
+  // Helper to create a horizontally scrollable single-row table
+  function makeTable(fields, row) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'scrollTable';
+    const tbl = document.createElement('table');
+
+    // Header row
+    const hdr = fields.map(f => `<th>${f}</th>`).join('');
+    // Data row
+    const dataRow = fields.map(f => `<td>${row[f] != null ? row[f] : '–'}</td>`).join('');
+
+    tbl.innerHTML = `<thead><tr>${hdr}</tr></thead><tbody><tr>${dataRow}</tr></tbody>`;
+    wrapper.appendChild(tbl);
+    pd.appendChild(wrapper);
+  }
+
+  // 1) Game table
+  makeTable(
+    ['Outs', 'Balls', 'Strikes'],
+    p
+  );
+
+  // 2) Pitch table
+  makeTable(
+    [
+      'AutoPitchType', 'PitchCall', 'RelSpeed', 'VertRelAngle', 'HorzRelAngle',
+      'SpinRate', 'SpinAxis', 'Tilt', 'RelHeight', 'RelSide', 'Extension', 'VertBreak',
+      'InducedVertBreak', 'HorzBreak', 'PlateLocHeight', 'PlateLocSide', 'ZoneSpeed',
+      'VertApprAngle', 'HorzApprAngle', 'ZoneTime', 'SpeedDrop'
+    ],
+    p
+  );
+
+  // 3) Hit table (only if there's exit velocity)
+  if (p.ExitSpeed) {
+    makeTable(
+      ['ExitSpeed', 'Angle', 'Direction', 'HitSpinRate', 'Distance', 'Bearing', 'MaxHeight', 'HangTime'],
+      p
+    );
+  }
+
+  // 4) Result table
+  makeTable(
+    ['RunsScored', 'OutsOnPlay', 'PitchCall', 'PlayResult'],
+    p
+  );
+
+  // ----- Plate View Canvas -----
+  const plateBox = document.createElement('div');
+  plateBox.className = 'canvas-container';
+  const plateCan = document.createElement('canvas');
+  plateBox.appendChild(plateCan);
+  pd.appendChild(plateBox);
+  drawPlateView(plateCan, p);
+
+  // ----- Spray + Fielders Canvas -----
+  const sprayBox = document.createElement('div');
+  sprayBox.className = 'canvas-container';
+  const sprayCan = document.createElement('canvas');
+  sprayBox.appendChild(sprayCan);
+  pd.appendChild(sprayBox);
+  const fr = fPositions.find(r => r.PitchUID === p.PitchUID);
+  drawSprayCanvas(sprayCan, [p], fr);
+}
+
+
+  // —— Drawing full field + spray + fielders —— 
+  function drawSprayCanvas(canvas, rows, fr){
+    const ctx = canvas.getContext('2d');
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    const park   = currentPark;
+    const origin = { x:canvas.width/2, y:canvas.height-20 };
+    const scale  = (canvas.height-40)/park.center;
+
+    // foul lines
+    const ang = Math.PI/4;
+    ctx.strokeStyle='#888'; ctx.lineWidth=1.5; ctx.beginPath();
+    ctx.moveTo(origin.x,origin.y);
+    ctx.lineTo(origin.x+Math.sin(-ang)*park.leftFoul*scale,
+               origin.y-Math.cos(-ang)*park.leftFoul*scale);
+    ctx.moveTo(origin.x,origin.y);
+    ctx.lineTo(origin.x+Math.sin( ang)*park.rightFoul*scale,
+               origin.y-Math.cos( ang)*park.rightFoul*scale);
+    ctx.stroke();
+
+    // outfield wall (5‐point)
+    const angles = [-45,-22.5,0,22.5,45];
+    const radii  = [park.leftFoul,park.leftCenter,park.center,park.rightCenter,park.rightFoul];
+    ctx.strokeStyle='#555'; ctx.lineWidth=3; ctx.beginPath();
+    angles.forEach((d,i)=>{
+      const rad = d*Math.PI/180;
+      const dx  = Math.sin(rad)*radii[i]*scale;
+      const dy  = Math.cos(rad)*radii[i]*scale;
+      const x   = origin.x+dx, y = origin.y-dy;
+      i===0? ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // fence labels
+    ctx.fillStyle='#000'; ctx.font='12px sans-serif';
+    angles.forEach((d,i)=>{
+      const rad = d*Math.PI/180;
+      const dx  = Math.sin(rad)*radii[i]*scale;
+      const dy  = Math.cos(rad)*radii[i]*scale;
+      const px  = origin.x+dx, py = origin.y-dy;
+      ctx.fillText(Math.round(radii[i])+"'", px + (d<0?-25:5), py+15);
+    });
+
+    // infield diamond
+    const bases = [
+      {x:0,z:0},
+      {x:90*Math.cos(Math.PI/4), z:90*Math.sin(Math.PI/4)},
+      {x:90*Math.sqrt(2),       z:0},
+      {x:90*Math.cos(Math.PI/4), z:-90*Math.sin(Math.PI/4)}
+    ];
+    ctx.strokeStyle='#444'; ctx.lineWidth=2; ctx.beginPath();
+    bases.forEach((pt,i)=>{
+      const x = origin.x + pt.z*scale;
+      const y = origin.y - pt.x*scale;
+      i===0? ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.closePath(); ctx.stroke();
+
+    // base squares
+    ctx.fillStyle='#fff';
+    bases.forEach(pt=>{
+      const x = origin.x + pt.z*scale;
+      const y = origin.y - pt.x*scale;
+      ctx.fillRect(x-6,y-6,12,12);
+    });
+
+    // infield arc
+    const extraC = 55, extraM = 28.5;
+    ctx.strokeStyle='#aaa'; ctx.lineWidth=2; ctx.beginPath();
+    for(let d=-45; d<=45; d++){
+      const rad = d*Math.PI/180;
+      const r0  = 90+extraC, r1=90*Math.sqrt(2)+extraM;
+      const t   = 1-Math.abs(d)/45;
+      const r   = r0 + t*(r1-r0);
+      const x   = origin.x + Math.sin(rad)*r*scale;
+      const y   = origin.y - Math.cos(rad)*r*scale;
+      d===-45? ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // spray
+    rows.filter(r=>r.PitchCall==='InPlay').forEach(r=>{
+      const dir = parseFloat(r.Direction), dist=parseFloat(r.Distance),
+            ev  = parseFloat(r.ExitSpeed);
+      if(isNaN(dir)||isNaN(dist)) return;
+      const rad = dir*Math.PI/180,
+            dpx = Math.min(dist,park.center)*scale,
+            x   = origin.x + Math.sin(rad)*dpx,
+            y   = origin.y - Math.cos(rad)*dpx,
+            size= isNaN(ev)?6:Math.min(ev/2,15);
+      ctx.fillStyle='rgba(220,50,50,0.7)';
+      ctx.beginPath(); ctx.arc(x,y,size,0,2*Math.PI); ctx.fill();
+    });
+
+    // fielders in blue
+    if (fr) {
+      ['1B','2B','3B','SS','LF','CF','RF'].forEach(lbl=>{
+        const px = parseFloat(fr[lbl+'_PositionAtReleaseX']),
+              pz = parseFloat(fr[lbl+'_PositionAtReleaseZ']),
+              name = fr[lbl+'_Name']||lbl;
+        if(!isNaN(px)&&!isNaN(pz)){
+          const x = origin.x + pz*scale,
+                y = origin.y - px*scale;
+          ctx.fillStyle='rgba(50,100,220,0.8)';
+          ctx.beginPath(); ctx.arc(x,y,6,0,2*Math.PI); ctx.fill();
+          ctx.fillStyle='#000'; ctx.font='12px sans-serif';
+          ctx.textAlign='left'; ctx.textBaseline='middle';
+          ctx.fillText(name, x+8, y);
+        }
+      });
+    }
+  }
+  </script>
+</body>
+</html>

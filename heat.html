@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Batter Scouting Heatmaps – Zone-Aligned Grid (2×2 per page)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #151821;
+      --muted: #8b93a7;
+      --text: #e9eefc;
+      --card: #1b1f2b;
+      --accent: #6ea8fe;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --grid-gap: 14px;
+      --radius: 16px;
+      --shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 20px;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans";
+      background: var(--bg); color: var(--text);
+    }
+    h1 { margin: 0 0 8px; }
+    .sub { color: var(--muted); margin-bottom: 16px; }
+
+    .controls{
+      background:var(--panel); padding:12px; border-radius:var(--radius);
+      display:grid; grid-template-columns: repeat(8, minmax(0,1fr));
+      gap:10px; align-items:end; box-shadow:var(--shadow);
+    }
+    .controls .field{display:flex; flex-direction:column; gap:6px}
+    .controls label{font-size:.9rem; color:var(--muted)}
+    .controls input[type="number"], .controls select{
+      width:100%; padding:8px 10px; background:var(--card); color:var(--text);
+      border:1px solid #2a2f3e; border-radius:10px; outline:none;
+    }
+    .controls input[type="file"]{ color:var(--muted) }
+    .controls button{ padding:10px 12px; background:var(--accent); border:none; color:#0b1020; font-weight:700; border-radius:10px; cursor:pointer }
+
+    .legend{margin:14px 0 6px; color:var(--muted); font-size:.95rem; display:flex; align-items:center; gap:10px;}
+    .legend-bar{height:10px; width:220px; background:linear-gradient(90deg,#2563eb,#ef4444); border-radius:6px;}
+
+    .badge{font-family:var(--mono); font-size:.8rem; background:#0f1422; border:1px solid #222a3a; padding:2px 6px; border-radius:6px; color:#9fb4ea}
+
+    .results{display:flex; flex-direction:column; gap:16px; margin-top:14px;}
+    .batter-block{background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px; page-break-inside: avoid}
+    .batter-header{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px}
+    .batter-name{font-weight:800; font-size:1.1rem}
+
+    /* 2 columns so two pitch types sit side-by-side the same size */
+    .pitchtype-grid{
+      display:grid; gap:var(--grid-gap);
+      grid-template-columns: repeat(2, minmax(600px,1fr));
+    }
+    .pitchtype-card{
+      background:var(--card); border:1px solid #2a2f3e; border-radius:12px; padding:14px; page-break-inside: avoid;
+      display:flex; flex-direction:column;
+    }
+    .pt-title{
+      font-weight:800; font-size:1rem; margin:0 0 8px; color:#dbe7ff; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    }
+
+    /* Maps: two columns on-screen; print switches to three across */
+    .maps{display:grid; gap:14px; grid-template-columns: 1fr 1fr}
+    .map{background:#0d1018; border:1px solid #2a2f3e; border-radius:10px; padding:10px;}
+    .map h4{margin:0 0 8px; font-size:1rem}
+    .canvas-wrap{position:relative}
+    canvas{display:block; width:100%; height:auto; border-radius:8px; background:#0a0d14}
+    .meta{margin-top:6px; font-size:.85rem; color:#aab3c9}
+
+    .page-break{ page-break-after: always; height:0; overflow:hidden; }
+
+    @media print{
+      body{ background:#fff; color:#000; padding:0.25in; }
+      .controls, .legend, .sub{ display:none !important }
+      .batter-block{ background:#fff; box-shadow:none; border:1px solid #ddd }
+      .pitchtype-card{ background:#fff; border:1px solid #ddd }
+      .map{ background:#fff; border:1px solid #ccc }
+      canvas{ background:#fff }
+      .badge{ border-color:#bbb; color:#333; background:#f7f7f7 }
+      .pitchtype-grid{ grid-template-columns: repeat(1, 1fr) } /* full-width card when printing */
+      .maps{ grid-template-columns: 1fr 1fr 1fr; gap: 10px; }   /* three across (LHP BA/SLG/Whiff + RHP BA/SLG/Whiff) */
+    }
+  </style>
+</head>
+<body>
+  <h1>Batter Scouting Heatmaps</h1>
+  <div class="sub">Auto-loads <code>data.csv</code>, team <b>HAG_FLY</b>. Zone-aligned cells. 0% blue → 100% red.</div>
+
+  <div class="controls">
+    <div class="field">
+      <label>CSV (fallback if auto-load fails)</label>
+      <input type="file" id="file" accept=".csv" />
+    </div>
+    <div class="field">
+      <label>Inside Zone Cells (cols)</label>
+      <input id="insideCols" type="number" min="3" value="7" />
+    </div>
+    <div class="field">
+      <label>Inside Zone Cells (rows)</label>
+      <input id="insideRows" type="number" min="3" value="7" />
+    </div>
+    <div class="field">
+      <label>Padding Cells (left/right)</label>
+      <input id="padX" type="number" min="0" value="2" />
+    </div>
+    <div class="field">
+      <label>Padding Cells (bottom/top)</label>
+      <input id="padY" type="number" min="0" value="2" />
+    </div>
+    <div class="field">
+      <label>Canvas Size</label>
+      <select id="canvasSize">
+        <option value="640">640 px</option>
+        <option value="720" selected>720 px</option>
+        <option value="800">800 px</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Min Samples / Pitch Type</label>
+      <input id="minSamples" type="number" value="15" min="1" />
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button id="buildBtn">Rebuild</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div>Color scale</div><div class="legend-bar"></div>
+  </div>
+
+  <div id="results" class="results"></div>
+
+<script>
+(() => {
+  // ==== SETTINGS YOU CAN EDIT ====
+  const PRESELECT_TEAM = "HP";
+  const AUTO_CSV_PATH  = "data.csv";
+
+  // Include ONLY these batters (case-insensitive). Format (preferred): first-initial_firstname_lastname
+  // e.g., "m_mike_trout". You can also use "firstname_lastname", "m_trout", or the full name string.
+  const BATTER_INCLUDE = [
+    // "m_mike_trout", "s_shohei_ohtani"
+  ];
+
+  const HIT_RESULTS = new Set(['Single','Double','Triple','HomeRun']);
+  const BASES = { 'Single':1, 'Double':2, 'Triple':3, 'HomeRun':4 };
+
+  // Strike zone bounds (feet)
+  const ZONE = { xMin:-0.83, xMax:0.83, yMin:1.5, yMax:3.5 };
+
+  // CSV columns
+  const COLUMNS = {
+    plateX: 'PlateLocSide',
+    plateY: 'PlateLocHeight',
+    pitchCall: 'PitchCall',
+    pitchType: 'AutoPitchType',
+    batter: 'Batter',
+    batterTeam: 'BatterTeam',
+    playResult: 'PlayResult',
+    pitcherThrows: 'PitcherThrows'
+  };
+
+  // Swings: StrikeSwinging, InPlay, FoulBallNotFieldable
+  const isSwing = (pc) => pc === 'StrikeSwinging' || pc === 'InPlay' || pc === 'FoulBallNotFieldable';
+
+  // Canvas config
+  let CANVAS_SIZE = 720;
+  const PADDING = 22;
+  const CELL_BORDER = 0;
+
+  // ==== State ====
+  let rows = [];
+  let battersByTeam = new Map();
+
+  // ==== DOM ====
+  const resultsEl = document.getElementById('results');
+  const fileInput = document.getElementById('file');
+  const insideColsInput = document.getElementById('insideCols');
+  const insideRowsInput = document.getElementById('insideRows');
+  const padXInput = document.getElementById('padX');
+  const padYInput = document.getElementById('padY');
+  const canvasSizeSelect = document.getElementById('canvasSize');
+  const minSamplesInput = document.getElementById('minSamples');
+  const buildBtn = document.getElementById('buildBtn');
+
+  // ==== Auto-load data.csv ====
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch(AUTO_CSV_PATH, {cache:'no-store'});
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const csvText = await res.text();
+      parseCSV(csvText);
+    } catch (e) {
+      resultsEl.innerHTML = `<div style="color:#aab3c9">Auto-load of <b>${AUTO_CSV_PATH}</b> failed (${escapeHtml(e.message)}). Upload manually.</div>`;
+    }
+  });
+
+  // Manual upload
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files?.[0];
+    if (!f) return;
+    Papa.parse(f, {
+      header: true, dynamicTyping: false, skipEmptyLines: true,
+      complete: (res) => afterParsed(res.data),
+      error: (err) => { resultsEl.innerHTML = `<div style="color:#ffb4b4">Parse error: ${escapeHtml(err?.message || String(err))}</div>`; }
+    });
+  });
+
+  buildBtn.addEventListener('click', () => {
+    if (!rows.length) {
+      resultsEl.innerHTML = `<div style="color:#ffb4b4">No data loaded.</div>`;
+      return;
+    }
+    buildAll();
+  });
+
+  function parseCSV(csvText){
+    Papa.parse(csvText, {
+      header:true, dynamicTyping:false, skipEmptyLines:true,
+      complete: (res) => afterParsed(res.data),
+      error: (err) => { resultsEl.innerHTML = `<div style="color:#ffb4b4">Parse error: ${escapeHtml(err?.message || String(err))}</div>`; }
+    });
+  }
+
+  function afterParsed(data){
+    rows = data.map(r => {
+      const o = {};
+      for (const k in r) {
+        const nk = (k || '').trim();
+        o[nk] = (typeof r[k] === 'string') ? r[k].trim() : r[k];
+      }
+      return o;
+    }).filter(r => r && r[COLUMNS.batterTeam] != null);
+
+    // batters per team
+    battersByTeam = new Map();
+    const teams = Array.from(new Set(rows.map(r => r[COLUMNS.batterTeam]).filter(Boolean)));
+    teams.forEach(team => {
+      const batters = Array.from(new Set(
+        rows.filter(r => r[COLUMNS.batterTeam] === team).map(r => r[COLUMNS.batter]).filter(Boolean)
+      )).sort();
+      battersByTeam.set(team, batters);
+    });
+
+    buildAll(); // auto-build for team
+  }
+
+  // ==== Build all batters for team (with optional include filter) ====
+  function buildAll(){
+    CANVAS_SIZE = parseInt(canvasSizeSelect.value, 10);
+    const insideCols = Math.max(1, parseInt(insideColsInput.value, 10));
+    const insideRows = Math.max(1, parseInt(insideRowsInput.value, 10));
+    const padX = Math.max(0, parseInt(padXInput.value, 10));
+    const padY = Math.max(0, parseInt(padYInput.value, 10));
+    const minSamples = Math.max(1, parseInt(minSamplesInput.value, 10));
+
+    // Compute cell size from zone so zone aligns to cell edges
+    const cellW = (ZONE.xMax - ZONE.xMin) / insideCols;
+    const cellH = (ZONE.yMax - ZONE.yMin) / insideRows;
+
+    // Domain expands by whole cells around the zone
+    const DOMAIN = {
+      xMin: ZONE.xMin - padX * cellW,
+      xMax: ZONE.xMax + padX * cellW,
+      yMin: ZONE.yMin - padY * cellH,
+      yMax: ZONE.yMax + padY * cellH
+    };
+
+    // Total grid dimensions
+    const NX = insideCols + 2*padX;
+    const NY = insideRows + 2*padY;
+
+    const team = PRESELECT_TEAM;
+    const teamRows = rows.filter(r => r[COLUMNS.batterTeam] === team);
+    if (!teamRows.length){
+      resultsEl.innerHTML = `<div>No rows found for team <b>${escapeHtml(team)}</b>.</div>`;
+      return;
+    }
+
+    // Filter batters by include list if provided
+    let batters = battersByTeam.get(team) || [];
+    if (BATTER_INCLUDE.length){
+      const allow = new Set(BATTER_INCLUDE.map(s => s.trim().toLowerCase()));
+      batters = batters.filter(full => {
+        const keys = nameKeys(full);
+        return keys.some(k => allow.has(k));
+      });
+      if (!batters.length){
+        resultsEl.innerHTML = `<div>No batters matched the provided <b>BATTER_INCLUDE</b> list for team <b>${escapeHtml(team)}</b>.</div>`;
+        return;
+      }
+    }
+
+    const byBatter = groupBy(teamRows, r => r[COLUMNS.batter] || 'Unknown');
+
+    resultsEl.innerHTML = '';
+    for (const bName of batters){
+      const bRows = byBatter[bName] || [];
+      if (!bRows.length) continue;
+
+      const pitchTypes = Array.from(new Set(bRows.map(r => r[COLUMNS.pitchType]).filter(Boolean))).sort();
+
+      const block = document.createElement('section');
+      block.className = 'batter-block';
+
+      const header = document.createElement('div');
+      header.className = 'batter-header';
+      header.innerHTML = `<div class="batter-name">${escapeHtml(bName)}</div>
+                          <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <span class="badge">Team: ${escapeHtml(team)}</span>
+                            <span class="badge">Pitch types: ${pitchTypes.length}</span>
+                          </div>`;
+      block.appendChild(header);
+
+      const ptGrid = document.createElement('div');
+      ptGrid.className = 'pitchtype-grid';
+
+      let count = 0;
+      for (const pt of pitchTypes){
+        const ptRows = bRows.filter(r => r[COLUMNS.pitchType] === pt);
+        if (ptRows.length < minSamples) continue;
+
+        // Split by pitcher handedness
+        const {Lrows, Rrows} = splitByHand(ptRows);
+
+        // Build grids for each side; if no data, make placeholders so card height stays consistent
+        const leftAgg  = Lrows.length ? buildGrids(Lrows, NX, NY, DOMAIN, cellW, cellH) : makeEmptyAgg(NY, NX);
+        const rightAgg = Rrows.length ? buildGrids(Rrows, NX, NY, DOMAIN, cellW, cellH) : makeEmptyAgg(NY, NX);
+
+        const card = renderPitchTypeCard(bName, pt, ptRows.length,
+                                         {NX, NY, DOMAIN, insideCols, insideRows, padX, padY},
+                                         leftAgg, rightAgg, Lrows.length, Rrows.length);
+        ptGrid.appendChild(card);
+        count++;
+
+        // Optional page break after each group of 4 pitch types (keeps 2×2 per page feel)
+        if (count % 4 === 0){
+          const br = document.createElement('div');
+          br.className = 'page-break';
+          ptGrid.appendChild(br);
+        }
+      }
+
+      if (ptGrid.querySelector('.pitchtype-card')){
+        block.appendChild(ptGrid);
+        resultsEl.appendChild(block);
+      }
+    }
+
+    if (!resultsEl.querySelector('.pitchtype-card')){
+      resultsEl.innerHTML = `<div>No pitch types met the <b>min sample</b> threshold (${minSamples}).</div>`;
+    }
+  }
+
+  // Create an "empty" aggregation with null grids (so charts render as neutral placeholders)
+  function makeEmptyAgg(NY, NX){
+    const gNull = Array.from({length:NY},()=>Array.from({length:NX},()=>null));
+    const gZero = Array.from({length:NY},()=>Array.from({length:NX},()=>0));
+    return { baGrid:gNull, slgGrid:gNull, whiffPctGrid:gNull, ctGrid:gZero, swingGrid:gZero };
+  }
+
+  // Handedness splitter (accepts 'L'/'Left', 'R'/'Right')
+  function splitByHand(rows){
+    const Lrows = [];
+    const Rrows = [];
+    for (const r of rows){
+      const th = (r[COLUMNS.pitcherThrows] || '').toLowerCase();
+      if (th === 'l' || th === 'left') Lrows.push(r);
+      else if (th === 'r' || th === 'right') Rrows.push(r);
+      // else ignore unknown/empty
+    }
+    return {Lrows, Rrows};
+  }
+
+  // ==== Aggregation with zone-aligned bins ====
+  function buildGrids(rows, NX, NY, DOMAIN, cellW, cellH){
+    const xMin = DOMAIN.xMin, yMin = DOMAIN.yMin;
+
+    const total    = zeroGrid(NY, NX);
+    const swings   = zeroGrid(NY, NX);
+    const whiffs   = zeroGrid(NY, NX);
+    const inPlay   = zeroGrid(NY, NX);
+    const hits     = zeroGrid(NY, NX);
+    const bases    = zeroGrid(NY, NX); // for SLG on contact
+
+    for (const r of rows) {
+      const x = parseFloat(r[COLUMNS.plateX]);
+      const y = parseFloat(r[COLUMNS.plateY]);
+      if (!isFinite(x) || !isFinite(y)) continue;
+
+      const i = Math.floor((x - xMin) / cellW);
+      const j = Math.floor((y - yMin) / cellH);
+      if (i < 0 || i >= NX || j < 0 || j >= NY) continue;
+
+      const pc = r[COLUMNS.pitchCall] || '';
+      total[j][i] += 1;
+
+      if (pc === 'InPlay') {
+        inPlay[j][i] += 1;
+        const pr = r[COLUMNS.playResult] || '';
+        if (HIT_RESULTS.has(pr)) hits[j][i] += 1;
+        bases[j][i] += (BASES[pr] || 0); // outs/errors/FC = 0 bases
+      }
+
+      if (pc === 'StrikeSwinging') {
+        swings[j][i] += 1; whiffs[j][i] += 1;
+      } else if (pc === 'InPlay' || pc === 'FoulBallNotFieldable') {
+        swings[j][i] += 1;
+      }
+    }
+
+    const ba = zeroGrid(NY, NX);
+    const slg = zeroGrid(NY, NX);
+    const whiffPct = zeroGrid(NY, NX);
+
+    for (let j=0;j<NY;j++){
+      for (let i=0;i<NX;i++){
+        ba[j][i]       = inPlay[j][i]  > 0 ? (hits[j][i] / inPlay[j][i])   : null;
+        slg[j][i]      = inPlay[j][i]  > 0 ? (bases[j][i] / inPlay[j][i])  : null; // SLG on contact
+        whiffPct[j][i] = swings[j][i]  > 0 ? (whiffs[j][i] / swings[j][i]) : null;
+      }
+    }
+
+    return {
+      // counts for obs lines
+      ctGrid: inPlay,
+      swingGrid: swings,
+
+      // value grids
+      baGrid: ba,
+      slgGrid: slg,
+      whiffPctGrid: whiffPct
+    };
+  }
+
+  function zeroGrid(NY, NX){ return Array.from({length:NY}, _ => Array.from({length:NX}, __ => 0)); }
+
+  // ==== Rendering ====
+  function renderPitchTypeCard(bName, pt, nTotal, gridInfo, leftAgg, rightAgg, nL, nR){
+    const card = document.createElement('div');
+    card.className = 'pitchtype-card';
+
+    const title = document.createElement('div');
+    title.className = 'pt-title';
+    title.innerHTML = `${escapeHtml(bName)} — ${escapeHtml(pt)} <span class="badge">n=${nTotal}</span> <span class="badge">LH:${nL}</span> <span class="badge">RH:${nR}</span>`;
+    card.appendChild(title);
+
+    const maps = document.createElement('div');
+    maps.className = 'maps';
+
+    // Always render both sides so every card has 6 maps (keeps equal height)
+    // LEFT-HANDED PITCHERS
+    maps.appendChild(renderMap('BA on Contact (vs LHP)', leftAgg.baGrid,   leftAgg.ctGrid,    gridInfo));
+    maps.appendChild(renderMap('SLG on Contact (vs LHP)', leftAgg.slgGrid, leftAgg.ctGrid,    gridInfo));
+    maps.appendChild(renderMap('Whiff% (vs LHP)',         leftAgg.whiffPctGrid, leftAgg.swingGrid, gridInfo));
+
+    // RIGHT-HANDED PITCHERS
+    maps.appendChild(renderMap('BA on Contact (vs RHP)', rightAgg.baGrid,   rightAgg.ctGrid,    gridInfo));
+    maps.appendChild(renderMap('SLG on Contact (vs RHP)', rightAgg.slgGrid, rightAgg.ctGrid,    gridInfo));
+    maps.appendChild(renderMap('Whiff% (vs RHP)',         rightAgg.whiffPctGrid, rightAgg.swingGrid, gridInfo));
+
+    card.appendChild(maps);
+    return card;
+  }
+
+  function renderMap(title, valueGrid, countGridForMeta, gridInfo){
+    const wrap = document.createElement('div');
+    wrap.className = 'map';
+
+    const h4 = document.createElement('h4');
+    h4.textContent = title;
+    wrap.appendChild(h4);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = CANVAS_SIZE; canvas.height = CANVAS_SIZE;
+    const cr = document.createElement('div');
+    cr.className = 'canvas-wrap';
+    cr.appendChild(canvas);
+    wrap.appendChild(cr);
+
+    // obs (observations) for the correct denominator
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = `obs: ${sum2D(countGridForMeta)}`;
+    wrap.appendChild(meta);
+
+    drawHeatmap(canvas, valueGrid, 0, 1, gridInfo);
+    return wrap;
+  }
+
+  function sum2D(grid){ let s=0; for(const row of grid) for(const v of row) s+=v; return s; }
+
+  function drawHeatmap(canvas, grid, vMin, vMax, gridInfo){
+    const {NX, NY, DOMAIN, insideCols, insideRows, padX, padY} = gridInfo;
+    const cellW = (DOMAIN.xMax - DOMAIN.xMin) / NX;
+    const cellH = (DOMAIN.yMax - DOMAIN.yMin) / NY;
+
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    const innerW = W - PADDING*2;
+    const innerH = H - PADDING*2;
+
+    // scale factors canvas<->domain
+    const sx = innerW / (DOMAIN.xMax - DOMAIN.xMin);
+    const sy = innerH / (DOMAIN.yMax - DOMAIN.yMin);
+
+    // draw cells
+    for (let j=0;j<NY;j++){
+      for (let i=0;i<NX;i++){
+        const v = grid[j][i];
+        // domain cell bounds
+        const x0 = DOMAIN.xMin + i*cellW;
+        const y0 = DOMAIN.yMin + j*cellH;
+        const x1 = x0 + cellW;
+        const y1 = y0 + cellH;
+        // canvas rect (note y inverted)
+        const cx = PADDING + (x0 - DOMAIN.xMin) * sx;
+        const cy = PADDING + (DOMAIN.yMax - y1) * sy;
+        const cw = (x1 - x0) * sx;
+        const ch = (y1 - y0) * sy;
+
+        if (v == null) ctx.fillStyle = '#e5e7eb';
+        else ctx.fillStyle = valueBlueToRed(v, vMin, vMax);
+        ctx.fillRect(cx, cy, cw, ch);
+
+        if (CELL_BORDER){
+          ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+          ctx.strokeRect(cx+.5, cy+.5, cw-1, ch-1);
+        }
+
+        if (v != null){
+          ctx.fillStyle = labelTextForBg(v);
+          ctx.font = 'bold 14px Inter, system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(Math.round(v*100)+'%', cx + cw/2, cy + ch/2);
+        }
+      }
+    }
+
+    // Strike zone EXACTLY on cell boundaries
+    const zx0 = PADDING + (padX * cellW) * sx;
+    const zx1 = PADDING + ((padX + insideCols) * cellW) * sx;
+    const zy0 = PADDING + (NY - (padY + insideRows)) * cellH * sy; // top
+    const zy1 = PADDING + (NY - padY) * cellH * sy;               // bottom
+
+    ctx.save();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([]);
+    ctx.strokeRect(zx0, zy0, zx1 - zx0, zy1 - zy0);
+    ctx.restore();
+
+    // Outer border
+    ctx.strokeStyle = '#2a3145';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(PADDING, PADDING, innerW, innerH);
+  }
+
+  // ==== Color & contrast ====
+  function valueBlueToRed(v, vMin, vMax){
+    const t = clamp01((v - vMin) / (vMax - vMin));
+    const c1 = [37, 99, 235];  // blue
+    const c2 = [239, 68, 68];  // red
+    const r = Math.round(lerp(c1[0], c2[0], t));
+    const g = Math.round(lerp(c1[1], c2[1], t));
+    const b = Math.round(lerp(c1[2], c2[2], t));
+    return `rgb(${r},${g},${b})`;
+  }
+  function labelTextForBg(v){ return v >= 0.55 ? 'rgba(255,255,255,0.95)' : 'rgba(20,28,40,0.95)'; }
+
+  // ==== Name helpers ====
+  function nameKeys(full){
+    const raw = (full||'').trim();
+    const low = raw.toLowerCase();
+
+    // split name (simple heuristics)
+    const parts = low.split(/\s+/).filter(Boolean);
+    const first = parts[0] || '';
+    const last  = parts.length > 1 ? parts[parts.length - 1] : '';
+    const fi = first ? first[0] : '';
+
+    const keys = new Set();
+    if (raw) keys.add(low); // full string
+    if (first && last){
+      keys.add(`${first}_${last}`);      // firstname_lastname
+      keys.add(`${fi}_${first}_${last}`); // requested: f_first_last
+      keys.add(`${fi}_${last}`);         // f_lastname
+    }
+    return Array.from(keys);
+  }
+
+  // ==== Utils ====
+  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function groupBy(arr, keyFn){
+    const m = {};
+    for (const it of arr){
+      const k = keyFn(it);
+      if (!m[k]) m[k] = [];
+      m[k].push(it);
+    }
+    return m;
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+})();
+</script>
+</body>
+</html>

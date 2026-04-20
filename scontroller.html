@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Light Show — Operator (58s Warriors V3 + Breath)</title>
+<style>
+  :root { --bg:#0b0b0f; --card:#14141a; --fg:#fff; --muted:#9aa3b2; --accent:#69f; }
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto}
+  .wrap{max-width:980px;margin:24px auto;padding:0 16px;display:grid;gap:16px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+  h1{font-size:22px;margin:0 0 8px}
+  h2{font-size:16px;margin:0 0 10px;color:var(--muted)}
+  label{display:block;font-size:12px;color:var(--muted);margin:6px 0 4px}
+  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #2a2a34;background:#0f0f14;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{padding:12px;border:0;border-radius:12px;background:#2b3140;color:#fff;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+  button.accent{background:var(--accent);color:#000}
+  button.warn{background:#f66;color:#000}
+  .stat{font:12px/1.2 system-ui;color:var(--muted)}
+  pre{white-space:pre-wrap}
+  .kbd{background:#000;padding:2px 6px;border-radius:6px;border:1px solid #333;color:#aaa}
+</style>
+<body>
+<div class="wrap">
+  <div class="row">
+    <div class="card">
+      <h1>Operator Panel</h1>
+      <div class="stat" id="status">–</div>
+
+      <div class="grid" style="margin-top:8px">
+        <div>
+          <label>Show ID</label>
+          <input id="showId" value="warriors" />
+        </div>
+        <div>
+          <label>Title</label>
+          <input id="title" placeholder="Warriors (V3, 58s start)">
+        </div>
+        <div>
+          <label>BPM</label>
+          <input id="bpm" type="number" min="40" max="220" value="138">
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:10px">
+        <button id="loadShow">Load</button>
+        <button id="saveMeta">Save Meta</button>
+        <button id="resetShow" class="warn">Reset t0</button>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <div class="card" style="background:#101018">
+          <h2>Timing Tools</h2>
+          <div class="flex">
+            <button id="tapTempo" title="Press repeatedly to set BPM">Tap Tempo (<span id="tapBpm">—</span>)</button>
+            <button id="nudgeBack">Nudge −10ms</button>
+            <button id="nudgeFwd">Nudge +10ms</button>
+            <label style="margin-left:8px">Bars</label>
+            <input id="bars" type="number" min="1" max="256" value="96" style="width:110px">
+          </div>
+          <div class="stat" id="timeInfo" style="margin-top:8px">–</div>
+        </div>
+
+        <div class="card" style="background:#101018">
+          <h2>Live Cues</h2>
+          <div class="stack">
+            <div class="flex">
+              <button id="startSongNow" class="accent">Start Show (align @ 0:58)</button>
+              <button id="stopNow" class="warn">Stop Now</button>
+            </div>
+            <div class="stat" style="font-size:1.15em;margin-top:6px;text-align:center">
+              Show Progress: <span id="songTimer">0s</span>
+            </div>
+            <div class="grid" style="margin-top:8px">
+              <button id="blastNow">Blast now</button>
+              <button id="whiteOut1">Whiteout 1 beat</button>
+              <button id="strobe2s">Strobe 2s @ 8 Hz</button>
+            </div>
+            <div class="grid">
+              <button id="torchOn">Torch ON</button>
+              <button id="torchOff">Torch OFF</button>
+              <button id="loadWarriorsV3" class="accent">Load “Warriors V3 (58s)”</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="card">
+      <h1>Debug / Show State</h1>
+      <div class="stat">Patterns are generated **only from 0:58 → end**.</div>
+      <pre class="stat" id="currShow">–</pre>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* ====================================================
+   OPERATOR — Warriors (V3) aligned to 0:58 + Breath
+   ==================================================== */
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js';
+import { getDatabase, ref, get, set, update, onValue } from 'https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js';
+
+console.log("[O1] Operator start.");
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+  authDomain: "revs-2c987.firebaseapp.com",
+  projectId: "revs-2c987",
+  storageBucket: "revs-2c987.appspot.com",
+  messagingSenderId: "181256684157",
+  appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+  measurementId: "G-2050889X0C",
+  databaseURL: "https://revs-2c987-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+console.log("[O2] Firebase connected.");
+
+const el = id => document.getElementById(id);
+const showId   = el('showId');
+const status   = el('status');
+const title    = el('title');
+const bpm      = el('bpm');
+const bars     = el('bars');
+const timeInfo = el('timeInfo');
+const currShow = el('currShow');
+const songTimer= el('songTimer');
+const tapBpmEl = el('tapBpm');
+
+const btnStart = el('startSongNow');
+let timerInterval = null;
+let currentShow = {};
+
+function sref(path){ return ref(db, path); }
+function logStatus(t){ status.textContent = t; console.log("[STATUS]", t); }
+
+// Server time sync
+const offsetRef = ref(db, '.info/serverTimeOffset');
+let serverOffset = 0;
+onValue(offsetRef, snap => { serverOffset = snap.val()|0; });
+const serverNow = () => Date.now() + serverOffset;
+
+// ======== RTDB helpers
+async function loadShow(){
+  const id = showId.value.trim();
+  const snap = await get(sref(`shows/${id}`));
+  if (!snap.exists()){
+    logStatus('No show doc; create with Save Meta.');
+    await saveMeta();
+    return;
+  }
+  currentShow = snap.val() || {};
+  title.value = currentShow.title ?? '';
+  bpm.value   = currentShow?.tempo?.bpm ?? 138;
+  bars.value  = currentShow?.grid?.bars ?? 96;
+  renderShow();
+}
+async function saveMeta(){
+  const id = showId.value.trim();
+  const payload = {
+    title: title.value || 'Untitled',
+    tempo: { bpm: Number(bpm.value||138), ts: "4/4" },
+    grid:  { mode: "bpm", bars: Number(bars.value||96) }
+  };
+  Object.assign(currentShow, payload);
+  await update(sref(`shows/${id}`), payload);
+  logStatus('Meta saved.');
+}
+async function setT0(ms){
+  const id = showId.value.trim();
+  await update(sref(`shows/${id}`), { t0: ms });
+}
+async function resetT0(){
+  const id = showId.value.trim();
+  await update(sref(`shows/${id}`), { t0: 0 });
+}
+async function setPatterns(arr){
+  const id = showId.value.trim();
+  await update(sref(`shows/${id}`), { patterns: arr });
+  logStatus(`Patterns pushed: ${arr.length}`);
+}
+async function torchCommand(atMs, on){
+  const id = showId.value.trim();
+  await set(sref(`shows/${id}/liveTorch`), { type:'torch', at: atMs, on: !!on, atClient: serverNow() });
+}
+
+// Mirror server state to local pane
+onValue(sref(`shows/${showId.value}`), snap=>{
+  if (snap.exists()){
+    currentShow = snap.val() || {};
+    renderShow();
+  }
+});
+function renderShow(){
+  const info = {
+    t0: currentShow.t0 || 0,
+    title: currentShow.title || '',
+    bpm: currentShow?.tempo?.bpm,
+    bars: currentShow?.grid?.bars,
+    patterns: (currentShow.patterns||[]).length
+  };
+  currShow.textContent = JSON.stringify(info, null, 2);
+}
+
+// ======== Timing tools: Tap Tempo + Nudge
+let tapTimes = [];
+el('tapTempo').onclick = ()=>{
+  const t = performance.now();
+  tapTimes.push(t);
+  if (tapTimes.length > 8) tapTimes.shift();
+  if (tapTimes.length >= 2){
+    const diffs = [];
+    for (let i=1;i<tapTimes.length;i++) diffs.push(tapTimes[i]-tapTimes[i-1]);
+    const avgMs = diffs.reduce((a,b)=>a+b,0)/diffs.length;
+    const newBpm = Math.max(40, Math.min(220, Math.round(60000/avgMs)));
+    bpm.value = String(newBpm);
+    tapBpmEl.textContent = String(newBpm);
+    logStatus(`Tap BPM = ${newBpm}`);
+  }
+};
+el('nudgeBack').onclick = async ()=>{
+  const id = showId.value.trim();
+  const s = await get(sref(`shows/${id}`));
+  const t0 = (s.val()?.t0 || serverNow()) - 10; // −10ms
+  await setT0(t0);
+  logStatus("t0 nudged −10ms");
+};
+el('nudgeFwd').onclick = async ()=>{
+  const id = showId.value.trim();
+  const s = await get(sref(`shows/${id}`));
+  const t0 = (s.val()?.t0 || serverNow()) + 10; // +10ms
+  await setT0(t0);
+  logStatus("t0 nudged +10ms");
+};
+
+// ======== Pattern helpers (including BREATH)
+function breathBlock(atBeat, lenBeats, opts = {}){
+  const {
+    cycleBeats = 4,   // inhale+exhale length in beats
+    min = 0.15,       // floor 0..1
+    max = 1.0,        // ceiling 0..1
+    target = 'screen',// 'screen' | 'torch' | 'both'
+    easing = 'sine',  // 'sine' | 'linear'
+    torchPwmHz = 0    // 0 = no PWM; else fake torch brightness
+  } = opts;
+  return { type:'breath', atBeat, lenBeats, cycleBeats, min, max, target, easing, torchPwmHz };
+}
+const addBlast  = (arr, atBeat, lenBeats=0.25)=>arr.push({ atBeat, type:'blast', lenBeats });
+const addStrobe = (arr, atBeat, lenBeats, hz, duty=0.5)=>arr.push({ atBeat, type:'strobe', hz, duty, lenBeats });
+const addTorch  = (arr, atBeat, on=true, lenBeats=0.05)=>arr.push({ atBeat, type:'torch', on, lenBeats });
+
+function runBlasts(arr, startBeat, endBeat, stepBeats=1, lenBeats=0.18){
+  for (let b=startBeat; b<endBeat; b+=stepBeats) addBlast(arr, b, lenBeats);
+}
+function gridStrobe(arr, startBeat, endBeat, everyBeat=0.5, hz=16, duty=0.5, lenEach=0.5){
+  for (let b=startBeat; b<endBeat; b+=everyBeat) addStrobe(arr, b, lenEach, hz, duty);
+}
+
+// ======== Warriors V3 (ONLY from 0:58 onward)
+function warriorsV3From58(){
+  const patterns = [];
+  const BPM = Number(bpm.value || 138);
+
+  // Beat 0 is aligned to song 0:58.
+  const toBeats = (m, s=0) => ((m*60 + s) - 58) * (BPM / 60);
+
+  // Section times (relative to the official track):
+  // Pre-chorus lift: 0:58–1:12
+  // Chorus 1:        1:12–1:47
+  // Verse/Build 2:   1:47–2:22
+  // Chorus 2:        2:22–2:57
+  // Outro:           2:57–3:55 (end)
+
+  const preS = toBeats(0,58);      // = 0
+  const preE = toBeats(1,12);
+  const c1S  = toBeats(1,12);
+  const c1E  = toBeats(1,47);
+  const b2S  = toBeats(1,47);
+  const b2E  = toBeats(2,22);
+  const c2S  = toBeats(2,22);
+  const c2E  = toBeats(2,57);
+  const outS = toBeats(2,57);
+  const outE = toBeats(3,55);
+
+  // ---- PRE-LIFT (screen breath, no torch) ----
+  patterns.push(breathBlock(preS, (preE-preS)-2, { cycleBeats:4, min:0.12, max:0.85, target:'screen', easing:'sine' }));
+  patterns.push(breathBlock(preE-2, 1.5, { cycleBeats:2, min:0.35, max:1.00, target:'screen', easing:'sine' }));
+  // clean half-beat gap to drop
+  gridStrobe(patterns, preE-0.5, preE, 0.25, 18, 0.55, 0.2);
+
+  // ---- CHORUS 1 (tight 4-on-the-floor + offbeat chatter) ----
+  runBlasts(patterns, c1S, c1E, 1, 0.20);
+  gridStrobe(patterns, c1S+0.5, c1E, 1, 16, 0.50, 0.45);
+  // small screen breath layered (slow, subtle)
+  patterns.push(breathBlock(c1S, (c1E-c1S), { cycleBeats:8, min:0.08, max:0.35, target:'screen', easing:'sine' }));
+  // phrase pops
+  for (let b=c1S+2; b<c1E; b+=8) addBlast(patterns, b-0.25, 0.12);
+
+  // ---- BUILD 2 (half-time, rising tension) ----
+  runBlasts(patterns, b2S, b2E, 2, 0.22);
+  for (let b=b2S+1; b<b2E; b+=4) addTorch(patterns, b, true, 0.05), addTorch(patterns, b+0.3, false, 0.05);
+  // breath ramps up under it
+  patterns.push(breathBlock(b2S, (b2E-b2S)-8, { cycleBeats:4, min:0.25, max:0.8, target:'screen', easing:'sine' }));
+  // 8-beat acceleration into drop
+  const ramp = b2E-8;
+  addStrobe(patterns, ramp+0, 2,  8, 0.45);
+  addStrobe(patterns, ramp+2, 2, 12, 0.50);
+  addStrobe(patterns, ramp+4, 2, 16, 0.55);
+  addStrobe(patterns, ramp+6, 2, 20, 0.60);
+
+  // ---- CHORUS 2 (denser, more aggressive) ----
+  runBlasts(patterns, c2S, c2E, 1, 0.22);
+  gridStrobe(patterns, c2S, c2E, 0.25, 18, 0.52, 0.22);
+  // “barline” screen breath pulses (quick swells)
+  for (let b=c2S; b<c2E; b+=8){
+    patterns.push(breathBlock(b+3.5, 0.75, { cycleBeats:1.5, min:0.2, max:1.0, target:'screen', easing:'sine' }));
+  }
+  // fill roll to outro
+  for (let i=0;i<4;i++) addBlast(patterns, c2E - 1 + i*0.25, 0.10);
+
+  // ---- OUTRO (cinematic wash → accel → finale) ----
+  addStrobe(patterns, outS, 8, 20, 0.70);
+  addBlast(patterns, outS, 1.0);
+  // alternating measure texture
+  for (let m=0;m<8;m++){
+    const bar = outS + m*4;
+    runBlasts(patterns, bar, bar+4, 1, 0.18);
+    gridStrobe(patterns, bar+2, bar+4, 0.5, 16, 0.5, 0.4);
+    if (m%2===1) patterns.push(breathBlock(bar+1.5, 1.0, { cycleBeats:2, min:0.15, max:0.9, target:'screen' }));
+  }
+  // last 6s acceleration
+  const sixSecBeats = 6 * (BPM/60);
+  const accel = outE - sixSecBeats;
+  addStrobe(patterns, accel+0, 2, 24, 0.55);
+  addStrobe(patterns, accel+2, 2, 28, 0.60);
+  addStrobe(patterns, accel+4, 2, 32, 0.65);
+  // three final hits + hard torch off
+  addBlast(patterns, outE - 0.75, 0.20);
+  addBlast(patterns, outE - 0.50, 0.25);
+  addBlast(patterns, outE - 0.25, 0.40);
+  addTorch(patterns, outE, false, 0.05);
+
+  return patterns;
+}
+
+// ======== UI bindings
+document.getElementById('loadShow').onclick = loadShow;
+document.getElementById('saveMeta').onclick = saveMeta;
+document.getElementById('resetShow').onclick = async ()=>{
+  await resetT0();
+  logStatus('t0 cleared');
+};
+
+btnStart.onclick = async ()=>{
+  if (!title.value){
+    title.value = "Warriors (V3, 58s start)";
+  }
+  // push currentShow meta + patterns before starting
+  const showIdValue = showId.value.trim();
+  await update(sref(`shows/${showIdValue}`), currentShow);
+
+  btnStart.disabled = true;
+  let countdown = 3;
+  const original = btnStart.textContent;
+  const tick = setInterval(async ()=>{
+    if (countdown > 0){
+      btnStart.textContent = `${countdown}…`;
+      countdown--;
+    } else {
+      clearInterval(tick);
+      btnStart.textContent = original;
+      const t0 = serverNow();
+      await setT0(t0);
+      logStatus('Show started (align track @ 0:58 now).');
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(()=>{
+        const elapsed = Math.round((serverNow() - t0)/1000);
+        songTimer.textContent = `${elapsed}s`;
+      }, 1000);
+    }
+  }, 1000);
+};
+
+document.getElementById('stopNow').onclick = async ()=>{
+  clearInterval(timerInterval);
+  songTimer.textContent = '0s';
+  btnStart.disabled = false;
+  await setPatterns([]);
+  logStatus('Stopped.');
+};
+
+document.getElementById('blastNow').onclick = async ()=>{
+  await setPatterns([{ atMs: 0, type:'blast', lenBeats:1 }]);
+  const at = serverNow();
+  await torchCommand(at, true);
+  setTimeout(()=>torchCommand(serverNow(), false), 120);
+};
+
+document.getElementById('whiteOut1').onclick = async ()=>{
+  const at = serverNow();
+  await torchCommand(at, true);
+  setTimeout(()=>torchCommand(serverNow(), false), Math.max(80, (60000/Number(bpm.value||138))));
+};
+
+document.getElementById('strobe2s').onclick = async ()=>{
+  const id = showId.value.trim();
+  const s  = await get(sref(`shows/${id}`));
+  const show = s.val() || {};
+  const t0 = show.t0 || serverNow();
+  const rel = Math.max(0, serverNow() - t0);
+  const arr = (show.patterns || []).slice();
+  const bpmVal = Number(bpm.value||138);
+  const beatsIn2s = Math.max(1, Math.round(2 / (60000/bpmVal)));
+  arr.push({ atMs: rel, type:'strobe', hz:8, duty:0.35, lenBeats: beatsIn2s });
+  await setPatterns(arr);
+};
+
+document.getElementById('torchOn').onclick  = ()=>torchCommand(serverNow(), true);
+document.getElementById('torchOff').onclick = ()=>torchCommand(serverNow(), false);
+
+document.getElementById('loadWarriorsV3').onclick = ()=>{
+  const patterns = warriorsV3From58();
+  currentShow = {
+    title: "Warriors (V3, 58s start)",
+    tempo: { bpm: Number(bpm.value||138), ts: "4/4" },
+    grid: { mode: "bpm", bars: Number(bars.value||96) },
+    patterns
+  };
+  // push to DB for clients to preview if needed
+  setPatterns(patterns);
+  logStatus('“Warriors V3 (58s)” loaded. Hit Start when PA hits 0:58.');
+  renderShow();
+};
+
+// Time ticker
+setInterval(()=>{
+  timeInfo.textContent = `Local: ${new Date().toLocaleTimeString()} | Δserver≈${serverOffset}ms | ServerNow: ${new Date(serverNow()).toISOString()}`;
+}, 500);
+
+// Boot
+document.addEventListener('DOMContentLoaded', () => {
+  loadShow().then(()=>console.log("[O-boot] initial load done."));
+});
+</script>
+</body>
+</html>

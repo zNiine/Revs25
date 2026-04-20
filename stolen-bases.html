@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stealing Stats Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    #menu { background: #444; }
+    #menu ul { list-style: none; margin: 0; padding: 0; display: flex; }
+    #menu li { margin: 0; }
+    #menu a { display: block; padding: 1rem; color: #fff; text-decoration: none; }
+    #menu a.active, #menu a:hover { background: #666; }
+    header { background: #333; color: #fff; padding: 1rem; text-align: center; }
+    .submenu { display: flex; gap: 1rem; padding: 0.5rem 1rem; background: #ddd; }
+    .submenu button { padding: 0.5rem 1rem; cursor: pointer; background: #fff; border: 1px solid #ccc; }
+    .submenu button:hover { background: #eee; }
+    .filters { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; background: #f4f4f4; }
+    .filters label { display: flex; flex-direction: column; font-size: 0.9rem; }
+    #note { margin: 0.5rem 1rem; color: red; font-weight: bold; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
+    th { background: #eee; position: sticky; top: 0; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <nav id="menu">
+    <ul>
+      <li><a href="index.html" >Home</a></li>
+                          <li><a href="schedule.html" >Standings</a></li>
+
+                        <li><a href="games.html">Games</a></li>
+
+      <li><a href="leaderboards.html">Leaderboards</a></li>
+      <li><a href="park-factors.html">Park Factors</a></li>
+      <li><a href="fielding.html">Fielding</a></li>
+      <li><a href="stolen-bases.html" class="active">Base Running</a></li>
+            <li><a href="dong.html">Would it Dong?</a></li>
+
+    </ul>
+  </nav>
+
+  <header><h1>Stealing Stats Dashboard</h1></header>
+
+  <div class="submenu">
+    <button id="btnCount">Attempts By Count</button>
+  </div>
+  <section id="countSection">
+    <div class="filters">
+      <label>Batting Team:
+        <select id="battingTeamCountFilter"><option value="">All</option></select>
+      </label>
+    </div>
+    <table id="countTable">
+      <thead><tr id="countHeader"></tr></thead>
+      <tbody id="countBody"></tbody>
+    </table>
+  </section>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    const stealsUrl='all_steals.csv';
+    let stealRows=[];
+
+    function cleanName(n){return typeof n==='string'?n.replace(/\s*\d.*$/,'').trim():'';}  
+    function makeSortable(id,body){document.querySelectorAll(`#${id} th`).forEach((th,i)=>th.onclick=()=>{const tb=document.getElementById(body),rows=Array.from(tb.rows),asc=th.asc=!th.asc;rows.sort((a,b)=>{const x=a.cells[i].innerText,y=b.cells[i].innerText,nx=parseFloat(x),ny=parseFloat(y),cmp=(isNaN(nx)||isNaN(ny)?x.localeCompare(y):nx-ny);return asc?cmp:-cmp;});tb.innerHTML='';rows.forEach(r=>tb.appendChild(r));});}
+
+    function populateCountFilters(){const Bc=document.getElementById('battingTeamCountFilter');Bc.innerHTML='';Bc.append(new Option('All',''));new Set(stealRows.map(s=>s.batting_team)).forEach(t=>Bc.append(new Option(t,t)));}
+
+    function renderCount(){
+      const B = document.getElementById('battingTeamCountFilter').value;
+      const allCounts = [...new Set(stealRows.map(s => `${s.balls}-${s.strikes}`))]
+        .sort((a,b)=>{const [aB,aS]=a.split('-').map(Number),[bB,bS]=b.split('-').map(Number);return aB!==bB?aB-bB:aS-bS;});
+
+      const playerStats = {};
+      stealRows.filter(s=>!B||s.batting_team===B).forEach(s=>{
+        const p=cleanName(s.player), cnt=`${s.balls}-${s.strikes}`;
+        playerStats[p]=playerStats[p]||{};
+        playerStats[p][cnt]=playerStats[p][cnt]||0;
+        playerStats[p][cnt]++;
+      });
+
+      // compute max
+      let maxVal=0;
+      Object.values(playerStats).forEach(counts=>{Object.values(counts).forEach(v=>{if(v>maxVal)maxVal=v;});});
+
+      // header
+      const hdr=['Runner',...allCounts,'Total'];
+      document.getElementById('countHeader').innerHTML=hdr.map(h=>`<th>${h}</th>`).join('');
+
+      // body
+      let html='';
+      Object.entries(playerStats).forEach(([p,counts])=>{
+        let tot=0;
+        html+=`<tr><td>${p}</td>`;
+        allCounts.forEach(cnt=>{
+          const v=counts[cnt]||0;
+          tot+=v;
+          const ratio = maxVal? v / maxVal : 0;
+          const gb = Math.round(255 * (1 - ratio));
+          html += `<td style="background:rgb(255,${gb},${gb})">${v}</td>`;
+        });
+        html+=`<td>${tot}</td></tr>`;
+      });
+      const teamTotals = allCounts.map(cnt => Object.values(playerStats).reduce((acc, counts) => acc + (counts[cnt] || 0), 0));
+      const teamSum = teamTotals.reduce((a, b) => a + b, 0);
+      const teamMax = teamTotals.length? Math.max(...teamTotals):0;
+
+      html += `<tr><td><strong>Team Total</strong></td>`;
+      teamTotals.forEach(v => {const ratio = teamMax? v / teamMax:0; const gb = Math.round(255 * (1 - ratio)); html += `<td style="background:rgb(255,${gb},${gb})"><strong>${v}</strong></td>`;});
+      html += `<td><strong>${teamSum}</strong></td></tr>`;
+
+      document.getElementById('countBody').innerHTML=html;
+      makeSortable('countTable','countBody');
+    }
+    document.getElementById('btnCount').onclick=()=>{document.getElementById('countSection').classList.remove('hidden');};
+
+    fetch(stealsUrl).then(r=>r.text()).then(t=>Papa.parse(t,{header:true}).data).then(s=>{stealRows=s;stealRows.forEach(s=>{s.batting_team=s.batting_team||s.BattingTeam||'';});populateCountFilters();document.getElementById('battingTeamCountFilter').addEventListener('change',renderCount);renderCount();});
+  </script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+    authDomain: "revs-2c987.firebaseapp.com",
+    projectId: "revs-2c987",
+    storageBucket: "revs-2c987.firebasestorage.app",
+    messagingSenderId: "181256684157",
+    appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+    measurementId: "G-2050889X0C"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  firebase.initializeApp(firebaseConfig);
+
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+      const auth = firebase.auth();
+
+      // Redirect to login if not authenticated
+      auth.onAuthStateChanged(user => {
+        if (!user) {
+          window.location.href = 'login.html';
+        } else {
+        }
+      });
+
+    
+      
+    });
+</script>
+</body>
+</html>

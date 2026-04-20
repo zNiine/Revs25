@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Batter & Scoreboard Overlay Controller</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+
+    button {
+      font-size: 1.2rem;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #1976d2;
+      color: white;
+      transition: background 0.3s;
+      margin: 10px 0;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 1.1rem;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Overlay Controller</h1>
+
+  <!-- Batter Overlay Controls -->
+  <button id="batterBtn">Toggle Batter Overlay</button>
+  <div class="status" id="batterStatus">Loading batter overlay status...</div>
+
+  <!-- Scoreboard Overlay Controls -->
+  <button id="scoreboardBtn">Toggle Scoreboard Overlay</button>
+  <div class="status" id="scoreboardStatus">Loading scoreboard overlay status...</div>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+      authDomain: "revs-2c987.firebaseapp.com",
+      databaseURL: "https://revs-2c987-default-rtdb.firebaseio.com",
+      projectId: "revs-2c987"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Batter overlay
+    const batterRef = db.ref("batter-overlay");
+    const batterBtn = document.getElementById("batterBtn");
+    const batterStatus = document.getElementById("batterStatus");
+
+    batterRef.on("value", (snap) => {
+      const val = snap.val();
+      batterStatus.innerText = val ? "Batter Overlay is ON" : "Batter Overlay is OFF";
+      batterBtn.innerText = val ? "Turn Batter Overlay OFF" : "Turn Batter Overlay ON";
+    });
+
+    batterBtn.addEventListener("click", async () => {
+      const current = (await batterRef.get()).val();
+      batterRef.set(!current);
+    });
+
+    // Scoreboard overlay
+    const scoreboardRef = db.ref("scoreboard-overlay");
+    const scoreboardBtn = document.getElementById("scoreboardBtn");
+    const scoreboardStatus = document.getElementById("scoreboardStatus");
+
+    scoreboardRef.on("value", (snap) => {
+      const val = snap.val();
+      scoreboardStatus.innerText = val ? "Scoreboard Overlay is ON" : "Scoreboard Overlay is OFF";
+      scoreboardBtn.innerText = val ? "Turn Scoreboard Overlay OFF" : "Turn Scoreboard Overlay ON";
+    });
+
+    scoreboardBtn.addEventListener("click", async () => {
+      const current = (await scoreboardRef.get()).val();
+      scoreboardRef.set(!current);
+    });
+  </script>
+
+</body>
+</html>

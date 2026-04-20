@@ -1,0 +1,6 @@
+Status,Season,season_id,Team,team_id,Player,player_id,AVG,R,H,2B,3B,HR,RBI,BB,SO,SB,R_from_100,RBI_from_80,SB_from_50,stats_url,AB,CS,DP,E,G,HBP,P,SF,SH
+close,ALPB- 2023,34162,York Revolution,3614,"Martin, D",1751055,.282,90,120,23,2,19,82,56,119,46,-10.0,2.0,-4.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=34162,425,2,10,3,117,2,CF,8,2
+close,ALPB- 2025,34102,York Revolution,3614,"Miller, J",1745941,.308,94,124,35,2,16,71,37,58,48,-6.0,-9.0,-2.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=34102,402,6,3,5,95,4,2B,4,1
+close,ALPB- 2025,34102,Charleston Dirty Birds,163527,"Nelson, J",1750017,.317,82,126,21,0,28,75,53,90,40,-18.0,-5.0,-10.0,https://baseball.pointstreak.com/team_stats.html?teamid=163527&seasonid=34102,397,8,9,6,99,7,IF,4,0
+close,ALPB- 2024,33927,Gastonia Baseball Club,163528,"Stowers, J",1696445,.301,91,120,24,2,17,73,54,75,49,-9.0,-7.0,-1.0,https://baseball.pointstreak.com/team_stats.html?teamid=163528&seasonid=33927,399,7,13,1,105,9,OF,6,0
+close,ALPB- 2016,30100,Long Island Ducks,3609,"Lentini, F",582166,.313,108,179,42,6,9,75,38,80,51,8.0,-5.0,1.0,https://baseball.pointstreak.com/team_stats.html?teamid=3609&seasonid=30100,571,5,12,2,140,10,OF,5,6

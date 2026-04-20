@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Batter Scouting Reports</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 13px;
+            color: #111827;
+            background: #eef0f4;
+            padding: 24px;
+        }
+
+        /* ── Controls ── */
+        #teamWrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,.12);
+            margin-bottom: 28px;
+        }
+        #teamWrap label { font-weight: 600; color: #374151; }
+        select {
+            font-size: 13px;
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fff;
+            color: #111827;
+        }
+
+        /* ── Print ── */
+        @page { size: letter portrait; margin: .35in; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            #teamWrap { display: none !important; }
+            .report-page {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: .15in .22in !important;
+            }
+            th {
+                background: #111827 !important;
+                color: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            tbody tr:nth-child(even) td {
+                background: #f9fafb !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .report-header { border-bottom: 2px solid #111827 !important; }
+            canvas { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+
+        /* ── Report page ── */
+        .report-page {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 14px rgba(0,0,0,.1);
+            padding: 14px 20px;
+            margin-bottom: 28px;
+            page-break-after: always;
+        }
+        .report-page:last-child { page-break-after: auto; }
+
+        /* ── Header ── */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 2px solid #111827;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+        }
+        .report-header-name { font-size: 1.2rem; font-weight: 800; color: #111827; letter-spacing: .02em; }
+        .report-header-meta { font-size: .78rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .08em; }
+
+        /* ── Tables ── */
+        .tables-row { display: flex; gap: 12px; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #e5e7eb; padding: 4px 8px; text-align: center; }
+        th {
+            background: #111827;
+            color: #fff;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        td { color: #374151; }
+        td:first-child { text-align: left; font-weight: 600; color: #111827; }
+        tbody tr:nth-child(even) td { background: #f9fafb; }
+
+        /* ── Charts row ── */
+        .charts-row {
+            display: flex;
+            gap: 16px;
+            align-items: stretch;
+        }
+        .approach-wrap {
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .spray-wrap {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+        }
+        .chart-label {
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #6b7280;
+        }
+        canvas.approach-canvas {
+            display: block;
+            width: 100%;
+            height: 700px;
+        }
+        canvas.spray-canvas {
+            display: block;
+            width: 350px;
+            height: 350px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div id="teamWrap">
+        <label for="teamSelect">Select Team:</label>
+        <select id="teamSelect"><option value="">-- pick a team --</option></select>
+    </div>
+    <div id="reports"></div>
+
+    <script>
+    const includedPositionPlayers = [
+        "Ulrich, Evan","Rosengard, Ben","Smith, David","Battles, Jalen",
+        "Carpenter, Joseph","Flores, Marc","Kelly, Scott","Miller, Tyler",
+        "Lucky, Nick","Watson Jr., Kevin","Thompson, Jake","Alexander, Sebastian","Robertson, Tyler",
+    ];
+    const includedLC = includedPositionPlayers.map(n => n.trim().toLowerCase());
+    const ANY_TEAM = '__ANY_FROM_LIST__';
+
+    window._data = [];
+
+    Papa.parse('data.csv', {
+        header: true,
+        download: true,
+        complete: results => { window._data = results.data; initTeamPicker(); },
+        error: (err) => { console.error('CSV error:', err); }
+    });
+
+    function initTeamPicker() {
+        const sel = document.getElementById('teamSelect');
+        const teams = Array.from(new Set(_data.map(r => r.BatterTeam).filter(Boolean))).sort();
+        if (!teams.length) { sel.innerHTML = '<option value="">-- No teams found --</option>'; return; }
+        // "Any team from list" option first
+        const anyOpt = document.createElement('option');
+        anyOpt.value = ANY_TEAM; anyOpt.textContent = 'Any team — included list only';
+        sel.appendChild(anyOpt);
+        teams.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); });
+        sel.addEventListener('change', () => buildReports(sel.value));
+        if (teams.includes('LAN')) { sel.value = 'LAN'; buildReports('LAN'); }
+    }
+
+    function buildReports(team) {
+        const container = document.getElementById('reports');
+        container.innerHTML = '';
+        if (!team) return;
+
+        const isAnyTeam = team === ANY_TEAM;
+        const poolRows = isAnyTeam ? _data : _data.filter(r => r.BatterTeam === team);
+        let batters = Array.from(new Set(poolRows.map(r => r.Batter).filter(Boolean))).sort();
+
+        // Apply included list filter
+        if (includedPositionPlayers.length > 0) {
+            batters = batters.filter(n => includedLC.includes((n||'').trim().toLowerCase()));
+        }
+        if (!batters.length) { container.innerHTML = `<p>No matching batters found.</p>`; return; }
+
+        batters.forEach(batter => {
+            ['Left', 'Right'].forEach(side => {
+                const vs = poolRows.filter(r => r.Batter === batter && r.PitcherThrows === side);
+                if (!vs.length) return;
+                const { page, appCanvas, sprayCanvas } = renderBatterPage(batter, side, vs);
+                container.appendChild(page);
+                drawApproachGrid(appCanvas, vs);
+                drawSprayField(sprayCanvas, vs);
+            });
+        });
+    }
+
+    function renderBatterPage(name, side, rows) {
+        const page = document.createElement('div');
+        page.className = 'report-page';
+        page.innerHTML = `<div class="report-header">
+            <div class="report-header-name">${esc(name)}</div>
+            <div class="report-header-meta">vs. ${side === 'Left' ? 'LHP' : 'RHP'}</div>
+        </div>`;
+
+        // Tables
+        const tablesWrapper = document.createElement('div');
+        tablesWrapper.className = 'tables-row';
+        const csTable = renderCountSummaryTable(computeCountSummary(rows));
+        csTable.style.width = '48%';
+        const ptTable = renderPitchTypeTable(computePitchTypeMetrics(rows));
+        ptTable.style.width = '52%';
+        tablesWrapper.append(csTable, ptTable);
+        page.appendChild(tablesWrapper);
+
+        // Charts row
+        const chartsRow = document.createElement('div');
+        chartsRow.className = 'charts-row';
+
+        // Approach canvas
+        const approachWrap = document.createElement('div');
+        approachWrap.className = 'approach-wrap';
+        const appLbl = document.createElement('div');
+        appLbl.className = 'chart-label';
+        appLbl.textContent = 'Approach by Count';
+        const appCanvas = document.createElement('canvas');
+        appCanvas.className = 'approach-canvas';
+        appCanvas.width = 560;
+        appCanvas.height = 820;
+        approachWrap.appendChild(appLbl);
+        approachWrap.appendChild(appCanvas);
+
+        // Spray canvas
+        const sprayWrap = document.createElement('div');
+        sprayWrap.className = 'spray-wrap';
+        const sprayLbl = document.createElement('div');
+        sprayLbl.className = 'chart-label';
+        sprayLbl.textContent = 'Balls In Play';
+        const sprayCanvas = document.createElement('canvas');
+        sprayCanvas.className = 'spray-canvas';
+        sprayCanvas.width = 420;
+        sprayCanvas.height = 420;
+        sprayWrap.appendChild(sprayLbl);
+        sprayWrap.appendChild(sprayCanvas);
+
+        chartsRow.appendChild(approachWrap);
+        chartsRow.appendChild(sprayWrap);
+        page.appendChild(chartsRow);
+
+        return { page, appCanvas, sprayCanvas };
+    }
+
+    /* ── Count summary table ─────────────────────── */
+    function computeCountSummary(rows) {
+        const byC = {};
+        rows.forEach(r => {
+            const key = `${r.Balls}-${r.Strikes}`;
+            if (!byC[key]) byC[key] = { seen:0, ooz:0, sw:0, chase:0, wh:0 };
+            const m = byC[key]; m.seen++;
+            const side = parseFloat(r.PlateLocSide), ht = parseFloat(r.PlateLocHeight);
+            if (isNaN(side) || isNaN(ht)) return;
+            const inZone = side >= -0.85 && side <= 0.85 && ht >= 1.5 && ht <= 3.5;
+            if (!inZone) m.ooz++;
+            const swung = !['BallCalled','StrikeCalled'].includes(r.PitchCall);
+            if (swung) { m.sw++; if (r.PitchCall === 'StrikeSwinging') m.wh++; if (!inZone) m.chase++; }
+        });
+        return Object.entries(byC).filter(([,m]) => m.seen > 0).map(([cnt,m]) => ({
+            Count: cnt,
+            PitchesSeen: m.seen,
+            InZone: ((m.seen - m.ooz) / m.seen * 100).toFixed(1) + '%',
+            Swing: (m.sw / m.seen * 100).toFixed(1) + '%',
+            Chase: m.ooz > 0 ? (m.chase / m.ooz * 100).toFixed(1) + '%' : '-',
+            Whiff: m.sw > 0 ? (m.wh / m.sw * 100).toFixed(1) + '%' : '-'
+        }));
+    }
+
+    function renderCountSummaryTable(data) {
+        data.sort((a,b) => {
+            const [b1,s1] = a.Count.split('-').map(Number), [b2,s2] = b.Count.split('-').map(Number);
+            return b1 !== b2 ? b1 - b2 : s1 - s2;
+        });
+        const tbl = document.createElement('table');
+        tbl.innerHTML = `<thead><tr><th>Count</th><th>Pitches</th><th>InZone%</th><th>Swing%</th><th>Chase%</th><th>Whiff%</th></tr></thead><tbody>` +
+            data.map(r => `<tr><td>${r.Count}</td><td>${r.PitchesSeen}</td><td>${r.InZone}</td><td>${r.Swing}</td><td>${r.Chase}</td><td>${r.Whiff}</td></tr>`).join('') +
+            `</tbody>`;
+        return tbl;
+    }
+
+    /* ── Pitch type table ────────────────────────── */
+    function computePitchTypeMetrics(rows) {
+        const total = rows.length;
+        const byType = {};
+        rows.forEach(r => {
+            const t = r.AutoPitchType || 'Unknown';
+            if (!byType[t]) byType[t] = { cnt:0, ab:0, hits:0, TB:0, evSum:0, evCount:0, laSum:0, laCount:0, swings:0, whiffs:0, ooz:0, chase:0 };
+            const m = byType[t]; m.cnt++;
+
+            // Four-Seam velocity buckets
+            if (t === 'Four-Seam') {
+                const spd = parseFloat(r.RelSpeed);
+                const bucket = !isFinite(spd) ? null : spd <= 92 ? 'Four-Seam ≤92' : spd <= 95 ? 'Four-Seam 92-95' : 'Four-Seam 96+';
+                if (bucket) {
+                    if (!byType[bucket]) byType[bucket] = { cnt:0, ab:0, hits:0, TB:0, evSum:0, evCount:0, laSum:0, laCount:0, swings:0, whiffs:0, ooz:0, chase:0 };
+                    byType[bucket].cnt++;
+                    // rest of bucket stats filled below via shared logic
+                    const mb = byType[bucket];
+                    const swungB = !['BallCalled','StrikeCalled'].includes(r.PitchCall);
+                    const sideB = parseFloat(r.PlateLocSide), htB = parseFloat(r.PlateLocHeight);
+                    if (!isNaN(sideB) && !isNaN(htB)) { const inZB = sideB >= -0.85 && sideB <= 0.85 && htB >= 1.5 && htB <= 3.5; if (!inZB) { mb.ooz++; if (swungB) mb.chase++; } }
+                    const termB = r.PitchCall === 'InPlay' || (r.PitchCall === 'StrikeSwinging' && r.KorBB === 'Strikeout');
+                    if (termB) { mb.ab++; if (/Single|Double|Triple|HomeRun/.test(r.PlayResult)) { mb.hits++; mb.TB += {'Single':1,'Double':2,'Triple':3,'HomeRun':4}[r.PlayResult]||0; } }
+                    const evB = parseFloat(r.ExitSpeed); if (!isNaN(evB)) { mb.evSum += evB; mb.evCount++; }
+                    const laB = parseFloat(r.Angle); if (!isNaN(laB)) { mb.laSum += laB; mb.laCount++; }
+                    if (swungB) { mb.swings++; if (r.PitchCall === 'StrikeSwinging') mb.whiffs++; }
+                }
+            }
+            const swung = !['BallCalled','StrikeCalled'].includes(r.PitchCall);
+            const side = parseFloat(r.PlateLocSide), ht = parseFloat(r.PlateLocHeight);
+            if (!isNaN(side) && !isNaN(ht)) {
+                const inZone = side >= -0.85 && side <= 0.85 && ht >= 1.5 && ht <= 3.5;
+                if (!inZone) { m.ooz++; if (swung) m.chase++; }
+            }
+            const terminal = r.PitchCall === 'InPlay' || (r.PitchCall === 'StrikeSwinging' && r.KorBB === 'Strikeout');
+            if (terminal) {
+                m.ab++;
+                if (/Single|Double|Triple|HomeRun/.test(r.PlayResult)) { m.hits++; m.TB += {'Single':1,'Double':2,'Triple':3,'HomeRun':4}[r.PlayResult] || 0; }
+            }
+            const ev = parseFloat(r.ExitSpeed); if (!isNaN(ev)) { m.evSum += ev; m.evCount++; }
+            const la = parseFloat(r.Angle); if (!isNaN(la)) { m.laSum += la; m.laCount++; }
+            if (swung) { m.swings++; if (r.PitchCall === 'StrikeSwinging') m.whiffs++; }
+        });
+
+        const BUCKET_LABELS = ['Four-Seam ≤92','Four-Seam 92-95','Four-Seam 96+'];
+        const metrics = Object.entries(byType)
+          .filter(([type]) => !BUCKET_LABELS.includes(type))
+          .flatMap(([type, m]) => {
+            const out = [{ type, m }];
+            if (type === 'Four-Seam') {
+                BUCKET_LABELS.forEach(bl => { if (byType[bl] && byType[bl].cnt > 0) out.push({ type: bl, m: byType[bl] }); });
+            }
+            return out;
+          })
+          .map(({ type: type, m }) => ({
+            AutoPitchType: type,
+            pct: BUCKET_LABELS.includes(type) ? '↳ ' + (m.cnt / total * 100).toFixed(1) + '%' : (m.cnt / total * 100).toFixed(1) + '%',
+            AVG: m.ab > 0 ? (m.hits / m.ab).toFixed(3).substring(1) : '-',
+            SLG: m.ab > 0 ? (m.TB / m.ab).toFixed(3).substring(1) : '-',
+            ExitVelo: m.evCount > 0 ? (m.evSum / m.evCount).toFixed(1) : '-',
+            LA: m.laCount > 0 ? (m.laSum / m.laCount).toFixed(1) : '-',
+            Swing: m.cnt > 0 ? (m.swings / m.cnt * 100).toFixed(1) + '%' : '-',
+            Chase: m.ooz > 0 ? (m.chase / m.ooz * 100).toFixed(1) + '%' : '-',
+            Whiff: m.swings > 0 ? (m.whiffs / m.swings * 100).toFixed(1) + '%' : '-'
+        }));
+
+        const allR = rows;
+        const totalAB = allR.filter(r => r.PitchCall === 'InPlay' || (r.PitchCall === 'StrikeSwinging' && r.KorBB === 'Strikeout')).length;
+        const totalHits = allR.filter(r => r.PitchCall === 'InPlay' && /Single|Double|Triple|HomeRun/.test(r.PlayResult)).length;
+        const totalEV = allR.map(r => parseFloat(r.ExitSpeed)).filter(v => !isNaN(v));
+        const totalLA = allR.map(r => parseFloat(r.Angle)).filter(v => !isNaN(v));
+        const totalSwings = allR.filter(r => !['BallCalled','StrikeCalled'].includes(r.PitchCall)).length;
+        const totalWhiffs = allR.filter(r => r.PitchCall === 'StrikeSwinging').length;
+        const totalOoz = allR.filter(r => { const s = parseFloat(r.PlateLocSide), h = parseFloat(r.PlateLocHeight); return !isNaN(s) && !isNaN(h) && !(s >= -0.85 && s <= 0.85 && h >= 1.5 && h <= 3.5); }).length;
+        const totalChase = allR.filter(r => { const s = parseFloat(r.PlateLocSide), h = parseFloat(r.PlateLocHeight); const sw = !['BallCalled','StrikeCalled'].includes(r.PitchCall); return sw && !isNaN(s) && !isNaN(h) && !(s >= -0.85 && s <= 0.85 && h >= 1.5 && h <= 3.5); }).length;
+
+        metrics.push({
+            AutoPitchType: 'Total', pct: '100.0%',
+            AVG: totalAB > 0 ? (totalHits / totalAB).toFixed(3).substring(1) : '-', SLG: '-',
+            ExitVelo: totalEV.length > 0 ? (totalEV.reduce((a,b) => a+b, 0) / totalEV.length).toFixed(1) : '-',
+            LA: totalLA.length > 0 ? (totalLA.reduce((a,b) => a+b, 0) / totalLA.length).toFixed(1) : '-',
+            Swing: total > 0 ? (totalSwings / total * 100).toFixed(1) + '%' : '-',
+            Chase: totalOoz > 0 ? (totalChase / totalOoz * 100).toFixed(1) + '%' : '-',
+            Whiff: totalSwings > 0 ? (totalWhiffs / totalSwings * 100).toFixed(1) + '%' : '-'
+        });
+        return metrics;
+    }
+
+    function renderPitchTypeTable(data) {
+        const tbl = document.createElement('table');
+        tbl.innerHTML = `<thead><tr><th>Type</th><th>%</th><th>AVG</th><th>SLG</th><th>EV</th><th>LA</th><th>Swing%</th><th>Chase%</th><th>Whiff%</th></tr></thead><tbody>` +
+            data.map(r => `<tr><td>${r.AutoPitchType}</td><td>${r.pct}</td><td>${r.AVG}</td><td>${r.SLG}</td><td>${r.ExitVelo}</td><td>${r.LA}</td><td>${r.Swing}</td><td>${r.Chase}</td><td>${r.Whiff}</td></tr>`).join('') +
+            `</tbody>`;
+        return tbl;
+    }
+
+    /* ── Approach decision tree canvas ──────────── */
+    function drawApproachGrid(canvas, rows) {
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const data = {};
+        rows.forEach(r => {
+            const b = parseInt(r.Balls), s = parseInt(r.Strikes);
+            if (isNaN(b) || isNaN(s) || b > 3 || s > 2) return;
+            const key = `${b}-${s}`;
+            if (!data[key]) data[key] = { n:0, swing:0 };
+            const m = data[key]; m.n++;
+            if (!['BallCalled','StrikeCalled'].includes(r.PitchCall)) m.swing++;
+        });
+
+        // Diamond tree: tier = balls + strikes
+        const NW = 116, NH = 116;
+        const STEP_X = Math.floor(W / 2 - NW / 2 - 6);   // fill full canvas width
+        const STEP_Y = NH + 18;                            // node height + fixed gap
+        const PAD_T = 10;
+
+        const x0 = W/2 - STEP_X, x1 = W/2, x2 = W/2 + STEP_X;
+        const tierXC = [
+            [x1],
+            [(x0+x1)/2, (x1+x2)/2],
+            [x0, x1, x2],
+            [x0, x1, x2],
+            [(x0+x1)/2, (x1+x2)/2],
+            [x1],
+        ];
+        const tierYC = Array.from({length:6}, (_,t) => PAD_T + NH/2 + t * STEP_Y);
+
+        const counts = [['0-0'],['1-0','0-1'],['2-0','1-1','0-2'],['3-0','2-1','1-2'],['3-1','2-2'],['3-2']];
+
+        const edges = [
+            ['0-0','1-0'],['0-0','0-1'],
+            ['1-0','2-0'],['1-0','1-1'],
+            ['0-1','1-1'],['0-1','0-2'],
+            ['2-0','3-0'],['2-0','2-1'],
+            ['1-1','2-1'],['1-1','1-2'],
+            ['0-2','1-2'],
+            ['3-0','3-1'],
+            ['2-1','3-1'],['2-1','2-2'],
+            ['1-2','2-2'],
+            ['3-1','3-2'],['2-2','3-2'],
+        ];
+
+        const pos = {};
+        counts.forEach((tier, t) => tier.forEach((cnt, i) => { pos[cnt] = { cx: tierXC[t][i], cy: tierYC[t] }; }));
+
+        // Edges
+        ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 1.2;
+        edges.forEach(([from, to]) => {
+            if (!pos[from] || !pos[to]) return;
+            ctx.beginPath();
+            ctx.moveTo(pos[from].cx, pos[from].cy + NH/2);
+            ctx.lineTo(pos[to].cx, pos[to].cy - NH/2);
+            ctx.stroke();
+        });
+
+        // Nodes
+        const HDR = 28;
+        const R_OUT = 36, R_IN = 22;
+        counts.forEach((tier) => {
+            tier.forEach((cnt) => {
+                const { cx, cy } = pos[cnt];
+                const nx = cx - NW/2, ny = cy - NH/2;
+                const m = data[cnt] || { n:0, swing:0 };
+
+                // Card
+                ctx.fillStyle = '#f9fafb';
+                rrect(ctx, nx, ny, NW, NH, 6); ctx.fill();
+                ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1; ctx.stroke();
+
+                // Header
+                ctx.fillStyle = '#111827';
+                rrectTop(ctx, nx, ny, NW, HDR, 6); ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 17px Arial';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(cnt, cx, ny + HDR/2);
+
+                if (m.n === 0) {
+                    ctx.fillStyle = '#d1d5db'; ctx.font = '12px Arial';
+                    ctx.fillText('—', cx, cy + 6); return;
+                }
+
+                const swPct = m.swing / m.n;
+                const RING_CX = cx, RING_CY = ny + HDR + (NH - HDR)/2;
+                const startA = -Math.PI / 2;
+
+                // Take background (green)
+                ctx.beginPath(); ctx.arc(RING_CX, RING_CY, R_OUT, 0, Math.PI*2);
+                ctx.fillStyle = '#d1fae5'; ctx.fill();
+
+                // Swing slice (blue)
+                ctx.beginPath(); ctx.moveTo(RING_CX, RING_CY);
+                ctx.arc(RING_CX, RING_CY, R_OUT, startA, startA + Math.PI*2*swPct);
+                ctx.closePath(); ctx.fillStyle = '#2563eb'; ctx.fill();
+
+                // Donut hole
+                ctx.beginPath(); ctx.arc(RING_CX, RING_CY, R_IN, 0, Math.PI*2);
+                ctx.fillStyle = '#f9fafb'; ctx.fill();
+
+                // Swing % in center
+                ctx.fillStyle = '#111827'; ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(Math.round(swPct*100)+'%', RING_CX, RING_CY);
+            });
+        });
+
+        // Legend
+        const lx = 6, ly = H - 10;
+        ctx.beginPath(); ctx.arc(lx+6, ly, 6, 0, Math.PI*2); ctx.fillStyle='#2563eb'; ctx.fill();
+        ctx.fillStyle='#6b7280'; ctx.font='11px Arial'; ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText('Swing%', lx+14, ly);
+        ctx.beginPath(); ctx.arc(lx+80, ly, 6, 0, Math.PI*2); ctx.fillStyle='#d1fae5'; ctx.fill();
+        ctx.strokeStyle='#a7f3d0'; ctx.lineWidth=1; ctx.stroke();
+        ctx.fillStyle='#6b7280'; ctx.fillText('Take%', lx+88, ly);
+    }
+
+    /* ── Spray field canvas ──────────────────────── */
+    function drawSprayField(canvas, rows) {
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const HX = W / 2, HY = H - 16;
+        const MAX_FT = 290;
+        const SC = Math.min(
+            (HY - 4) / MAX_FT,
+            (HX - 8) / (MAX_FT * Math.sin(45 * Math.PI / 180))
+        );
+        const IF_DIST = 150;
+
+        function fc(dist, deg) {
+            const r = deg * Math.PI / 180;
+            return [HX + dist * Math.sin(r) * SC, HY - dist * Math.cos(r) * SC];
+        }
+
+        const IF_SECS = [
+            { label: '3B', dMin: -45, dMax: -22.5 },
+            { label: 'SS', dMin: -22.5, dMax: 0   },
+            { label: '2B', dMin: 0,     dMax: 22.5 },
+            { label: '1B', dMin: 22.5,  dMax: 45   },
+        ];
+        const OF_SECS = [
+            { label: 'LF', dMin: -45, dMax: -27 },
+            { label: 'LC', dMin: -27, dMax: -9  },
+            { label: 'CF', dMin: -9,  dMax: 9   },
+            { label: 'RC', dMin: 9,   dMax: 27  },
+            { label: 'RF', dMin: 27,  dMax: 45  },
+        ];
+
+        const bip = rows.filter(r => r.PitchCall === 'InPlay');
+        const ifBIP = bip.filter(r => { const d = parseFloat(r.Distance); return isFinite(d) && d > 0 && d < IF_DIST; });
+        const ofBIP = bip.filter(r => { const d = parseFloat(r.Distance); return isFinite(d) && d >= IF_DIST; });
+
+        function countSecs(secs, list) {
+            secs.forEach(s => {
+                s.count = list.filter(r => { const dir = parseFloat(r.Direction); return isFinite(dir) && dir >= s.dMin && dir < s.dMax; }).length;
+                s.pct = list.length > 0 ? s.count / list.length : null;
+            });
+        }
+        countSecs(IF_SECS, ifBIP);
+        countSecs(OF_SECS, ofBIP);
+
+        function secColor(pct, a = 0.72) {
+            if (pct === null) return `rgba(200,200,200,${a})`;
+            const t = Math.min(1, pct / 0.35);
+            return `rgba(${Math.round(37+(220-37)*t)},${Math.round(99+(50-99)*t)},${Math.round(235+(50-235)*t)},${a})`;
+        }
+
+        function sector(dMin, dMax, r0, r1) {
+            ctx.beginPath();
+            if (r0 <= 0) {
+                ctx.moveTo(HX, HY);
+                for (let d = dMin; d <= dMax; d++) { const [x,y] = fc(r1,d); ctx.lineTo(x,y); }
+            } else {
+                const [ix,iy] = fc(r0, dMin); ctx.moveTo(ix, iy);
+                for (let d = dMin; d <= dMax; d++) { const [x,y] = fc(r1,d); ctx.lineTo(x,y); }
+                for (let d = dMax; d >= dMin; d--) { const [x,y] = fc(r0,d); ctx.lineTo(x,y); }
+            }
+            ctx.closePath();
+        }
+
+        sector(-45, 45, 0, MAX_FT); ctx.fillStyle = '#c8dfb4'; ctx.fill();
+        sector(-45, 45, 0, IF_DIST); ctx.fillStyle = '#dbc49a'; ctx.fill();
+
+        OF_SECS.forEach(s => { sector(s.dMin, s.dMax, IF_DIST, MAX_FT); ctx.fillStyle = secColor(s.pct); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.5; ctx.stroke(); });
+        IF_SECS.forEach(s => { sector(s.dMin, s.dMax, 0, IF_DIST); ctx.fillStyle = secColor(s.pct); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.5; ctx.stroke(); });
+
+        ctx.beginPath();
+        for (let d = -45; d <= 45; d++) { const [x,y] = fc(IF_DIST,d); d === -45 ? ctx.moveTo(x,y) : ctx.lineTo(x,y); }
+        ctx.strokeStyle = 'rgba(100,70,30,0.45)'; ctx.lineWidth = 1.5; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+
+        [[-45],[45]].forEach(([deg]) => { const [fx,fy] = fc(MAX_FT,deg); ctx.beginPath(); ctx.moveTo(HX,HY); ctx.lineTo(fx,fy); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2; ctx.stroke(); });
+
+        ctx.beginPath();
+        for (let d = -45; d <= 45; d++) { const [x,y] = fc(MAX_FT,d); d === -45 ? ctx.moveTo(x,y) : ctx.lineTo(x,y); }
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        function labelSec(sec, r0, r1, isOF) {
+            if (sec.pct === null) return;
+            const midDir = (sec.dMin + sec.dMax) / 2;
+            const midDist = r0 + (r1 - r0) * (isOF ? 0.52 : 0.55);
+            const [cx,cy] = fc(midDist, midDir);
+            ctx.fillStyle = '#111827';
+            ctx.font = `bold ${isOF ? 12 : 11}px Arial`;
+            ctx.fillText(Math.round(sec.pct * 100) + '%', cx, cy);
+        }
+        IF_SECS.forEach(s => labelSec(s, 0, IF_DIST, false));
+        OF_SECS.forEach(s => labelSec(s, IF_DIST, MAX_FT, true));
+
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(HX, HY, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+        ctx.font = '9px Arial'; ctx.fillStyle = '#555';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText(`IF: ${ifBIP.length} BIP`, 4, H - 11);
+        ctx.fillText(`OF: ${ofBIP.length} BIP`, 4, H - 1);
+    }
+
+    /* ── Canvas helpers ──────────────────────────── */
+    function rrect(ctx, x, y, w, h, r) {
+        r = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+        ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+        ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+        ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+        ctx.closePath();
+    }
+
+    function rrectTop(ctx, x, y, w, h, r) {
+        r = Math.min(r, w / 2, h);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+        ctx.lineTo(x+w, y+h); ctx.lineTo(x, y+h); ctx.lineTo(x, y+r);
+        ctx.quadraticCurveTo(x, y, x+r, y);
+        ctx.closePath();
+    }
+
+    function esc(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    </script>
+</body>
+</html>

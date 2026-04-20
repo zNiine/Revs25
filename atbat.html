@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Batter vs Pitcher Scouting Reports</title>
+  <style>
+ /* global page layout */
+body {
+  font-family: sans-serif;
+  margin: 1rem;
+}
+#controls {
+  margin-bottom: 1rem;
+}
+select {
+  margin-right: 1rem;
+}
+
+/* each “page” is a 2×2 grid of PA cards */
+.page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1rem;
+  page-break-after: always;
+  margin-bottom: 2rem;
+}
+.blank-page {
+  height: 100vh;
+  page-break-after: always;
+}
+
+/* individual PA card */
+.pa-card {
+  position: relative;       /* for stacking context */
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+.pa-header {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* canvas wrapper (if you wrap your <canvas> in a .pa-canvas div) */
+.pa-canvas {
+  position: relative;
+  z-index: 1;               /* lower layer */
+}
+
+/* the strike-zone canvas */
+canvas {
+  width: 100%;
+  margin-top: 30px;         /* adjust vertical spacing */
+  height: 320px;            /* taller for visibility */
+  background: transparent;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* detail table overlay */
+.detail {
+  position: relative;       /* so z-index applies */
+  z-index: 2;               /* above the canvas */
+  margin-top: -0px;        /* pull up over canvas—tweak as needed */
+  background: rgba(255,255,255,0.8); /* semi-translucent backdrop */
+  overflow: auto;           /* scroll if too tall */
+}
+
+/* table styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;       /* smaller text */
+  margin: 0;                /* controlled by .detail */
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 0.2rem;
+  text-align: center;
+}
+
+/* print-specific tweaks */
+@media print {
+  /* hide the controls bar */
+  #controls {
+    display: none;
+  }
+  /* force landscape orientation */
+  @page {
+    size: landscape;
+    margin: 1cm;
+  }
+  /* keep each card intact */
+  .pa-card {
+    page-break-inside: avoid;
+  }
+  /* canvas spans its grid cell */
+  canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+}
+
+  </style>
+</head>
+<body>
+
+  <div id="controls">
+    <label>Batting Team:
+      <select id="battingTeam"><option>Loading…</option></select>
+    </label>
+    <label id="pitchingTeamLabel">Pitching Team:
+      <select id="pitchingTeam"><option>Loading…</option></select>
+    </label>
+    <button id="renderBtn">Go</button>
+
+  </div>
+
+  <div id="reportContainer"></div>
+
+  <!-- PapaParse from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script>
+  const PALETTE = {
+    'Four-Seam': '#000000',
+    'Sinker':    '#FF69B4',
+    'Slider':    '#0000FF',
+    'Changeup':  '#00FF00',
+    'Curveball': '#FFA500',
+    'Cutter':    '#800080',
+    'Splitter':  '#00FFFF',
+    'undefined':'#888888'
+  };
+
+  // ── Custom matchup lists ──────────────────────────────────────────────────
+  // Populate these to use the "Custom" dropdown option.
+  const customBatters = [
+    // e.g. 'Smith, John',
+    'Otosaka, Tomo',
+    'Lewis, Brandon',
+    'Bates, Austin',
+    'Blackwell, Benjamin'
+  ];
+  const customPitchers = [
+      "Smith, Adam",
+  "Alexy, AJ",
+  "Garbrick, Alex",
+  "Sullivan, Billy",
+  "Patten, Cole",
+  "Bollman, Jason",
+  "Needles, Justin",
+  "Albright, Luke",
+  "McCollough, Luke",
+  "Stil, Matt",
+  "Bremer, Noah",
+  "Diehl, Phillip",
+  "Martinez, Quinton",
+  "Voacolo, Ronnie",
+  ];
+  // ─────────────────────────────────────────────────────────────────────────
+
+  let gamePitches = [], paList = [];
+
+  // Round helper
+  function roundVal(v) {
+    const n = parseFloat(v);
+    return isNaN(n) ? '' : n.toFixed(1);
+  }
+
+  // 1) Load CSV
+  Papa.parse('data.csv', {
+    header: true,
+    download: true,
+    complete: ({data}) => {
+      gamePitches = data.filter(r=>r.Batter && r.Pitcher);
+      buildPAList();
+      populateTeamSelectors();
+    }
+  });
+const excludePlayers = new Set([
+  'Corcino, Daniel',
+  'Martinez, Jorge',
+  'Rivera, Eduardo',
+  'Quintana, Franky',
+  'Colon, Rabel',
+  'Walker, Mason',
+  'Tovalin, Osvaldo',
+  'Richards, Jairus',
+  'Otosaka, Tomo',
+  'Berglund, Michael',
+  'King, Thomas',
+  'Stem, Craig',
+  'Firoved, Graham',
+  'Boss, Jackson',
+  'Kruglewicz, Parker',
+  'Lantigua, John',
+  
+]);
+function buildPAList(){
+  const keys = new Set();
+  paList.length = 0;   // clear previous list
+
+  gamePitches
+    // 2. Filter out any rows where batter or pitcher is in the exclude list
+    .filter(r => !excludePlayers.has(r.Batter) && !excludePlayers.has(r.Pitcher))
+    .forEach(r => {
+      const key = [r.Batter, r.Pitcher, r.Inning, r['Top/Bottom'], r.PAofInning].join('||');
+      if (!keys.has(key)) {
+        keys.add(key);
+        paList.push({
+          batter:   r.Batter,
+          pitcher:  r.Pitcher,
+          inning:   r.Inning,
+          half:     r['Top/Bottom'],
+          paIndex:  r.PAofInning,
+          date:     r.Date  
+        });
+      }
+    });
+
+  // 3. Sort as before
+  paList.sort((a, b) => {
+    if (a.batter !== b.batter)   return a.batter.localeCompare(b.batter);
+    if (a.pitcher !== b.pitcher) return a.pitcher.localeCompare(b.pitcher);
+    return (+a.paIndex) - (+b.paIndex);
+  });
+}
+  // 3) Team dropdowns
+  function populateTeamSelectors(){
+    const batTeams = [...new Set(gamePitches.map(r=>r.BatterTeam))].sort(),
+          pitTeams = [...new Set(gamePitches.map(r=>r.PitcherTeam))].sort();
+    const batSel = document.getElementById('battingTeam'),
+          pitSel = document.getElementById('pitchingTeam');
+    batSel.innerHTML = batTeams.map(t=>`<option>${t}</option>`).join('') +
+                       `<option value="__custom__">Custom</option>`;
+    pitSel.innerHTML = pitTeams.map(t=>`<option>${t}</option>`).join('');
+    batSel.addEventListener('change', () => {
+      document.getElementById('pitchingTeamLabel').style.display =
+        batSel.value === '__custom__' ? 'none' : '';
+    });
+  }
+
+
+  document.getElementById('renderBtn').addEventListener('click', () => {
+    const batVal = document.getElementById('battingTeam').value;
+    const pitVal = document.getElementById('pitchingTeam').value;
+    const isCustom = batVal === '__custom__';
+    if (batVal && batVal !== 'Loading…' && (isCustom || (pitVal && pitVal !== 'Loading…'))) {
+      renderReports();
+    }
+  });
+
+// 4) Draw one PA (plate appearance)
+function drawPA(pa, canvas, tableDiv) {
+  // filter all pitches belonging to that PA
+  const rows = gamePitches.filter(r =>
+    r.Inning       === pa.inning  &&
+    r['Top/Bottom']=== pa.half    &&
+    +r.PAofInning  === +pa.paIndex&&
+    r.Pitcher      === pa.pitcher &&
+    r.Batter       === pa.batter
+  );
+
+  // resize canvas to match its CSS dimensions
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+
+  const ctx   = canvas.getContext('2d'),
+        zone  = { left: -17/24, right: 17/24, bottom: 1.5, top: 3.5 },
+        m     = 20,
+        availW= canvas.width  - m*2,
+        availH= canvas.height - m*2,
+        baseS = Math.min(availW/(zone.right-zone.left),
+                         availH/(zone.top-zone.bottom)),
+        scale = baseS * 0.7,
+        pixW  = (zone.right - zone.left) * scale,
+        pixH  = (zone.top   - zone.bottom) * scale,
+        ox    = (canvas.width  - pixW) / 2,
+        oy    = (canvas.height + pixH) / 2;
+
+  // mapY stays the same
+  const mapY = y => oy - (y - zone.bottom) * scale;
+
+  // mapX mirrored: dot at x appears at same distance from RIGHT edge
+const mapX = x => ox + (x - zone.left) * scale;
+  // clear & draw the original strike‐zone rectangle
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth   = 2;
+  // draw at the true left → no flipping here
+  ctx.strokeRect(
+    ox,
+    mapY(zone.top),
+    pixW,
+    pixH
+  );
+
+  // plot & number each pitch
+  rows.forEach((r, i) => {
+    const px = parseFloat(r.PlateLocSide),
+          py = parseFloat(r.PlateLocHeight);
+    if (isNaN(px) || isNaN(py)) return;
+
+    const x   = mapX(px),
+          y   = mapY(py),
+          rad = 8,
+          type  = r.AutoPitchType || 'undefined',
+          color = PALETTE[type] || PALETTE.undefined;
+
+    // dot
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, rad, 0, 2*Math.PI);
+    ctx.fill();
+
+    // sequence number
+    ctx.fillStyle    = '#fff';
+    ctx.font         = '12px sans-serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(i+1, x, y);
+  });
+
+  // build the detail table (with one‐decimal rounding)
+  let html = `<table><thead>
+    <tr>
+      <th>#</th><th>Type</th><th>Result</th>
+      <th>Speed</th><th>Spin</th><th>IndV</th><th>Horz</th><th>Drop</th>
+    </tr>
+  </thead><tbody>`;
+
+  rows.forEach((r, i) => {
+    const result = (r.PitchCall === 'InPlay'
+                    ? r.PlayResult
+                    : r.PitchCall) || '–';
+    html += `<tr>
+      <td>${i+1}</td>
+      <td>${r.AutoPitchType||'–'}</td>
+      <td>${result}</td>
+      <td>${roundVal(r.RelSpeed)}</td>
+      <td>${roundVal(r.SpinRate)}</td>
+      <td>${roundVal(r.InducedVertBreak)}</td>
+      <td>${roundVal(r.HorzBreak)}</td>
+      <td>${roundVal(r.SpeedDrop)}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  tableDiv.innerHTML = html;
+}
+
+
+  // 5) Render everything in 2×2 pages
+  function renderReports(){
+    const batVal   = document.getElementById('battingTeam').value;
+    const pitVal   = document.getElementById('pitchingTeam').value;
+    const isCustom = batVal === '__custom__';
+    const container = document.getElementById('reportContainer');
+    container.innerHTML = '';
+    let paCount = 0, currentBatter = null, pageDiv = null;
+
+    paList.forEach(pa=>{
+      // filter by custom lists or by chosen teams
+      if (isCustom) {
+        if (!customBatters.includes(pa.batter) || !customPitchers.includes(pa.pitcher)) return;
+      } else {
+        if(!gamePitches.some(r=>
+            r.Batter===pa.batter &&
+            r.Pitcher===pa.pitcher &&
+            r.BatterTeam===batVal &&
+            r.PitcherTeam===pitVal
+          )) return;
+      }
+
+      // new batter? reset count + insert blank page
+      if(pa.batter !== currentBatter){
+        currentBatter = pa.batter;
+        paCount = 0;
+        if(container.lastChild){
+          const bp = document.createElement('div');
+          bp.className = 'blank-page';
+          container.appendChild(bp);
+        }
+      }
+
+      // every 4 PAs → new page
+      if(paCount % 4 === 0){
+        pageDiv = document.createElement('div');
+        pageDiv.className = 'page';
+        container.appendChild(pageDiv);
+      }
+
+      // create card
+      const card = document.createElement('div');
+      card.className = 'pa-card';
+      card.innerHTML = `
+        <div class="pa-header">
+          ${pa.batter} @ ${pa.pitcher}
+          (Inning ${pa.inning} ${pa.half}, PA#${pa.paIndex}) ${pa.date}
+        </div>
+        <canvas></canvas>
+        <div class="detail"></div>`;
+      pageDiv.appendChild(card);
+
+      // draw zone + table
+      drawPA(pa, card.querySelector('canvas'), card.querySelector('.detail'));
+
+      paCount++;
+    });
+  }
+  </script>
+</body>
+</html>

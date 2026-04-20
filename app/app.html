@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Revs Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      padding: 30px;
+    }
+    h2 {
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+    }
+    .section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 40px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    input, textarea {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+  </style>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+
+<body>
+  <h1>Revs Admin Dashboard</h1>
+
+  <div class="section">
+    <h2>🧩 Set Today's Rev Reveal Player</h2>
+    <input id="rr_name" placeholder="Player Name" />
+    <input id="rr_year" type="number" placeholder="Year with Revs (e.g. 2024)" />
+    <input id="rr_height" type="number" placeholder="Height (in inches)" />
+    <input id="rr_jersey" type="number" placeholder="Jersey Number" />
+    <input id="rr_position" placeholder="Position (Pitcher, Infield, Outfield, etc.)" />
+    <input id="rr_image" placeholder="Silhouette Image URL" />
+    <button onclick="submitRevReveal()">Submit Rev Reveal</button>
+  </div>
+
+  <div class="section">
+    <h2>📊 Create a New Poll</h2>
+    <input id="poll_question" placeholder="Poll Question" />
+    <input id="option1" placeholder="Option 1" />
+    <input id="option2" placeholder="Option 2" />
+    <input id="option3" placeholder="Option 3 (optional)" />
+    <input id="option4" placeholder="Option 4 (optional)" />
+    <button onclick="createPoll()">Create Poll</button>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAf-BTt2AYmWGBpi_2qIfu0VCSyVG87J6c",
+      authDomain: "revs-games.firebaseapp.com",
+      projectId: "revs-games",
+      storageBucket: "revs-games.appspot.com",
+      messagingSenderId: "605063903756",
+      appId: "1:605063903756:web:4ad2bfe7a4934910c80c29",
+      measurementId: "G-75WLC3N2FF",
+      databaseURL: "https://revs-games-default-rtdb.firebaseio.com"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const firestore = firebase.firestore();
+    const rtdb = firebase.database();
+
+    function submitRevReveal() {
+      const name = document.getElementById("rr_name").value;
+      const year = parseInt(document.getElementById("rr_year").value);
+      const height = parseInt(document.getElementById("rr_height").value);
+      const jersey = parseInt(document.getElementById("rr_jersey").value);
+      const position = document.getElementById("rr_position").value;
+      const imageURL = document.getElementById("rr_image").value;
+
+      if (!name || !year || !height || !jersey || !position) {
+        alert("Please fill out all required fields.");
+        return;
+      }
+
+      firestore.collection("revReveal").doc("today").set({
+        name,
+        year,
+        heightInches: height,
+        jerseyNumber: jersey,
+        position,
+        imageURL
+      }).then(() => {
+        alert("✅ Rev Reveal player set!");
+      }).catch((err) => {
+        console.error("❌ Error setting player:", err);
+      });
+    }
+
+    function createPoll() {
+      const question = document.getElementById("poll_question").value;
+      const option1 = document.getElementById("option1").value;
+      const option2 = document.getElementById("option2").value;
+      const option3 = document.getElementById("option3").value;
+      const option4 = document.getElementById("option4").value;
+
+      if (!question || !option1 || !option2) {
+        alert("Please include at least two options.");
+        return;
+      }
+
+      const newPollRef = rtdb.ref("polls").push();
+      const pollData = {
+        question,
+        options: [option1, option2, option3, option4].filter(Boolean),
+        votes: {},
+        timestamp: Date.now()
+      };
+
+      newPollRef.set(pollData).then(() => {
+        alert("✅ Poll created successfully!");
+      }).catch((err) => {
+        console.error("❌ Error creating poll:", err);
+      });
+    }
+  </script>
+</body>
+</html>

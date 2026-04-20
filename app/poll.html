@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Poll Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial; background: #f0f8ff; padding: 2rem; }
+    h1 { color: #333; }
+    .poll {
+      background: white;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+    }
+    .option { margin-left: 1rem; }
+    button {
+      margin-top: 1rem;
+      padding: 5px 10px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button.inactive { background-color: #dc3545; }
+    #createForm { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Poll Dashboard</h1>
+  <div id="polls"></div>
+
+  <div id="createForm">
+    <h2>Create New Poll</h2>
+    <input type="text" id="question" placeholder="Poll question"><br><br>
+    <input type="text" id="option1" placeholder="Option 1"><br>
+    <input type="text" id="option2" placeholder="Option 2"><br>
+    <input type="text" id="option3" placeholder="Option 3 (optional)"><br>
+    <button onclick="createPoll()">Create Poll</button>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAf-BTt2AYmWGBpi_2qIfu0VCSyVG87J6c",
+      authDomain: "revs-games.firebaseapp.com",
+      projectId: "revs-games",
+      databaseURL: "https://revs-games-default-rtdb.firebaseio.com",
+      storageBucket: "revs-games.appspot.com",
+      messagingSenderId: "605063903756",
+      appId: "1:605063903756:web:4ad2bfe7a4934910c80c29",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function loadPolls() {
+      db.ref("polls").on("value", snapshot => {
+        const container = document.getElementById("polls");
+        container.innerHTML = "";
+
+        const data = snapshot.val();
+        if (!data) return;
+
+        Object.entries(data).forEach(([id, poll]) => {
+          const div = document.createElement("div");
+          div.className = "poll";
+
+          div.innerHTML = `
+            <h3>${poll.question}</h3>
+            <p>Status: <strong>${poll.active ? "Active" : "Inactive"}</strong></p>
+            ${poll.options.map((opt, i) => `
+              <div class="option">${opt}: ${poll.votes?.[opt] || 0}</div>
+            `).join("")}
+            <button class="${poll.active ? 'inactive' : ''}" onclick="togglePoll('${id}', ${poll.active})">
+              ${poll.active ? 'Close Poll' : 'Reopen Poll'}
+            </button>
+          `;
+
+          container.appendChild(div);
+        });
+      });
+    }
+
+    function togglePoll(id, currentStatus) {
+      db.ref("polls/" + id + "/active").set(!currentStatus);
+    }
+
+    function createPoll() {
+      const question = document.getElementById("question").value.trim();
+      const option1 = document.getElementById("option1").value.trim();
+      const option2 = document.getElementById("option2").value.trim();
+      const option3 = document.getElementById("option3").value.trim();
+
+      if (!question || !option1 || !option2) {
+        alert("At least 2 options and a question are required.");
+        return;
+      }
+
+      const options = [option1, option2];
+      if (option3) options.push(option3);
+
+      const newPollRef = db.ref("polls").push();
+      newPollRef.set({
+        question,
+        options,
+        votes: {},
+        voters: {},
+        active: true
+      });
+
+      // Clear form
+      document.getElementById("question").value = "";
+      document.getElementById("option1").value = "";
+      document.getElementById("option2").value = "";
+      document.getElementById("option3").value = "";
+    }
+
+    loadPolls();
+  </script>
+</body>
+</html>

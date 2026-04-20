@@ -1,0 +1,9 @@
+Status,Season,season_id,Team,team_id,Player,player_id,AVG,R,H,2B,3B,HR,RBI,BB,SO,SB,SB_from_50,SO_under_cap_60,stats_url,AB,CS,DP,E,G,HBP,P,SF,SH
+met,ALPB- 2021,34146,York Revolution,3614,"Sandford, C",1750089,.228,58,66,2,1,1,14,45,51,55,5.0,9.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=34146,289,12,2,9,82,7,OF,1,5
+met,ALPB- 2018,31284,Lancaster Barnstormers,3613,"Noel, R",1097506,.305,50,90,14,3,2,31,18,50,53,3.0,10.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=31284,295,7,6,4,87,8,U,2,3
+met,ALPB- 2014,28163,York Revolution,3614,"Valdez, W",584385,.292,69,129,14,5,2,38,42,42,55,5.0,18.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=28163,442,12,13,15,112,3,IF,3,20
+close,ALPB- 2019,34130,Sugar Land Skeeters,34136,"Noel, J",1750267,.284,42,56,9,0,1,15,29,33,45,-5.0,27.0,https://baseball.pointstreak.com/team_stats.html?teamid=34136&seasonid=34130,197,6,1,1,52,5,DH,4,1
+close,ALPB- 2025,34102,York Revolution,3614,"Miller, J",1745941,.308,94,124,35,2,16,71,37,58,48,-2.0,2.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=34102,402,6,3,5,95,4,2B,4,1
+close,ALPB- 2024,33927,Gastonia Baseball Club,163528,"Watson Jr, K",1696446,.302,69,111,17,4,13,66,55,60,40,-10.0,0.0,https://baseball.pointstreak.com/team_stats.html?teamid=163528&seasonid=33927,368,7,5,4,98,8,OF,2,0
+close,ALPB- 2017,30757,Lancaster Barnstormers,3613,"Sandford, D",827312,.324,46,77,4,2,0,26,32,53,45,-5.0,7.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=30757,238,13,6,3,60,1,OF,2,2
+close,ALPB - 2011,540,Long Island Ducks,3609,"Binick, K",127675,.343,72,128,19,4,4,47,42,35,42,-8.0,25.0,https://baseball.pointstreak.com/team_stats.html?teamid=3609&seasonid=540,373,5,11,2,106,18,OF,5,4

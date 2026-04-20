@@ -1,0 +1,29 @@
+Status,Season,season_id,Team,team_id,Player,player_id,AVG,R,H,2B,3B,HR,RBI,BB,SO,SB,HR_from_20,SO_under_cap_60,stats_url,AB,CS,DP,E,G,HBP,P,SF,SH
+met,ALPB- 2023,34162,Spire City Ghost Hounds,165441,"Read, R",1751113,.305,42,93,15,0,20,53,16,41,0,0.0,19.0,https://baseball.pointstreak.com/team_stats.html?teamid=165441&seasonid=34162,305,0,15,3,81,8,C,4,0
+met,ALPB- 2022,34154,Lancaster Barnstormers,3613,"Dugan, K",1745222,.326,58,77,16,0,23,69,33,50,7,3.0,10.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=34154,236,1,3,2,62,7,RF,2,0
+met,ALPB- 2021,34146,High Point Rockers,163529,"Cardullo, S",1750033,.289,73,94,20,0,20,76,57,46,16,0.0,14.0,https://baseball.pointstreak.com/team_stats.html?teamid=163529&seasonid=34146,325,2,9,12,91,18,1B,7,1
+met,ALPB- 2021,34146,Gastonia Honey Hunters,163528,"Rogers, J",1264796,.286,80,97,11,1,20,73,68,48,7,0.0,12.0,https://baseball.pointstreak.com/team_stats.html?teamid=163528&seasonid=34146,339,1,11,8,95,6,1B,3,0
+met,ALPB- 2025,34102,Lexington Legends,163530,"Whalen, B",1744113,.332,68,100,29,1,21,75,56,39,26,1.0,21.0,https://baseball.pointstreak.com/team_stats.html?teamid=163530&seasonid=34102,301,5,3,16,83,3,U,5,0
+met,ALPB- 2025,34102,Lexington Legends,163530,"Terry, C",1744116,.322,65,107,26,0,21,80,32,42,4,1.0,18.0,https://baseball.pointstreak.com/team_stats.html?teamid=163530&seasonid=34102,332,2,10,3,88,9,IF,3,0
+met,ALPB- 2017,30757,Lancaster Barnstormers,3613,"x Hobson, K",1113281,.326,42,78,9,1,21,61,29,42,1,1.0,18.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=30757,239,1,6,3,63,5,1B,2,0
+met,ALPB- 2013,21966,Southern Maryland Blue Crabs,3608,"x Hankerd, C",440810,.322,56,97,26,2,22,61,25,50,1,2.0,10.0,https://baseball.pointstreak.com/team_stats.html?teamid=3608&seasonid=21966,301,0,6,2,81,15,OF,5,0
+met,ALPB- 2012,12585,York Revolution,3614,"Perez, A",288351,.314,86,161,35,3,23,86,45,55,4,3.0,5.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=12585,512,1,12,13,132,5,2B,3,1
+met,ALPB - 2011,540,York Revolution,3614,"Nowak, C",151949,.330,67,98,19,0,25,66,28,52,7,5.0,8.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=540,297,1,6,5,84,11,IF,5,0
+met,ALPB - 2010,249,Lancaster Barnstormers,3613,"Nelson, B",45649,.288,84,158,28,0,22,91,36,43,4,2.0,17.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=249,549,7,14,28,135,1,SS,6,7
+close,ALPB- 2023,34162,Long Island Ducks,3609,"Travis, S",1750668,.303,82,138,24,1,19,92,43,49,1,-1.0,11.0,https://baseball.pointstreak.com/team_stats.html?teamid=3609&seasonid=34162,456,3,10,11,119,4,1B,5,0
+close,ALPB- 2023,34162,Gastonia Honey Hunters,163528,"Franco, C",1750343,.374,50,79,14,0,17,59,49,47,1,-3.0,13.0,https://baseball.pointstreak.com/team_stats.html?teamid=163528&seasonid=34162,211,0,4,3,61,0,1B,6,0
+close,ALPB- 2022,34154,Kentucky Wild Health Genomes,165440,"Davis, K",1750811,.271,35,51,6,1,17,46,21,46,0,-3.0,14.0,https://baseball.pointstreak.com/team_stats.html?teamid=165440&seasonid=34154,188,0,4,0,54,7,LF,4,0
+close,ALPB- 2021,34146,Long Island Ducks,3609,"Sánchez, H",1749710,.247,52,70,14,1,18,70,33,29,2,-2.0,31.0,https://baseball.pointstreak.com/team_stats.html?teamid=3609&seasonid=34146,283,0,7,5,82,1,C,2,0
+close,ALPB- 2021,34146,York Revolution,3614,"Castro, C",1750416,.352,47,92,12,3,17,59,16,50,0,-3.0,10.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=34146,261,0,9,6,70,4,C,5,0
+close,ALPB- 2021,34146,Lancaster Barnstormers,3613,"Gailen, B",290236,.279,59,80,15,0,18,72,68,60,4,-2.0,0.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=34146,287,1,11,8,90,6,LF,5,0
+close,ALPB- 2025,34102,Gastonia Ghost Peppers,163528,"Roederer, C",1749859,.266,67,86,17,2,17,54,55,60,21,-3.0,0.0,https://baseball.pointstreak.com/team_stats.html?teamid=163528&seasonid=34102,323,2,5,4,88,1,OF,7,1
+close,ALPB- 2024,33927,Charleston Dirty Birds,163527,"x Cancel, G",1696210,.282,50,55,10,1,17,39,43,50,30,-3.0,10.0,https://baseball.pointstreak.com/team_stats.html?teamid=163527&seasonid=33927,195,0,4,4,53,1,IF,0,0
+close,ALPB- 2024,33927,York Revolution,3614,"Wiel, Z",1696994,.323,46,73,17,1,17,58,25,56,5,-3.0,4.0,https://baseball.pointstreak.com/team_stats.html?teamid=3614&seasonid=33927,226,0,3,1,60,5,IF,4,0
+close,ALPB- 2014,28163,Lancaster Barnstormers,3613,"Gailen, B",290236,.350,54,86,15,2,18,52,51,33,13,-2.0,27.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=28163,246,3,4,0,66,2,OF,3,0
+close,ALPB- 2014,28163,Somerset Patriots,3604,"Montanez, L",436367,.289,69,142,30,4,17,74,38,50,5,-3.0,10.0,https://baseball.pointstreak.com/team_stats.html?teamid=3604&seasonid=28163,491,1,13,4,130,12,OF,7,1
+close,ALPB- 2013,21966,Lancaster Barnstormers,3613,"Ward, D",440364,.291,39,89,10,0,17,54,28,55,0,-3.0,5.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=21966,306,0,12,7,85,1,1B,4,0
+close,ALPB- 2012,12585,Long Island Ducks,3609,"Navarrete, R",127672,.309,76,160,50,0,18,90,43,59,1,-2.0,1.0,https://baseball.pointstreak.com/team_stats.html?teamid=3609&seasonid=12585,518,0,20,10,131,14,OF,8,0
+close,ALPB - 2011,540,Long Island Ducks,3609,"House, J",127669,.305,73,128,22,0,19,81,40,37,1,-1.0,23.0,https://baseball.pointstreak.com/team_stats.html?teamid=3609&seasonid=540,420,2,19,0,113,3,C,5,1
+close,ALPB - 2011,540,Long Island Ducks,3609,"Rodriguez, J",127680,.313,74,95,16,2,18,81,43,42,2,-2.0,18.0,https://baseball.pointstreak.com/team_stats.html?teamid=3609&seasonid=540,304,0,8,0,82,1,OF,1,0
+close,ALPB - 2011,540,Southern Maryland Blue Crabs,3608,"Garcia, T",125430,.305,48,79,18,1,18,57,19,53,4,-2.0,7.0,https://baseball.pointstreak.com/team_stats.html?teamid=3608&seasonid=540,259,1,5,7,69,4,3B,4,1
+close,ALPB - 2010,249,Lancaster Barnstormers,3613,"Witter, A",45645,.275,41,61,12,1,17,48,37,47,1,-3.0,13.0,https://baseball.pointstreak.com/team_stats.html?teamid=3613&seasonid=249,222,1,3,9,64,0,C,3,0

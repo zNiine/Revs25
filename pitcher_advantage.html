@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>YOR Pitching Advantage Counts (Print Optimized)</title>
+<style>
+    @media print {
+        .page-break { page-break-before: always; }
+    }
+    body { font-family: sans-serif; background: #fff; color: #000; padding: 20px; }
+    .player-card {
+        background: #f0f0f0;
+        padding: 15px;
+        margin: 10px;
+        border-radius: 8px;
+        display: inline-block;
+        width: 230px;
+        vertical-align: top;
+        height: 170px;
+    }
+    .player-card h3 { margin: 0 0 10px 0; font-size: 1.1em; }
+</style>
+</head>
+<body>
+
+<div id="cardsContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+const cardsContainer = document.getElementById('cardsContainer');
+const TEAM = "YOR"; // <— your team code here
+
+const advantageCounts = [
+    { label: "1-0", balls: 1, strikes: 0 },
+    { label: "2-0", balls: 2, strikes: 0 },
+    { label: "3-0", balls: 3, strikes: 0 },
+    { label: "2-1", balls: 2, strikes: 1 },
+    { label: "3-1", balls: 3, strikes: 1 },
+    { label: "3-2", balls: 3, strikes: 2 },
+    { label: "1-2", balls: 1, strikes: 2 },
+    { label: "0-2", balls: 0, strikes: 2 },
+];
+
+let data = [];
+
+// load and parse CSV
+fetch('data.csv')
+    .then(r => r.text())
+    .then(text => {
+        Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: results => {
+                data = results.data;
+                displayPitcherStats(TEAM);
+                displayTeamSummary(TEAM);
+                window.print();
+            }
+        });
+    });
+
+function displayPitcherStats(team) {
+    // clear out
+    cardsContainer.innerHTML = '';
+    // map each PA by pitcher + PA identifier
+    const paMap = {};
+    data.forEach(row => {
+        if (!row.PitcherTeam) return;
+        const key = `${row.PitcherTeam}|${row.Pitcher}|${row.Inning}|${row["Top/Bottom"]}|${row.PAofInning}`;
+        paMap[key] = paMap[key] || [];
+        paMap[key].push(row);
+    });
+
+    // build stats per pitcher per count
+    const pitchers = {};
+    Object.entries(paMap).forEach(([paKey, pitches]) => {
+        const [pitcherTeam, pitcher] = paKey.split('|');
+        if (pitcherTeam !== team) return;
+
+        // collect which counts occurred
+        const countsSeen = new Set();
+        pitches.forEach(p => {
+            const b = +p.Balls, s = +p.Strikes;
+            advantageCounts.forEach(c => {
+                if (c.balls === b && c.strikes === s) {
+                    countsSeen.add(c.label);
+                }
+            });
+        });
+        if (!countsSeen.size) return;
+
+        // determine outcome of PA
+        const last = pitches[pitches.length - 1];
+        let isAB = true, isH = false, isBB = false, isHBP = false, isSF = false, TB = 0;
+        if (last.KorBB === "Walk")      { isAB = false; isBB = true; }
+        else if (last.KorBB === "HitByPitch") { isAB = false; isHBP = true; }
+        else if (last.PlayResult === "SacFly") isSF = true;
+
+        if (["Single","Double","Triple","HomeRun"].includes(last.PlayResult)) {
+            isH = true;
+            TB = ({ Single:1, Double:2, Triple:3, HomeRun:4 })[last.PlayResult];
+        }
+
+        // init pitcher record
+        pitchers[pitcher] = pitchers[pitcher] || {};
+        countsSeen.forEach(label => {
+            const stats = pitchers[pitcher][label] = pitchers[pitcher][label] ||
+                { AB:0,H:0,BB:0,HBP:0,SF:0,TB:0 };
+            if (isAB)  stats.AB++;
+            if (isH)   stats.H++;
+            if (isBB)  stats.BB++;
+            if (isHBP) stats.HBP++;
+            if (isSF)  stats.SF++;
+            stats.TB += TB;
+        });
+    });
+
+    // render each pitcher's page
+    Object.entries(pitchers).forEach(([pitcher, counts], idx, arr) => {
+        advantageCounts.forEach(c => {
+            const st = counts[c.label] || {};
+            const AB = st.AB||0, H = st.H||0, BB = st.BB||0, HBP = st.HBP||0, SF = st.SF||0, TB = st.TB||0;
+            const BA  = AB>0 ? (H/AB).toFixed(3) : "0.000";
+            const SLG = AB>0 ? (TB/AB).toFixed(3): "0.000";
+            const denom = AB + BB + HBP + SF;
+            const OBP = denom>0 ? ((H+BB+HBP)/denom).toFixed(3) : "0.000";
+
+            const card = document.createElement('div');
+            card.className = 'player-card';
+            card.innerHTML = `
+                <h3>${pitcher} (${c.label})</h3>
+                <p><strong>BA AGT:</strong> ${BA}</p>
+                <p><strong>SLG AGT:</strong> ${SLG}</p>
+                <p><strong>OBP AGT:</strong> ${OBP}</p>
+                <p>AB: ${AB}, H: ${H}, BB: ${BB}, HBP: ${HBP}, SF: ${SF}</p>
+            `;
+            cardsContainer.appendChild(card);
+        });
+
+        // after each pitcher except last, force a page-break
+        if (idx < arr.length - 1) {
+            const pb = document.createElement('div');
+            pb.className = 'page-break';
+            cardsContainer.appendChild(pb);
+        }
+    });
+}
+
+function displayTeamSummary(team) {
+    // page-break before team summary
+    const pb = document.createElement('div');
+    pb.className = 'page-break';
+    cardsContainer.appendChild(pb);
+
+    // aggregate across *all* YOR pitchers
+    const teamStats = {};
+    // iterate all PAs for team
+    const paMap = {};
+    data.forEach(row => {
+        if (row.PitcherTeam !== team) return;
+        const key = `${row.PitcherTeam}|${row.Pitcher}|${row.Inning}|${row["Top/Bottom"]}|${row.PAofInning}`;
+        paMap[key] = paMap[key] || [];
+        paMap[key].push(row);
+    });
+
+    Object.values(paMap).forEach(pitches => {
+        // find which counts happened
+        const countsSeen = new Set();
+        pitches.forEach(p => {
+            const b = +p.Balls, s = +p.Strikes;
+            advantageCounts.forEach(c => {
+                if (c.balls===b && c.strikes===s) countsSeen.add(c.label);
+            });
+        });
+        if (!countsSeen.size) return;
+
+        // last pitch for outcome
+        const last = pitches[pitches.length - 1];
+        let isAB = true, isH = false, isBB = false, isHBP = false, isSF = false, TB = 0;
+        if (last.KorBB==="Walk")      { isAB=false; isBB=true; }
+        else if (last.KorBB==="HitByPitch") { isAB=false; isHBP=true; }
+        else if (last.PlayResult==="SacFly") isSF = true;
+
+        if (["Single","Double","Triple","HomeRun"].includes(last.PlayResult)) {
+            isH = true;
+            TB = ({ Single:1, Double:2, Triple:3, HomeRun:4 })[last.PlayResult];
+        }
+
+        countsSeen.forEach(label => {
+            const st = teamStats[label] = teamStats[label] || 
+                { AB:0,H:0,BB:0,HBP:0,SF:0,TB:0 };
+            if (isAB)  st.AB++;
+            if (isH)   st.H++;
+            if (isBB)  st.BB++;
+            if (isHBP) st.HBP++;
+            if (isSF)  st.SF++;
+            st.TB += TB;
+        });
+    });
+
+    // render 8 cards for team
+    advantageCounts.forEach(c => {
+        const st = teamStats[c.label] || {};
+        const AB = st.AB||0, H = st.H||0, BB = st.BB||0, HBP = st.HBP||0, SF = st.SF||0, TB = st.TB||0;
+        const BA  = AB>0 ? (H/AB).toFixed(3) : "0.000";
+        const SLG = AB>0 ? (TB/AB).toFixed(3): "0.000";
+        const denom = AB + BB + HBP + SF;
+        const OBP = denom>0 ? ((H+BB+HBP)/denom).toFixed(3) : "0.000";
+
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        card.innerHTML = `
+            <h3>YOR Team (${c.label})</h3>
+            <p><strong>BA AGT:</strong> ${BA}</p>
+            <p><strong>SLG AGT:</strong> ${SLG}</p>
+            <p><strong>OBP AGT:</strong> ${OBP}</p>
+            <p>AB: ${AB}, H: ${H}, BB: ${BB}, HBP: ${HBP}, SF: ${SF}</p>
+        `;
+        cardsContainer.appendChild(card);
+    });
+}
+</script>
+</body>
+</html>

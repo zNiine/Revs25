@@ -1,0 +1,647 @@
+#,Date,Away,Home,Result,W. Pitcher,L. Pitcher,Boxscore,AwayGameNo,HomeGameNo,away_prob,home_prob
+1.0,Apr 256:36 PM,Staten Island,Hagerstown,6-1,"Dunaway, M","Richardson, D",final|,1,1,0.0,0.0
+1.0,Apr 256:40 PM,High Point,S Maryland,6-4,"Edwards, J","Miller, J",final|,1,1,1.0,
+1.0,Apr 256:40 PM,Lancaster,Long Island,9-1,"Skirrow, N","Gant, J",final|,1,1,0.0,0.636
+1.0,Apr 257:00 PM,York,Gastonia,,,,Gastonia,1,1,0.364,0.0
+1.0,Apr 257:03 PM,Charleston,Lexington,1-2,"Laio, N","McGowin, K",final|,1,1,0.0,0.0
+1.0,May  26:41 PM,Lexington,High Point,6-5,"Wicklander, P","Edwards, J",final|,1,1,0.0,1.0
+1.0,Apr 296:48 PM,Lancaster,York,4-9,"Galdoni, L","Killgore, K",final|,2,1,0.0,0.364
+1.0,May  26:50 PM,Gastonia,Lancaster,5-6,"Gilliam, R","Wells, N",final|,1,1,0.0,0.0
+1.0,May  26:53 PM,S Maryland,Charleston,7-5,"Kahaloa, I","Lusk, L",final|,1,1,,0.0
+1.0,May  27:01 PM,Hagerstown,Staten Island,2-4,"McSweeney, M","Martinez, J",final|,1,1,0.0,0.0
+2.0,May  33:31 PM,Hagerstown,Staten Island,5-12,"Oxford, B","Corcino, D",final|,2,2,0.0,0.0
+2.0,May  36:35 PM,Lexington,High Point,,,,Cancelled,2,2,0.0,1.0
+2.0,May  36:40 PM,S Maryland,Charleston,2-4,"Sampson, K","Hennessey, J",final|,2,2,,0.0
+2.0,Apr 306:34 PM,Lancaster,York,7-8,"Robinson, C","Diehl, P",final|,3,2,0.0,0.364
+2.0,Apr 267:54 PM,High Point,S Maryland,14-4,"Scolaro, J","Kahaloa, I",final|,2,2,1.0,
+2.0,Apr 267:05 PM,Charleston,Lexington,5-9,"Wicklander, P","Sampson, K",final|,2,2,0.0,0.0
+2.0,Apr 267:02 PM,York,Gastonia,10-9,"Robinson, C","Myatt, T",final|,2,2,0.364,0.0
+2.0,Apr 266:34 PM,Lancaster,Long Island,5-13,"Plesac, Z","Swarmer, M",final|,4,2,0.0,0.636
+2.0,Apr 266:03 PM,Staten Island,Hagerstown,13-3,"Oxford, B","Martinez, J",final|,2,2,0.0,0.0
+2.0,May  36:49 PM,Gastonia,Lancaster,6-3,"Sheffield, J","Garbrick, A",final|,2,2,0.0,0.0
+3.0,May  16:33 PM,Lancaster,York,10-6,"Rees, J","Veen, Z",final|,5,3,0.0,0.364
+3.0,May  36:22 PM,Hagerstown,Staten Island,6-8,"Andrews, T","Saturria, M",final|,3,3,0.0,0.0
+3.0,May  46:01 PM,Lexington,High Point,1-3,"Frisbee, M","Tully, T",final|,3,3,0.0,1.0
+3.0,May  45:54 PM,S Maryland,Charleston,7-2,"Campbell, M","Reyes, S",final|,3,3,,0.0
+3.0,May  42:03 PM,Gastonia,Lancaster,8-7,"Horvath, N","Diehl, P",final|,3,3,0.0,0.0
+3.0,Apr 271:36 PM,Lancaster,Long Island,3-2,"Engler, S","Washington, M",final|,6,3,0.0,0.636
+3.0,Apr 272:06 PM,Charleston,Lexington,3-17,"Eastman, C","Endersby, J",final|,3,3,0.0,0.0
+3.0,Apr 272:06 PM,High Point,S Maryland,17-10,"Backman, B","Thurman, A",final|,3,3,1.0,
+3.0,Apr 274:01 PM,York,Gastonia,11-3,"Pace, F","Grey, C",final|,3,3,0.364,0.0
+3.0,Apr 272:04 PM,Staten Island,Hagerstown,5-8,"Corcino, D","Sigman, J",final|,3,3,0.0,0.0
+4.0,May  611:08 AM,Gastonia,High Point,14-8,"Myatt, T","Solter, M",final|,4,4,0.0,1.0
+4.0,May  66:37 PM,Lexington,Charleston,0-4,"Lebron, D","Castillo, W",final|,4,4,0.0,0.0
+4.0,May  66:48 PM,S Maryland,Lancaster,7-4,"Vazquez, R","Brennan, T",final|,4,4,,0.0
+4.0,Apr 2812:31 PM,High Point,Gastonia,3-0,"Solter, M","Smith, K",final|,4,4,1.0,0.0
+4.0,May  74:04 PM,Long Island,Staten Island,10-9,"Griffin, D","Capuano, C",final|,1,4,0.636,0.0
+4.0,Apr 296:34 PM,Staten Island,Long Island,12-10,"Baker, R","Williams, P",final|,4,4,0.0,0.636
+4.0,Apr 296:39 PM,Charleston,S Maryland,6-3,"Meza, C","Campbell, M",final|,4,4,0.0,
+4.0,Apr 298:36 PM,Hagerstown,Lexington,5-4,"Quintana, F","Tully, T",final|,4,4,0.0,0.0
+4.0,May  26:32 PM,Long Island,York,10-2,"Gant, J","Pace, F",final|,2,4,0.636,0.364
+4.0,May  96:30 PM,York,Hagerstown,,,,Hagerstown,4,4,0.364,0.0
+5.0,May  710:39 AM,Lexington,Charleston,4-3,"Laio, N","Hill, J",final|,5,5,0.0,0.0
+5.0,May  76:49 PM,S Maryland,Lancaster,4-3,"Semple, S","Skirrow, N",final|,5,5,,0.0
+5.0,Apr 306:33 PM,Staten Island,Long Island,8-4,"Dunaway, M","Senger, M",final|,5,5,0.0,0.636
+5.0,May 106:06 PM,York,Hagerstown,11-2,"Scott, W","Corcino, D",final|,5,5,0.364,0.0
+5.0,May  76:38 PM,Gastonia,High Point,3-4,"Scolaro, J","Sheffield, J",final|,5,5,0.0,1.0
+5.0,Apr 306:37 PM,Charleston,S Maryland,12-8,"Del Prado, N","Kelly, J",final|,5,5,0.0,
+5.0,May  77:07 PM,Long Island,Staten Island,2-3,"Mahoney, J","Tropeano, N",final|,3,5,0.636,0.0
+5.0,May  36:30 PM,Long Island,York,,,,"Postponed to:May 04, 01:00 PM",4,5,0.636,0.364
+5.0,Apr 282:49 PM,High Point,Gastonia,7-4,"Frisbee, M","Scott, A",final|,5,5,1.0,0.0
+5.0,Apr 3010:32 AM,Hagerstown,Lexington,3-6,"Castillo, W","Picone, D",final|,5,5,0.0,0.0
+6.0,May  110:39 AM,Charleston,S Maryland,1-3,"Semple, S","McGowin, K",final|,6,6,0.0,
+6.0,May  44:13 PM,Long Island,York,10-9,"Washington, M","Scott, W",final|,5,6,0.636,0.364
+6.0,May  112:03 PM,Hagerstown,Lexington,6-13,"Laio, N","Kickham, M",final|,6,6,0.0,0.0
+6.0,May  86:39 PM,Gastonia,High Point,3-6,"Barraclough, K","Wells, N",final|,6,6,0.0,1.0
+6.0,May  810:34 AM,Long Island,Staten Island,3-1,"Flores, B","Higgins, C",final|,6,6,0.636,0.0
+6.0,May  87:39 PM,Lexington,Charleston,2-1,"Wicklander, P","McGowin, K",final|,6,6,0.0,0.0
+6.0,May  16:34 PM,Staten Island,Long Island,10-5,"Oxford, B","Alintoff, J",final|,6,6,0.0,0.636
+6.0,Apr 296:33 PM,High Point,Gastonia,2-11,"Hennen, R","Guerrieri, T",final|,6,6,1.0,0.0
+6.0,May 112:06 PM,York,Hagerstown,5-4,"Llovera, M","Kelly, R",final|,6,6,0.364,0.0
+7.0,May 167:06 PM,Gastonia,Staten Island,9-2,"Sheffield, J","Mejia, A",final|,7,7,0.0,0.0
+7.0,May  75:05 PM,Hagerstown,York,2-4,"Denoyer, N","Richardson, D",final|,7,7,0.0,0.364
+7.0,May  96:37 PM,Charleston,S Maryland,6-7,"Sherfy, J","Demurias, E",final|,7,7,0.0,
+7.0,May  97:04 PM,Staten Island,Lexington,1-11,"Eastman, C","Mejia, A",final|,7,7,0.0,0.0
+7.0,May  97:04 PM,High Point,Gastonia,9-10,"Myatt, T","Lewis, J",final|,7,7,1.0,0.0
+7.0,May  97:20 PM,Lancaster,Long Island,1-11,"Gant, J","Swarmer, M",final|,7,7,0.0,0.636
+7.0,May 167:08 PM,Long Island,Lancaster,4-6,"McAvene, M","Washington, M",final|,7,6,0.636,0.0
+7.0,May 136:38 PM,Staten Island,Charleston,3-7,"Meza, C","Capuano, C",final|,8,7,0.0,0.0
+7.0,May 166:38 PM,Lexington,High Point,11-3,"Tully, T","Frisbee, M",final|,7,7,0.0,1.0
+8.0,May 176:52 PM,Long Island,Lancaster,2-5,"Brennan, T","Hillman, J",final|,8,7,0.636,0.0
+8.0,May 142:20 PM,Lancaster,Hagerstown,2-3,"Maruskin, J","Rees, J",final|,8,7,0.0,0.0
+8.0,May 171:03 PM,Gastonia,Staten Island,3-4,"Allegretti, C","Myatt, T",final|,8,8,0.0,0.0
+8.0,May 176:37 PM,Lexington,High Point,0-17,"Solter, M","Castillo, W",final|,8,8,0.0,1.0
+8.0,May  43:37 PM,Lexington,High Point,0-5,"Emanuel, K","Eastman, C",final|,9,9,0.0,1.0
+8.0,May 107:18 PM,High Point,Gastonia,4-2,"Backman, B","Kruglewicz, P",final|,8,8,1.0,0.0
+8.0,May 107:00 PM,Staten Island,Lexington,2-3,"Haab, J","Meeker, J",final|,9,8,0.0,0.0
+8.0,May 106:39 PM,Charleston,S Maryland,7-2,"Sampson, K","Hennessey, J",final|,8,8,0.0,
+8.0,May 106:35 PM,Lancaster,Long Island,0-1,"Plesac, Z","Killgore, K",final|,9,8,0.0,0.636
+8.0,May  78:01 PM,Hagerstown,York,3-2,"Kelly, R","Dula, H",final|,8,8,0.0,0.364
+8.0,May 146:41 PM,Staten Island,Charleston,5-7,"Hill, J","Mahoney, J",final|,10,8,0.0,0.0
+9.0,May 182:01 PM,Long Island,Lancaster,10-4,"Griffin, D","Bremer, N",final|,9,8,0.636,0.0
+9.0,May 184:08 PM,Lexington,High Point,3-9,"Uelmen, E","Laio, N",final|,10,10,0.0,1.0
+9.0,May 156:40 PM,Staten Island,Charleston,9-2,"Meeker, J","Del Prado, N",final|,11,9,0.0,0.0
+9.0,May 156:39 PM,Lancaster,Hagerstown,9-8,"Engler, S","Weisenburger, J",final|,10,8,0.0,0.0
+9.0,May 181:37 PM,Gastonia,Staten Island,7-8,"Andrews, T","Horvath, N",final|,9,9,0.0,0.0
+9.0,May 112:03 PM,Staten Island,Lexington,1-7,"Castillo, W","Williamson, R",final|,12,9,0.0,0.0
+9.0,May 112:09 PM,Charleston,S Maryland,2-3,"Vazquez, R","Gilman, N",final|,9,9,0.0,
+9.0,May  811:03 AM,Hagerstown,York,7-11,"Pace, F","Kickham, M",final|,9,9,0.0,0.364
+9.0,May 111:34 PM,Lancaster,Long Island,2-3,"Melville, T","Gilliam, R",final|,11,9,0.0,0.636
+9.0,May 114:03 PM,High Point,Gastonia,5-4,"Edwards, J","Blanton, B",final|,9,9,1.0,0.0
+10.0,May 307:03 PM,Hagerstown,High Point,3-6,"Halbohn, K","Goodson, D",final|,10,11,0.0,1.0
+10.0,May 206:37 PM,Long Island,Staten Island,8-6,"Asa, J","Meeker, J",final|,10,10,0.636,0.0
+10.0,May 206:32 PM,Lexington,Gastonia,4-6,"Thompson, C","Wicklander, P",final|,11,10,0.0,0.0
+10.0,May 236:33 PM,S Maryland,Hagerstown,11-1,"Thurman, A","Martinez, J",final|,6,9,,0.0
+10.0,May 136:33 PM,Gastonia,Long Island,3-7,"Griffin, D","Wells, N",final|,10,10,0.0,0.636
+10.0,May 206:50 PM,Hagerstown,Lancaster,5-14,"Skirrow, N","Richardson, D",final|,11,9,0.0,0.0
+10.0,May 1410:40 AM,York,S Maryland,0-3,"Semple, S","Walker, M",final|,7,10,0.364,
+10.0,May 136:47 PM,High Point,Lexington,6-7,"Laio, N","Uelmen, E",final|,10,10,1.0,0.0
+10.0,May 167:18 PM,Hagerstown,York,2-12,"Palm, T","Martinez, J",final|,12,10,0.0,0.364
+10.0,May 166:39 PM,S Maryland,Charleston,0-3,"Henriquez, J","Hennessey, J",final|,7,10,,0.0
+11.0,May 2112:32 PM,Lexington,Gastonia,7-6,"Ross, D","Snyder, N",final|,12,11,0.0,0.0
+11.0,May 2110:35 AM,Long Island,Staten Island,7-10,"McSweeney, M","Sharp, S",final|,11,11,0.636,0.0
+11.0,May 146:34 PM,Gastonia,Long Island,2-4,"Case, B","Scott, A",final|,11,11,0.0,0.636
+11.0,May 141:06 PM,York,S Maryland,2-3,"Kahaloa, I","Churchill, I",final|,8,11,0.364,
+11.0,May 176:36 PM,Hagerstown,York,5-7,"Galdoni, L","Corcino, D",final|,13,11,0.0,0.364
+11.0,May 246:06 PM,S Maryland,Hagerstown,9-7,"Hennessey, J","Corcino, D",final|,8,10,,0.0
+11.0,May 316:37 PM,Hagerstown,High Point,1-8,"Barraclough, K","Richardson, D",final|,14,12,0.0,1.0
+11.0,May 216:49 PM,Hagerstown,Lancaster,6-3,"Picone, D","Swarmer, M",final|,15,10,0.0,0.0
+11.0,May 176:39 PM,S Maryland,Charleston,3-9,"Sampson, K","Kelly, J",final|,9,11,,0.0
+11.0,May 1410:31 AM,High Point,Lexington,5-2,"Barraclough, K","Wicklander, P",final|,11,11,1.0,0.0
+12.0,Jun  14:31 PM,Hagerstown,High Point,0-6,"Emanuel, K","Picone, D",final|,16,13,0.0,1.0
+12.0,May 227:21 PM,Long Island,Staten Island,7-1,"Plesac, Z","Mejia, A",final|,12,12,0.636,0.0
+12.0,May 2211:07 AM,Hagerstown,Lancaster,5-7,"Rees, J","Kickham, M",final|,17,11,0.0,0.0
+12.0,May 156:36 PM,Gastonia,Long Island,5-2,"Underwood Jr., D","Flores, B",final|,12,12,0.0,0.636
+12.0,May 156:37 PM,York,S Maryland,3-4,"McCabe, B","Robinson, C",final|,9,12,0.364,
+12.0,May 213:35 PM,Lexington,Gastonia,7-8,"Scott, A","Haab, J",final|,13,12,0.0,0.0
+12.0,May 156:50 PM,High Point,Lexington,18-8,"Emanuel, K","Eastman, C",final|,12,12,1.0,0.0
+12.0,May 181:04 PM,Hagerstown,York,5-17,"Coles, C","Rivera, E",final|,18,12,0.0,0.364
+12.0,May 183:08 PM,S Maryland,Charleston,5-8,"Lusk, L","Vazquez, R",final|,10,12,,0.0
+12.0,May 252:04 PM,S Maryland,Hagerstown,2-7,"Richardson, D","Semple, S",final|,11,11,,0.0
+13.0,May 236:38 PM,Staten Island,Long Island,9-1,"Allegretti, C","Hillman, J",final|,13,13,0.0,0.636
+13.0,May 236:47 PM,York,Lancaster,0-3,"Killgore, K","Scott, W",final|,10,12,0.364,0.0
+13.0,May 237:03 PM,High Point,Gastonia,9-3,"Solter, M","Grey, C",final|,13,13,1.0,0.0
+13.0,May 306:35 PM,Gastonia,S Maryland,,,,"Postponed to:May 31, 06:00 PM",13,13,0.0,
+13.0,May 276:49 PM,York,Hagerstown,4-3,"Woolfolk, D","Picone, D",final|,11,12,0.364,0.0
+13.0,Jun  36:37 PM,Charleston,High Point,5-4,"Demurias, E","Branche, S",final|,10,14,0.0,1.0
+13.0,May 276:33 PM,Lancaster,Staten Island,3-9,"McSweeney, M","Lacey, S",final|,12,13,0.0,0.0
+13.0,May 207:32 PM,High Point,Charleston,8-2,"Barraclough, K","Endersby, J",final|,14,13,1.0,0.0
+13.0,May 206:34 PM,S Maryland,York,6-7,"Robinson, C","Sherfy, J",final|,12,13,,0.364
+13.0,May 237:04 PM,Charleston,Lexington,3-1,"Henriquez, J","Tully, T",final|,11,13,0.0,0.0
+14.0,May 2811:00 AM,York,Hagerstown,,,,"Postponed to:May 29, 04:00 PM",12,13,0.364,0.0
+14.0,May 319:26 PM,Gastonia,S Maryland,7-3,"Sheffield, J","Campbell, M",final|,14,14,0.0,
+14.0,May 216:40 PM,High Point,Charleston,12-4,"Emanuel, K","Hill, J",final|,15,14,1.0,0.0
+14.0,Jun  46:37 PM,Charleston,High Point,2-3,"Solter, M","Henriquez, J",final|,12,15,0.0,1.0
+14.0,May 247:03 PM,Charleston,Lexington,4-5,"Haab, J","Reyes, S",final|,13,14,0.0,0.0
+14.0,May 247:01 PM,High Point,Gastonia,6-2,"Uelmen, E","Smith, K",final|,16,14,1.0,0.0
+14.0,May 246:49 PM,York,Lancaster,1-8,"Bremer, N","Denz, D",final|,13,13,0.364,0.0
+14.0,May 246:33 PM,Staten Island,Long Island,4-3,"Baker, R","Williams, P",final|,14,14,0.0,0.636
+14.0,May 216:39 PM,S Maryland,York,5-4,"Kahaloa, I","Galdoni, L",final|,13,14,,0.364
+14.0,May 286:30 PM,Lancaster,Staten Island,,,,"Postponed to:May 29, 12:30 PM",13,14,0.0,0.0
+15.0,Jun  12:04 PM,Gastonia,S Maryland,12-5,"Underwood Jr., D","Miller, J",final|,15,15,0.0,
+15.0,Jun  56:37 PM,Charleston,High Point,2-1,"Record, J","Ogle, B",final|,14,16,0.0,1.0
+15.0,Jun  22:07 PM,S Maryland,York,3-5,"Llovera, M","Semple, S",final|,14,15,,0.364
+15.0,May 2910:31 AM,Lancaster,Staten Island,3-2,"Engler, S","Dunaway, M",final|,14,15,0.0,0.0
+15.0,May 296:58 PM,York,Hagerstown,4-0,"Scott, W","Reitz, M",final|,14,14,0.364,0.0
+15.0,May 252:08 PM,Charleston,Lexington,4-2,"Lebron, D","Laio, N",final|,15,15,0.0,0.0
+15.0,May 252:03 PM,York,Lancaster,4-2,"Palm, T","Scafidi, C",final|,15,14,0.364,0.0
+15.0,May 251:33 PM,Staten Island,Long Island,2-3,"Melville, T","Higgins, C",final|,15,15,0.0,0.636
+15.0,May 254:02 PM,High Point,Gastonia,13-12,"Lewis, J","Hennen, R",final|,17,15,1.0,0.0
+15.0,May 226:43 PM,High Point,Charleston,2-7,"McGowin, K","Backman, B",final|,18,15,1.0,0.0
+16.0,May 306:41 PM,Long Island,York,13-4,"Case, B","Churchill, I",final|,13,16,0.636,0.364
+16.0,May 307:03 PM,Lancaster,Staten Island,13-8,"Johnson, K","Barringer, S",final|,15,16,0.0,0.0
+16.0,Jun  66:33 PM,Long Island,Hagerstown,11-8,"Dipoto, J","Goodson, D",final|,14,15,0.636,0.0
+16.0,Jun 106:37 PM,Gastonia,S Maryland,8-10,"Hennessey, J","Hardy, H",final|,16,16,0.0,
+16.0,May 276:45 PM,Long Island,Lexington,16-7,"Sandberg, R","Wicklander, P",final|,15,16,0.636,0.0
+16.0,Jun  36:49 PM,Hagerstown,Lancaster,12-4,"Kickham, M","Killgore, K",final|,19,15,0.0,0.0
+16.0,Jun  66:38 PM,S Maryland,High Point,1-3,"Barraclough, K","Vazquez, R",final|,15,17,,1.0
+16.0,May 276:42 PM,High Point,Charleston,5-0,"Emanuel, K","Hill, J",final|,19,16,1.0,0.0
+16.0,Jun  36:35 PM,S Maryland,Long Island,3-4,"Nelson, B","Thompson, C",final|,16,16,,0.636
+16.0,May 276:31 PM,S Maryland,Gastonia,14-6,"Kahaloa, I","Underwood Jr., D",final|,17,16,,0.0
+17.0,Jun  46:48 PM,Hagerstown,Lancaster,13-0,"Reitz, M","Green, M",final|,20,16,0.0,0.0
+17.0,Jun  76:40 PM,S Maryland,High Point,10-7,"Thompson, C","Doyle, T",final|,18,18,,1.0
+17.0,Jun 116:36 PM,Gastonia,S Maryland,10-3,"Wells, N","Martin, G",final|,17,17,0.0,
+17.0,Jun  46:36 PM,S Maryland,Long Island,4-7,"Hillman, J","Campbell, M",final|,19,17,,0.636
+17.0,Jun  76:01 PM,Long Island,Hagerstown,3-0,"Asa, J","Picone, D",final|,16,16,0.636,0.0
+17.0,May 2812:32 PM,S Maryland,Gastonia,12-8,"Willamson, N","Blanton, B",final|,20,17,,0.0
+17.0,May 316:41 PM,Long Island,York,1-6,"Palm, T","Senger, M",final|,17,17,0.636,0.364
+17.0,May 316:34 PM,Lancaster,Staten Island,8-1,"Skirrow, N","Mahoney, J",final|,16,17,0.0,0.0
+17.0,May 286:48 PM,Long Island,Lexington,6-1,"Plesac, Z","Eastman, C",final|,18,17,0.636,0.0
+17.0,May 2810:40 AM,High Point,Charleston,1-7,"Reyes, S","Scolaro, J",final|,20,17,1.0,0.0
+18.0,Jun  82:06 PM,Long Island,Hagerstown,2-3,"Kickham, M","Alintoff, J",final|,19,17,0.636,0.0
+18.0,May 296:45 PM,Long Island,Lexington,6-9,"Tully, T","Alintoff, J",final|,20,18,0.636,0.0
+18.0,Jun  56:48 PM,Hagerstown,Lancaster,2-17,"Bremer, N","Saturria, M",final|,21,17,0.0,0.0
+18.0,May 297:01 PM,S Maryland,Gastonia,3-8,"Stem, C","Kelly, J",final|,21,18,,0.0
+18.0,Jun  56:35 PM,S Maryland,Long Island,9-2,"Martin, G","Griffin, D",final|,22,18,,0.636
+18.0,Jun  84:06 PM,S Maryland,High Point,4-3,"Thurman, A","Casad, C",final|,23,19,,1.0
+18.0,Jun 126:40 PM,Gastonia,S Maryland,8-9,"Scrubb, A","Snyder, N",final|,18,18,0.0,
+18.0,Jun  11:04 PM,Long Island,York,3-11,"Pace, F","Sandberg, R",final|,21,18,0.636,0.364
+18.0,Jun  11:34 PM,Lancaster,Staten Island,3-4,"Dunaway, M","Alexy, A",final|,17,18,0.0,0.0
+18.0,May 296:40 PM,High Point,Charleston,6-2,"Solter, M","Henriquez, J",final|,21,18,1.0,0.0
+19.0,Jun 136:34 PM,High Point,Long Island,3-1,"Emanuel, K","Beede, T",final|,22,19,1.0,0.636
+19.0,Jun 114:02 PM,High Point,Staten Island,5-4,"Solter, M","Baker, R",final|,23,19,1.0,0.0
+19.0,Jun 136:45 PM,Lexington,S Maryland,0-4,"Semple, S","Ferrer, B",final|,14,19,0.0,
+19.0,Jun 185:02 PM,Staten Island,High Point,2-6,"Solter, M","Allegretti, C",final|,16,20,0.0,1.0
+19.0,Jun 106:35 PM,York,Hagerstown,10-1,"Denz, D","Reitz, M",final|,16,18,0.364,0.0
+19.0,Jun  67:05 PM,York,Lexington,4-2,"Pace, F","Lynch, J",final|,17,19,0.364,0.0
+19.0,Jun  36:31 PM,Lexington,Gastonia,1-2,"Horvath, N","Laio, N",final|,15,19,0.0,0.0
+19.0,Jun  36:32 PM,Staten Island,York,10-3,"McSweeney, M","Scott, W",final|,17,19,0.0,0.364
+19.0,Jun  66:50 PM,Staten Island,Lancaster,7-18,"Skirrow, N","Kubo, T",final|,18,18,0.0,0.0
+19.0,May 308:26 PM,Lexington,Charleston,6-7,"Del Prado, N","Lynch, J",final|,16,19,0.0,0.0
+20.0,Jun 146:38 PM,Lexington,S Maryland,2-7,"Hennessey, J","Castillo, W",final|,17,20,0.0,
+20.0,May 316:39 PM,Lexington,Charleston,4-11,"Lebron, D","Castillo, W",final|,18,20,0.0,0.0
+20.0,Jun 117:10 PM,High Point,Staten Island,5-1,"Blair, D","Allegretti, C",final|,24,20,1.0,0.0
+20.0,Jun 116:33 PM,York,Hagerstown,9-2,"Horrell, M","Minaya, J",final|,18,19,0.364,0.0
+20.0,Jun  412:33 PM,Lexington,Gastonia,11-2,"Wicklander, P","Myatt, T",final|,19,20,0.0,0.0
+20.0,Jun 146:36 PM,High Point,Long Island,7-1,"Casad, C","Case, B",final|,25,20,1.0,0.636
+20.0,Jun 187:48 PM,Staten Island,High Point,4-10,"Doyle, T","Mejia, A",final|,19,21,0.0,1.0
+20.0,Jun  77:00 PM,York,Lexington,9-8,"Dula, H","Acosta, J",final|,19,20,0.364,0.0
+20.0,Jun  76:52 PM,Staten Island,Lancaster,8-11,"Rees, J","Barringer, S",final|,20,19,0.0,0.0
+20.0,Jun  46:37 PM,Staten Island,York,7-13,"Dula, H","Williamson, R",final|,21,20,0.0,0.364
+21.0,Jun  55:02 PM,Staten Island,York,12-5,"Allegretti, C","Palm, T",final|,22,21,0.0,0.364
+21.0,Jun  13:08 PM,Lexington,Charleston,2-3,"Record, J","Haab, J",final|,20,21,0.0,0.0
+21.0,Jun  56:31 PM,Lexington,Gastonia,6-5,"Eastman, C","Wells, N",final|,21,21,0.0,0.0
+21.0,Jun 151:37 PM,High Point,Long Island,10-6,"Frontera, D","Hillman, J",final|,26,21,1.0,0.636
+21.0,Jun  83:24 PM,Staten Island,Lancaster,5-9,"Lacey, S","Guzman, L",final|,23,20,0.0,0.0
+21.0,Jun  82:03 PM,York,Lexington,7-8,"Loper, J","Churchill, I",final|,20,21,0.364,0.0
+21.0,Jun 152:05 PM,Lexington,S Maryland,4-7,"Miller, J","Acosta, J",final|,22,21,0.0,
+21.0,Jun 126:35 PM,High Point,Staten Island,6-5,"Branche, S","Baker, R",final|,27,21,1.0,0.0
+21.0,Jun 196:56 PM,Staten Island,High Point,11-6,"Barringer, S","Emanuel, K",final|,24,22,0.0,1.0
+21.0,Jun 126:34 PM,York,Hagerstown,6-0,"Vallimont, C","Richardson, D",final|,21,20,0.364,0.0
+22.0,Jun 137:02 PM,Hagerstown,Staten Island,6-8,"Barringer, S","Picone, D",final|,22,22,0.0,0.0
+22.0,Jun 176:37 PM,Charleston,S Maryland,7-18,"Martin, G","Henriquez, J",final|,16,22,0.0,
+22.0,Jun  67:01 PM,Charleston,Gastonia,4-15,"Sheffield, J","Lebron, D",final|,17,22,0.0,0.0
+22.0,Jun 276:37 PM,Lancaster,High Point,4-7,"Branche, S","Diehl, P",final|,18,23,0.0,1.0
+22.0,Jun 206:37 PM,Charleston,Hagerstown,6-2,"Lebron, D","Kickham, M",final|,18,21,0.0,0.0
+22.0,Jun 106:48 PM,Lancaster,Lexington,15-5,"Bremer, N","Laio, N",final|,19,22,0.0,0.0
+22.0,Jun 106:39 PM,Long Island,Charleston,8-5,"Hillman, J","Henriquez, J",final|,22,22,0.636,0.0
+22.0,Jun 206:48 PM,Long Island,Lancaster,2-8,"Killgore, K","Sandberg, R",final|,23,21,0.636,0.0
+22.0,Jun 136:34 PM,Gastonia,York,2-3,"Denoyer, N","Hernández, A",final|,19,22,0.0,0.364
+22.0,Jun 176:34 PM,Lancaster,Long Island,4-8,"Griffin, D","Green, M",final|,20,22,0.0,0.636
+23.0,Jun 286:36 PM,Lancaster,High Point,3-5,"Scolaro, J","Green, M",final|,21,24,0.0,1.0
+23.0,Jun 186:41 PM,Charleston,S Maryland,1-16,"Kahaloa, I","Suriel, E",final|,19,23,0.0,
+23.0,Jun 186:36 PM,Lancaster,Long Island,1-6,"Alintoff, J","Skirrow, N",final|,22,23,0.0,0.636
+23.0,Jun 216:48 PM,Long Island,Lancaster,7-8,"Bremer, N","Hillman, J",final|,24,22,0.636,0.0
+23.0,Jun 216:03 PM,Charleston,Hagerstown,6-7,"Kelly, R","Alvarez, M",final|,20,22,0.0,0.0
+23.0,Jun 1112:09 PM,Long Island,Charleston,4-5,"Reyes, S","Nelson, B",final|,25,23,0.636,0.0
+23.0,Jun 146:43 PM,Hagerstown,Staten Island,1-0,"Kickham, M","McSweeney, M",final|,23,23,0.0,0.0
+23.0,Jun 146:35 PM,Gastonia,York,5-13,"Scott, W","Hartman, M",final|,20,23,0.0,0.364
+23.0,Jun 116:46 PM,Lancaster,Lexington,1-4,"Wicklander, P","Green, M",final|,23,23,0.0,0.0
+23.0,Jun  77:03 PM,Charleston,Gastonia,6-7,"Underwood Jr., D","Hill, J",final|,21,23,0.0,0.0
+24.0,Jun 151:47 PM,Hagerstown,Staten Island,1-2,"Baker, R","Martinez, Q",final|,24,24,0.0,0.0
+24.0,Jun 294:06 PM,Lancaster,High Point,12-0,"Skirrow, N","Gilbert, J",final|,24,25,0.0,1.0
+24.0,Jun 151:05 PM,Gastonia,York,14-7,"Blanton, B","Denz, D",final|,21,24,0.0,0.364
+24.0,Jun 222:05 PM,Charleston,Hagerstown,2-4,"Richardson, D","Romero, L",final|,22,23,0.0,0.0
+24.0,Jun 222:03 PM,Long Island,Lancaster,6-7,"Rees, J","Asa, J",final|,26,23,0.636,0.0
+24.0,Jun  84:02 PM,Charleston,Gastonia,11-8,"Lusk, L","Wilson, J",final|,23,24,0.0,0.0
+24.0,Jun 196:34 PM,Lancaster,Long Island,4-15,"Beede, T","Alexy, A",final|,25,24,0.0,0.636
+24.0,Jun 126:46 PM,Lancaster,Lexington,2-4,"Eastman, C","Skirrow, N",final|,26,24,0.0,0.0
+24.0,Jun 196:35 PM,Charleston,S Maryland,,,,Postponed to:n/a,24,24,0.0,
+24.0,Jun 126:41 PM,Long Island,Charleston,4-3,"Williams, P","Medoro, B",final|,27,24,0.636,0.0
+25.0,Jul  16:36 PM,Gastonia,High Point,2-0,"Wilson, J","Doyle, T",final|,22,26,0.0,1.0
+25.0,Jun 246:49 PM,York,Lancaster,4-6,"Skirrow, N","Horrell, M",final|,22,24,0.364,0.0
+25.0,Jun 207:11 PM,York,Staten Island,5-1,"Scott, W","McSweeney, M",final|,23,25,0.364,0.0
+25.0,Jun 246:37 PM,Staten Island,Long Island,8-1,"Allegretti, C","Alintoff, J",final|,25,25,0.0,0.636
+25.0,Jun 276:35 PM,Lexington,S Maryland,7-8,"Wright, J","Haab, J",final|,23,25,0.0,
+25.0,Jun 176:33 PM,Lexington,Gastonia,8-3,"Beggs, D","Newsome, L",final|,24,25,0.0,0.0
+25.0,Jun 136:40 PM,Lancaster,Charleston,15-6,"Stashak, C","Reyes, S",final|,27,25,0.0,0.0
+25.0,Jun 186:39 PM,Hagerstown,York,0-4,"Horrell, M","Minaya, J",final|,25,25,0.0,0.364
+25.0,Jun 207:02 PM,High Point,Lexington,5-11,"Ferrer, B","Casad, C",final|,28,25,1.0,0.0
+25.0,Jun 246:31 PM,S Maryland,Hagerstown,11-2,"Kahaloa, I","Minaya, J",final|,24,24,,0.0
+26.0,Jun 256:46 PM,York,Lancaster,8-2,"Pace, F","Killgore, K",final|,24,25,0.364,0.0
+26.0,Jul  26:36 PM,Gastonia,High Point,5-12,"Casad, C","Reitz, M",final|,23,27,0.0,1.0
+26.0,Jun 256:37 PM,S Maryland,Hagerstown,0-1,"Valdez, D","Semple, S",final|,25,25,,0.0
+26.0,Jun 256:34 PM,Staten Island,Long Island,13-11,"Mack, A","Dipoto, J",final|,26,26,0.0,0.636
+26.0,Jun 286:37 PM,Lexington,S Maryland,8-2,"Castillo, W","Martin, G",final|,25,26,0.0,
+26.0,Jun 146:55 PM,Lancaster,Charleston,1-10,"Hill, J","Killgore, K",final|,28,26,0.0,0.0
+26.0,Jun 189:14 PM,Hagerstown,York,4-14,"Pace, F","Richardson, D",final|,26,26,0.0,0.364
+26.0,Jun 1812:32 PM,Lexington,Gastonia,17-3,"Wicklander, P","Wells, N",final|,26,26,0.0,0.0
+26.0,Jun 217:02 PM,High Point,Lexington,10-14,"Castillo, W","Gardner, P",final|,29,26,1.0,0.0
+26.0,Jun 216:31 PM,York,Staten Island,0-10,"Dunaway, M","Vallimont, C",final|,25,26,0.364,0.0
+27.0,Jun 267:06 PM,York,Lancaster,6-5,"Morales, J","McAvene, M",final|,26,26,0.364,0.0
+27.0,Jun 196:35 PM,Lexington,Gastonia,3-7,"Sheffield, J","Eastman, C",final|,27,27,0.0,0.0
+27.0,Jun 197:37 PM,Hagerstown,York,6-5,"Picone, D","Ramirez, J",final|,27,27,0.0,0.364
+27.0,Jun 153:06 PM,Lancaster,Charleston,3-4,"Medoro, B","Engler, S",final|,29,27,0.0,0.0
+27.0,Jun 266:34 PM,Staten Island,Long Island,8-10,"Melville, T","Barringer, S",final|,27,27,0.0,0.636
+27.0,Jun 292:10 PM,Lexington,S Maryland,7-4,"Laio, N","Kahaloa, I",final|,28,27,0.0,
+27.0,Jul  36:38 PM,Gastonia,High Point,7-4,"Hasler, K","Branche, S",final|,24,28,0.0,1.0
+27.0,Jun 221:34 PM,York,Staten Island,1-2,"Parra, R","Churchill, I",final|,27,27,0.364,0.0
+27.0,Jun 222:05 PM,High Point,Lexington,11-16,"Laio, N","Scolaro, J",final|,30,27,1.0,0.0
+27.0,Jun 266:32 PM,S Maryland,Hagerstown,4-3,"Miller, J","Conklin, M",final|,26,26,,0.0
+28.0,Jul  46:34 PM,Long Island,Hagerstown,9-1,"Griffin, D","Martinez, Q",final|,28,27,0.636,0.0
+28.0,Jul  46:48 PM,Charleston,Lancaster,10-11,"Green, M","Hill, J",final|,25,27,0.0,0.0
+28.0,Jul  86:36 PM,York,High Point,2-12,"Esposito, M","Ramirez, J",final|,28,29,0.364,1.0
+28.0,Jun 276:34 PM,Staten Island,York,6-5,"Mack, A","Woolfolk, D",final|,28,28,0.0,0.364
+28.0,Jun 207:02 PM,S Maryland,Gastonia,2-5,"Wilson, J","Thompson, C",final|,27,28,,0.0
+28.0,Jun 276:36 PM,Hagerstown,Long Island,3-4,"Hillman, J","Richardson, D",final|,28,28,0.0,0.636
+28.0,Jul  47:03 PM,York,Staten Island,13-9,"Vallimont, C","Allegretti, C",final|,29,28,0.364,0.0
+28.0,Jul  16:35 PM,Hagerstown,S Maryland,,,,Postponed to:n/a,29,28,0.0,
+28.0,Jun 246:45 PM,Charleston,Lexington,3-10,"Wicklander, P","Henriquez, J",final|,26,28,0.0,0.0
+28.0,Jun 276:40 PM,Gastonia,Charleston,8-5,"King, T","Hill, J",final|,25,28,0.0,0.0
+29.0,Jul  52:04 PM,York,Staten Island,1-4,"Kehoe, R","Horrell, M",final|,30,29,0.364,0.0
+29.0,Jul  912:08 PM,York,High Point,4-3,"Robinson, C","Chasse, R",final|,31,30,0.364,1.0
+29.0,Jul  56:50 PM,Charleston,Lancaster,5-7,"Skirrow, N","McGowin, K",final|,27,28,0.0,0.0
+29.0,Jun 286:40 PM,Gastonia,Charleston,9-4,"Hartman, M","Romero, L",final|,26,29,0.0,0.0
+29.0,Jun 286:35 PM,Staten Island,York,6-14,"Llovera, M","Parra, R",final|,29,29,0.0,0.364
+29.0,Jun 286:34 PM,Hagerstown,Long Island,8-9,"Asa, J","Kelly, R",final|,30,29,0.0,0.636
+29.0,Jun 217:03 PM,S Maryland,Gastonia,8-3,"Miller, J","Hernández, A",final|,28,29,,0.0
+29.0,Jun 2511:04 AM,Charleston,Lexington,8-11,"Eastman, C","Suriel, E",final|,28,29,0.0,0.0
+29.0,Jul  56:03 PM,Long Island,Hagerstown,8-2,"Sandberg, R","Minaya, J",final|,29,28,0.636,0.0
+29.0,Jul  27:31 PM,Hagerstown,S Maryland,4-5,"Thurman, A","Weisenburger, J",final|,31,29,0.0,
+30.0,Jul 107:04 PM,York,High Point,8-6,"Churchill, I","Esposito, M",final|,32,31,0.364,1.0
+30.0,Jul  61:31 PM,York,Staten Island,9-16,"Mejia, A","Palm, T",final|,33,30,0.364,0.0
+30.0,Jul  62:01 PM,Charleston,Lancaster,6-5,"Lusk, L","Lacey, S",final|,29,29,0.0,0.0
+30.0,Jul  36:41 PM,Hagerstown,S Maryland,8-20,"Campbell, M","Quesada, R",final|,32,30,0.0,
+30.0,Jul  65:05 PM,Long Island,Hagerstown,5-1,"Beede, T","Imhoff, A",final|,30,29,0.636,0.0
+30.0,Jun 291:35 PM,Hagerstown,Long Island,4-5,"Sandberg, R","Minaya, J",final|,33,30,0.0,0.636
+30.0,Jun 267:41 PM,Charleston,Lexington,11-10,"Alesandro, R","Higgins, C",final|,30,30,0.0,0.0
+30.0,Jun 224:02 PM,S Maryland,Gastonia,9-10,"Hutchison, R","Vazquez, R",final|,29,30,,0.0
+30.0,Jun 291:03 PM,Staten Island,York,In Progress,"Horrell, M","Mejia, A",In Progress,30,30,0.0,0.364
+30.0,Jun 293:10 PM,Gastonia,Charleston,14-3,"Newsome, L","McGowin, K",final|,27,30,0.0,0.0
+31.0,Jul  86:45 PM,S Maryland,Lancaster,4-8,"Rees, J","Semple, S",final|,30,30,,0.0
+31.0,Jul  86:35 PM,Lexington,Hagerstown,2-4,"Robbins, Z","Wicklander, P",final|,29,30,0.0,0.0
+31.0,Jul  47:04 PM,S Maryland,Lexington,7-11,"Beggs, D","Martin, G",final|,31,31,,0.0
+31.0,Jun 246:32 PM,High Point,Gastonia,0-4,"Hennen, R","Solter, M",final|,31,31,1.0,0.0
+31.0,Jul  17:19 PM,Lancaster,York,8-2,"McAvene, M","Pace, F",final|,30,31,0.0,0.364
+31.0,Jul  18:20 PM,Lexington,Charleston,2-7,"de Avila, L","Wicklander, P",final|,30,31,0.0,0.0
+31.0,Jul 116:37 PM,Gastonia,High Point,13-7,"Wilson, J","Henry, J",final|,28,32,0.0,1.0
+31.0,Jul 116:39 PM,Lexington,S Maryland,5-4,"Loper, J","Thompson, C",final|,31,31,0.0,
+31.0,Jul  16:35 PM,Staten Island,Long Island,6-13,"Alintoff, J","Barringer, S",final|,31,31,0.0,0.636
+31.0,Jul  86:32 PM,Long Island,Staten Island,3-4,"Helvey, C","Asa, J",final|,31,31,0.636,0.0
+32.0,Jul 104:02 PM,Lexington,Hagerstown,2-0,"Eastman, C","Weisenburger, J",final|,32,31,0.0,0.0
+32.0,Jul 126:38 PM,Lexington,S Maryland,5-7,"Miller, J","Castillo, W",final|,33,32,0.0,
+32.0,Jul  96:45 PM,S Maryland,Lancaster,,,,"Postponed to:Jul 10, 05:00 PM",32,31,,0.0
+32.0,Jul  96:31 PM,Long Island,Staten Island,6-5,"Hillman, J","Scott, W",final|,32,32,0.636,0.0
+32.0,Jul 126:39 PM,Gastonia,High Point,5-6,"Lewis, J","Hasler, K",final|,29,33,0.0,1.0
+32.0,Jun 2512:32 PM,High Point,Gastonia,2-8,"Wells, N","Doyle, T",final|,32,32,1.0,0.0
+32.0,Jul  27:02 PM,Staten Island,Long Island,6-5,"Baker, R","Dipoto, J",final|,32,32,0.0,0.636
+32.0,Jul  36:32 PM,Lancaster,York,11-13,"Dula, H","Rees, J",final|,31,32,0.0,0.364
+32.0,Jul  57:02 PM,S Maryland,Lexington,9-3,"Kahaloa, I","Castillo, W",final|,33,32,,0.0
+32.0,Jul  26:38 PM,Lexington,Charleston,8-9,"Suriel, E","Eastman, C",final|,34,32,0.0,0.0
+33.0,Jul 134:08 PM,Gastonia,High Point,2-3,"Scott, W","Hennen, R",final|,30,34,0.0,1.0
+33.0,Jul  62:06 PM,S Maryland,Lexington,7-3,"Miller, J","Laio, N",final|,34,33,,0.0
+33.0,Jun 266:47 PM,High Point,Gastonia,12-6,"Casad, C","Sheffield, J",final|,33,33,1.0,0.0
+33.0,Jul 106:31 PM,Long Island,Staten Island,7-8,"Baker, R","Asa, J",final|,33,33,0.636,0.0
+33.0,Jul 132:05 PM,Lexington,S Maryland,,,,"Postponed to:Aug 29, 07:30 PM",35,33,0.0,
+33.0,Jul 106:47 PM,Lexington,Hagerstown,5-6,"Conklin, M","Ross, D",final|,36,32,0.0,0.0
+33.0,Jul 107:58 PM,S Maryland,Lancaster,2-10,"Green, M","Campbell, M",final|,35,32,,0.0
+33.0,Jul  36:46 PM,Lexington,Charleston,5-13,"Lebron, D","Ferrer, B",final|,37,33,0.0,0.0
+33.0,Jul  37:17 PM,Staten Island,Long Island,2-9,"Hillman, J","Sabia, D",final|,33,33,0.0,0.636
+34.0,Jul 156:34 PM,Lancaster,Hagerstown,1-5,"Weisenburger, J","McCollough, L",final|,32,33,0.0,0.0
+34.0,Jul 156:51 PM,Gastonia,Lexington,8-11,"Laio, N","Wells, N",final|,31,34,0.0,0.0
+34.0,Jul 186:49 PM,High Point,Lancaster,2-5,"McAvene, M","Del Bonta-Smith, F",final|,34,33,1.0,0.0
+34.0,Jul 116:36 PM,Lancaster,Long Island,5-2,"Skirrow, N","Sandberg, R",final|,33,34,0.0,0.636
+34.0,Jul  44:01 PM,High Point,Gastonia,4-3,"McGrane, J","Thompson, C",final|,35,34,1.0,0.0
+34.0,Jul 226:38 PM,Charleston,High Point,3-6,"Klobosits, G","Hill, J",final|,31,35,0.0,1.0
+34.0,Jul 116:35 PM,Staten Island,York,19-11,"Sabia, D","Horrell, M",final|,34,33,0.0,0.364
+34.0,Jul 226:37 PM,Long Island,S Maryland,8-7,"Romano, S","Thompson, C",final|,34,34,0.636,
+34.0,Jul 116:39 PM,Hagerstown,Charleston,0-3,"McGowin, K","Minaya, J",final|,34,34,0.0,0.0
+34.0,Jul 156:32 PM,Long Island,Staten Island,6-4,"Clenney, N","Scott, W",final|,35,34,0.636,0.0
+35.0,Jul 167:29 PM,Lancaster,Hagerstown,3-2,"Green, M","Quesada, R",final|,34,34,0.0,0.0
+35.0,Jul 166:32 PM,Long Island,Staten Island,4-7,"Feltman, D","Alintoff, J",final|,36,35,0.636,0.0
+35.0,Jul 236:38 PM,Charleston,High Point,0-10,"Gilbert, J","Demurias, E",final|,32,36,0.0,1.0
+35.0,Jul 196:59 PM,High Point,Lancaster,9-3,"Devine, M","Bremer, N",final|,36,34,1.0,0.0
+35.0,Jul 236:35 PM,Long Island,S Maryland,8-2,"Dipoto, J","Overton, C",final|,37,35,0.636,
+35.0,Jul 1611:02 AM,Gastonia,Lexington,11-12,"Acosta, J","Blanton, B",final|,32,35,0.0,0.0
+35.0,Jul 126:35 PM,Staten Island,York,4-7,"Pace, F","Reitz, M",final|,35,34,0.0,0.364
+35.0,Jul  57:00 PM,High Point,Gastonia,2-3,"Warren, A","Vennaro, Z",final|,37,35,1.0,0.0
+35.0,Jul 126:39 PM,Hagerstown,Charleston,1-3,"de Avila, L","Imhoff, A",final|,35,35,0.0,0.0
+35.0,Jul 126:35 PM,Lancaster,Long Island,3-1,"Engler, S","Case, B",final|,35,35,0.0,0.636
+36.0,Jul 135:05 PM,Lancaster,Long Island,5-6,"Flores, B","Rees, J",final|,36,36,0.0,0.636
+36.0,Jul 177:32 PM,Gastonia,Lexington,3-8,"Castillo, W","Underwood Jr., D",final|,33,36,0.0,0.0
+36.0,Jul 176:36 PM,Lancaster,Hagerstown,7-6,"Stashak, C","Conklin, M",final|,37,35,0.0,0.0
+36.0,Jul  64:01 PM,High Point,Gastonia,7-6,"Castillo, S","Thompson, C",final|,38,36,1.0,0.0
+36.0,Jul 1710:40 AM,Long Island,Staten Island,8-3,"Sandberg, R","Reitz, M",final|,38,36,0.636,0.0
+36.0,Jul 133:10 PM,Hagerstown,Charleston,14-6,"Kickham, M","Demurias, E",final|,36,36,0.0,0.0
+36.0,Jul 246:37 PM,Charleston,High Point,3-4,"Scott, W","Moscatiello, F",final|,33,37,0.0,1.0
+36.0,Jul 132:17 PM,Staten Island,York,2-15,"Ramirez, J","Williamson, R",final|,36,35,0.0,0.364
+36.0,Jul 2411:12 AM,Long Island,S Maryland,8-6,"Melville, T","Martin, G",final|,39,36,0.636,
+36.0,Jul 202:00 PM,High Point,Lancaster,2-10,"Diehl, P","Scolaro, J",final|,39,35,1.0,0.0
+37.0,Jul 226:53 PM,Hagerstown,Lancaster,5-1,"Martinez, Q","Green, M",final|,37,36,0.0,0.0
+37.0,Jul 256:37 PM,Gastonia,High Point,3-9,"Scolaro, J","Newsome, L",final|,34,38,0.0,1.0
+37.0,Jul  86:32 PM,Charleston,Gastonia,1-8,"Silber, C","Suriel, E",final|,34,37,0.0,0.0
+37.0,Jul 256:43 PM,Hagerstown,S Maryland,6-10,"Miller, J","Kickham, M",final|,38,37,0.0,
+37.0,Jul 226:32 PM,York,Staten Island,7-12,"Allegretti, C","Valverde, A",final|,34,37,0.364,0.0
+37.0,Jul 156:35 PM,High Point,York,2-9,"Vallimont, C","Scolaro, J",final|,40,36,1.0,0.364
+37.0,Jul 156:38 PM,S Maryland,Charleston,4-3,"Hennessey, J","Lusk, L",final|,36,37,,0.0
+37.0,Jul 187:38 PM,S Maryland,Lexington,1-11,"Eastman, C","Martin, G",final|,37,37,,0.0
+37.0,Jul 186:34 PM,York,Hagerstown,13-3,"Miranda, K","Imhoff, A",final|,35,36,0.364,0.0
+37.0,Jul 186:34 PM,Charleston,Long Island,1-5,"Dipoto, J","McGowin, K",final|,35,37,0.0,0.636
+38.0,Jul 196:03 PM,York,Hagerstown,2-1,"Valverde, A","Kickham, M",final|,36,37,0.364,0.0
+38.0,Jul 266:40 PM,Gastonia,High Point,4-6,"Blair, D","Hennen, R",final|,35,39,0.0,1.0
+38.0,Jul 266:36 PM,Hagerstown,S Maryland,2-15,"Semple, S","Anziani, C",final|,39,38,0.0,
+38.0,Jul 236:47 PM,Hagerstown,Lancaster,0-4,"Skirrow, N","Minaya, J",final|,40,37,0.0,0.0
+38.0,Jul 166:30 PM,High Point,York,,,,"Postponed to:Jul 17, 11:00 AM",41,37,1.0,0.364
+38.0,Jul 2310:37 AM,York,Staten Island,10-1,"Miranda, K","Mack, A",final|,37,38,0.364,0.0
+38.0,Jul  912:33 PM,Charleston,Gastonia,6-2,"Lebron, D","Wells, N",final|,36,38,0.0,0.0
+38.0,Jul 1612:11 PM,S Maryland,Charleston,6-1,"Thurman, A","Hill, J",final|,38,38,,0.0
+38.0,Jul 196:35 PM,Charleston,Long Island,7-2,"de Avila, L","Melville, T",final|,37,38,0.0,0.636
+38.0,Jul 197:04 PM,S Maryland,Lexington,4-10,"Beggs, D","Miller, J",final|,39,38,,0.0
+39.0,Jul 205:06 PM,Charleston,Long Island,17-16,"Suriel, E","Case, B",final|,38,39,0.0,0.636
+39.0,Jul 176:35 PM,S Maryland,Charleston,,,,Postponed to:n/a,40,39,,0.0
+39.0,Jul 205:05 PM,York,Hagerstown,17-3,"Vallimont, C","Robbins, Z",final|,38,38,0.364,0.0
+39.0,Jul 173:03 PM,High Point,York,10-8,"Scott, W","Horrell, M",final|,42,38,1.0,0.364
+39.0,Jul 202:04 PM,S Maryland,Lexington,6-10,"Fanning, H","Thompson, C",final|,41,39,,0.0
+39.0,Jul 272:08 PM,Hagerstown,S Maryland,1-2,"Scrubb, A","Conklin, M",final|,41,39,0.0,
+39.0,Jul 246:30 PM,York,Staten Island,7-9,"Kehoe, R","Pace, F",final|,39,39,0.364,0.0
+39.0,Jul 274:07 PM,Gastonia,High Point,6-2,"Hartman, M","Wereski, B",final|,36,40,0.0,1.0
+39.0,Jul 246:47 PM,Hagerstown,Lancaster,4-15,"McAvene, M","Imhoff, A",final|,42,38,0.0,0.0
+39.0,Jul 106:31 PM,Charleston,Gastonia,7-5,"Van Gurp, F","Hasler, K",final|,39,39,0.0,0.0
+40.0,Jul 296:35 PM,Gastonia,Hagerstown,8-5,"Thompson, C","Conklin, M",final|,37,39,0.0,0.0
+40.0,Jul 296:49 PM,High Point,Lexington,4-11,"Laio, N","Uelmen, E",final|,43,40,1.0,0.0
+40.0,Aug  16:39 PM,Gastonia,S Maryland,6-7,"McCabe, B","Horvath, N",final|,38,40,0.0,
+40.0,Jul 257:20 PM,Long Island,York,6-5,"Alintoff, J","Palm, T",final|,40,39,0.636,0.364
+40.0,Jul 256:40 PM,Lexington,Charleston,1-14,"Diaz, A","Castillo, W",final|,38,40,0.0,0.0
+40.0,Aug  16:49 PM,Staten Island,Lancaster,7-6,"OHara, C","Brennan, T",final|,37,39,0.0,0.0
+40.0,Jul 186:59 PM,Staten Island,Gastonia,4-16,"Warren, A","Williamson, R",final|,38,40,0.0,0.0
+40.0,Aug  56:37 PM,S Maryland,High Point,5-1,"Miller, J","Uelmen, E",final|,42,41,,1.0
+40.0,Jul 257:01 PM,Lancaster,Staten Island,8-7,"Moreno, G","Kubo, T",final|,38,40,0.0,0.0
+40.0,Jul 296:34 PM,Staten Island,Long Island,7-3,"Allegretti, C","Dipoto, J",final|,39,40,0.0,0.636
+41.0,Aug  66:37 PM,S Maryland,High Point,2-5,"Hess, D","Semple, S",final|,43,42,,1.0
+41.0,Aug  26:52 PM,Staten Island,Lancaster,11-2,"Reitz, M","Green, M",final|,40,40,0.0,0.0
+41.0,Jul 306:47 PM,High Point,Lexington,3-6,"Wicklander, P","Backman, B",final|,44,41,1.0,0.0
+41.0,Jul 3011:02 AM,Staten Island,Long Island,8-5,"Parra, R","Nelson, B",final|,41,41,0.0,0.636
+41.0,Jul 3011:02 AM,Gastonia,Hagerstown,9-2,"Wilson, J","Imhoff, A",final|,39,40,0.0,0.0
+41.0,Aug  26:38 PM,Gastonia,S Maryland,10-6,"King, T","Thompson, C",final|,40,41,0.0,
+41.0,Jul 266:43 PM,Lexington,Charleston,9-5,"Lambert, C","Moscatiello, F",final|,39,41,0.0,0.0
+41.0,Jul 266:32 PM,Lancaster,Staten Island,4-5,"Parra, R","McCollough, L",final|,39,41,0.0,0.0
+41.0,Jul 197:00 PM,Staten Island,Gastonia,4-16,"Stem, C","Reitz, M",final|,42,41,0.0,0.0
+41.0,Jul 266:37 PM,Long Island,York,6-1,"Hillman, J","Vallimont, C",final|,41,40,0.636,0.364
+42.0,Jul 273:10 PM,Lexington,Charleston,6-2,"Ferrer, B","Hill, J",final|,40,42,0.0,0.0
+42.0,Aug  32:08 PM,Gastonia,S Maryland,6-1,"Wells, N","Overton, C",final|,41,42,0.0,
+42.0,Jul 316:50 PM,High Point,Lexington,6-7,"Lambert, C","Rouse, S",final|,45,42,1.0,0.0
+42.0,Jul 202:01 PM,Staten Island,Gastonia,6-7,"Wilson, J","Scott, W",final|,43,42,0.0,0.0
+42.0,Jul 316:35 PM,Staten Island,Long Island,,,,"Postponed to:Aug 04, 05:35 PM",44,42,0.0,0.636
+42.0,Jul 316:33 PM,Gastonia,Hagerstown,5-3,"Newsome, L","Kickham, M",final|,42,41,0.0,0.0
+42.0,Jul 271:03 PM,Long Island,York,7-5,"Nelson, B","Llovera, M",final|,42,41,0.636,0.364
+42.0,Aug  76:37 PM,S Maryland,High Point,10-5,"Martin, G","Del Bonta-Smith, F",final|,44,43,,1.0
+42.0,Jul 271:33 PM,Lancaster,Staten Island,3-0,"Green, M","Peralta, O",final|,40,42,0.0,0.0
+42.0,Aug  32:03 PM,Staten Island,Lancaster,1-3,"Skirrow, N","Peralta, O",final|,45,41,0.0,0.0
+43.0,Aug  56:45 PM,Hagerstown,Lancaster,9-7,"Reyes, C","McAvene, M",final|,43,42,0.0,0.0
+43.0,Aug 126:39 PM,Lancaster,S Maryland,10-8,"Bremer, N","Semple, S",final|,41,43,0.0,
+43.0,Aug  56:35 PM,Lexington,Staten Island,6-10,"Helvey, C","Loper, J",final|,41,43,0.0,0.0
+43.0,Jul 296:30 PM,Lancaster,York,5-7,"Robinson, C","Moreno, G",final|,42,42,0.0,0.364
+43.0,Aug  86:33 PM,Long Island,Hagerstown,8-4,"Santos, R","Robbins, Z",final|,43,42,0.636,0.0
+43.0,Jul 226:33 PM,Lexington,Gastonia,6-7,"Hennen, R","Lambert, C",final|,42,43,0.0,0.0
+43.0,Jul 298:27 PM,S Maryland,Charleston,7-2,"Thompson, C","Chasse, R",final|,45,43,,0.0
+43.0,Aug  17:06 PM,High Point,Lexington,15-2,"Scolaro, J","Castillo, W",final|,46,43,1.0,0.0
+43.0,Aug  16:32 PM,Hagerstown,Long Island,3-6,"Hillman, J","Weisenburger, J",final|,44,43,0.0,0.636
+44.0,Jul 2312:30 PM,Lexington,Gastonia,15-7,"Wicklander, P","Wells, N",final|,43,44,0.0,0.0
+44.0,Aug  27:03 PM,High Point,Lexington,6-8,"Beggs, D","Devine, M",final|,47,44,1.0,0.0
+44.0,Aug  66:46 PM,Hagerstown,Lancaster,1-5,"Bremer, N","Weisenburger, J",final|,45,43,0.0,0.0
+44.0,Aug  96:40 PM,S Maryland,High Point,2-4,"Devine, M","Overton, C",final|,46,44,,1.0
+44.0,Aug 136:35 PM,Lancaster,S Maryland,3-1,"Sullivan, B","Scrubb, A",final|,43,44,0.0,
+44.0,Aug  66:34 PM,Lexington,Staten Island,5-2,"Wicklander, P","Mack, A",final|,44,44,0.0,0.0
+44.0,Aug  26:34 PM,Hagerstown,Long Island,3-5,"Sandberg, R","Martinez, Q",final|,46,44,0.0,0.636
+44.0,Jul 306:39 PM,S Maryland,Charleston,7-5,"Martin, G","de Avila, L",final|,47,44,,0.0
+44.0,Aug  96:02 PM,Long Island,Hagerstown,5-7,"Noriega, B","Dipoto, J",final|,44,43,0.636,0.0
+44.0,Jul 306:34 PM,Lancaster,York,3-8,"Pace, F","McAvene, M",final|,44,43,0.0,0.364
+45.0,Aug  76:32 PM,Lexington,Staten Island,3-7,"Reitz, M","Eastman, C",final|,45,45,0.0,0.0
+45.0,Aug 149:00 PM,Lancaster,S Maryland,9-8,"Diehl, P","McCabe, B",final|,45,45,0.0,
+45.0,Jul 316:39 PM,S Maryland,Charleston,3-10,"Diaz, A","Miller, J",final|,48,45,,0.0
+45.0,Aug  35:02 PM,Hagerstown,Long Island,4-5,"Case, B","Henriquez, J",final|,47,45,0.0,0.636
+45.0,Aug 104:06 PM,S Maryland,High Point,2-1,"Miller, J","Wereski, B",final|,49,45,,1.0
+45.0,Jul 246:33 PM,Lexington,Gastonia,5-9,"Stem, C","Acosta, J",final|,46,45,0.0,0.0
+45.0,Aug  32:02 PM,High Point,Lexington,8-3,"Rouse, S","Ferrer, B",final|,48,45,1.0,0.0
+45.0,Aug 105:03 PM,Long Island,Hagerstown,6-15,"Imhoff, A","Melville, T",final|,45,44,0.636,0.0
+45.0,Jul 317:00 PM,Lancaster,York,9-6,"Bremer, N","Vallimont, C",final|,46,44,0.0,0.364
+45.0,Aug  76:48 PM,Hagerstown,Lancaster,1-4,"Brennan, T","Martinez, Q",final|,48,44,0.0,0.0
+46.0,Aug 156:40 PM,York,S Maryland,4-7,"Carr, J","Miranda, K",final|,40,46,0.364,
+46.0,Aug 126:48 PM,Gastonia,Lexington,6-7,"Loper, J","Benoit, D",final|,43,46,0.0,0.0
+46.0,Aug 156:47 PM,Staten Island,Lancaster,0-3,"Brennan, T","Peralta, O",final|,46,45,0.0,0.0
+46.0,Aug 126:33 PM,Staten Island,Hagerstown,4-2,"Mack, A","Martinez, Q",final|,47,45,0.0,0.0
+46.0,Aug 126:36 PM,York,Long Island,7-5,"Kickham, M","Flores, B",final|,41,46,0.364,0.636
+46.0,Aug  56:46 PM,Charleston,Gastonia,3-6,"Underwood Jr., D","Reyes, S",final|,40,46,0.0,0.0
+46.0,Aug  56:31 PM,Long Island,York,5-4,"Clenney, N","Mikolajchak, N",final|,46,45,0.636,0.364
+46.0,Aug  16:42 PM,York,Charleston,1-2,"Lebron, D","Miranda, K",final|,42,46,0.364,0.0
+46.0,Aug  810:31 AM,Lancaster,Staten Island,8-4,"Johnson, K","Scott, W",final|,47,46,0.0,0.0
+46.0,Aug 196:40 PM,Lexington,High Point,3-5,"Klobosits, G","Gregersen, S",final|,47,46,0.0,1.0
+47.0,Aug 136:32 PM,Staten Island,Hagerstown,8-9,"Kelly, R","Snead, K",final|,48,46,0.0,0.0
+47.0,Aug  612:30 PM,Charleston,Gastonia,2-6,"Wilson, J","Diaz, A",final|,41,47,0.0,0.0
+47.0,Aug 206:34 PM,Lexington,High Point,9-11,"Scolaro, J","Lynch, J",final|,48,47,0.0,1.0
+47.0,Aug  96:38 PM,Lancaster,Staten Island,10-6,"Skirrow, N","Peralta, O",final|,48,47,0.0,0.0
+47.0,Aug  66:30 PM,Long Island,York,,,,"Postponed to:Aug 07, 04:00 PM",47,46,0.636,0.364
+47.0,Aug 136:36 PM,York,Long Island,1-4,"Hillman, J","Vallimont, C",final|,43,47,0.364,0.636
+47.0,Aug 166:38 PM,York,S Maryland,7-5,"Thurman, G","Miller, J",final|,44,47,0.364,
+47.0,Aug  26:38 PM,York,Charleston,7-2,"Firoved, E","Hill, J",final|,45,47,0.364,0.0
+47.0,Aug 166:52 PM,Staten Island,Lancaster,12-23,"McAvene, M","Kehoe, R",final|,49,46,0.0,0.0
+47.0,Aug 138:08 PM,Gastonia,Lexington,10-7,"Hennen, R","Wicklander, P",final|,44,47,0.0,0.0
+48.0,Aug 146:48 PM,Gastonia,Lexington,2-6,"Lambert, C","Hasler, K",final|,45,48,0.0,0.0
+48.0,Aug 172:07 PM,York,S Maryland,14-4,"Kickham, M","Chatham, C",final|,46,48,0.364,
+48.0,Aug 146:37 PM,York,Long Island,6-3,"Churchill, I","Romano, S",final|,47,48,0.364,0.636
+48.0,Aug 146:30 PM,Staten Island,Hagerstown,0-4,"Henriquez, J","Scott, W",final|,50,47,0.0,0.0
+48.0,Aug 216:36 PM,Lexington,High Point,1-5,"Wereski, B","Laio, N",final|,49,48,0.0,1.0
+48.0,Aug  76:40 PM,Long Island,York,10-4,"Nelson, B","Thurman, G",final|,48,47,0.636,0.364
+48.0,Aug 101:33 PM,Lancaster,Staten Island,3-2,"McAvene, M","Kehoe, R",final|,49,48,0.0,0.0
+48.0,Aug 172:03 PM,Staten Island,Lancaster,3-11,"Bremer, N","Mack, A",final|,51,47,0.0,0.0
+48.0,Aug  76:31 PM,Charleston,Gastonia,8-11,"King, T","Lebron, D",final|,42,48,0.0,0.0
+48.0,Aug  33:10 PM,York,Charleston,2-13,"Demurias, E","Sanabia, A",final|,48,48,0.364,0.0
+49.0,Aug 126:39 PM,High Point,Charleston,8-4,"Uelmen, E","Diaz, A",final|,49,49,1.0,0.0
+49.0,Aug 196:49 PM,Long Island,Lancaster,4-3,"Santos, R","Engler, S",final|,49,48,0.636,0.0
+49.0,Aug  87:00 PM,Charleston,Gastonia,4-6,"Hartman, M","Hill, J",final|,43,49,0.0,0.0
+49.0,Aug 156:35 PM,Hagerstown,Long Island,0-9,"Alintoff, J","Imhoff, A",final|,49,49,0.0,0.636
+49.0,Aug  86:37 PM,Lexington,York,3-7,"Vallimont, C","Beggs, D",final|,50,48,0.0,0.364
+49.0,Aug 196:33 PM,Charleston,Staten Island,3-1,"Lebron, D","Kaminsky, R",final|,44,49,0.0,0.0
+49.0,Aug 157:00 PM,Gastonia,Lexington,5-0,"Wells, N","Ferrer, B",final|,46,49,0.0,0.0
+49.0,Aug 226:37 PM,Long Island,Hagerstown,14-7,"Case, B","Weisenburger, J",final|,50,48,0.636,0.0
+49.0,Aug 196:39 PM,Gastonia,S Maryland,8-4,"Blanton, B","Scrubb, A",final|,47,49,0.0,
+49.0,Aug 226:34 PM,Lexington,High Point,4-5,"Klobosits, G","Armstrong, J",final|,51,49,0.0,1.0
+50.0,Aug 206:37 PM,Gastonia,S Maryland,7-8,"Vazquez, R","Horvath, N",final|,48,50,0.0,
+50.0,Aug  96:34 PM,Lexington,York,9-3,"Ferrer, B","Palm, T",final|,52,49,0.0,0.364
+50.0,Aug 166:35 PM,Hagerstown,Long Island,3-6,"Melville, T","Weisenburger, J",final|,50,50,0.0,0.636
+50.0,Aug 236:03 PM,Long Island,Hagerstown,10-3,"Griffin, D","Martinez, Q",final|,51,49,0.636,0.0
+50.0,Aug 236:37 PM,Lexington,High Point,8-7,"Eastman, C","Blair, D",final|,53,50,0.0,1.0
+50.0,Aug 1312:07 PM,High Point,Charleston,6-7,"Reyes, S","Rouse, S",final|,50,50,1.0,0.0
+50.0,Aug  97:01 PM,Charleston,Gastonia,1-4,"Wells, N","Demurias, E",final|,45,50,0.0,0.0
+50.0,Aug 206:49 PM,Long Island,Lancaster,6-7,"Skirrow, N","Dipoto, J",final|,52,49,0.636,0.0
+50.0,Aug 167:05 PM,Gastonia,Lexington,5-12,"Eastman, C","Newsome, L",final|,49,50,0.0,0.0
+50.0,Aug 213:59 PM,Charleston,Staten Island,1-3,"Scott, W","Hill, J",final|,46,50,0.0,0.0
+51.0,Aug 216:47 PM,Long Island,Lancaster,10-5,"Nelson, B","Sullivan, B",final|,53,50,0.636,0.0
+51.0,Aug 216:39 PM,Gastonia,S Maryland,2-3,"Briceño, E","Blanton, B",final|,50,51,0.0,
+51.0,Aug 244:05 PM,Lexington,High Point,11-2,"Edwards, C","Del Bonta-Smith, F",final|,54,51,0.0,1.0
+51.0,Aug 242:01 PM,Long Island,Hagerstown,7-2,"Case, B","Minaya, J",final|,54,50,0.636,0.0
+51.0,Aug 216:31 PM,Charleston,Staten Island,2-0,"Demurias, E","Peralta, O",final|,47,51,0.0,0.0
+51.0,Aug 104:00 PM,Charleston,Gastonia,6-7,"Thompson, C","Lusk, L",final|,48,51,0.0,0.0
+51.0,Aug 101:04 PM,Lexington,York,6-7,"Cellucci, B","Haab, J",final|,55,50,0.0,0.364
+51.0,Aug 175:13 PM,Hagerstown,Long Island,4-10,"Clenney, N","Simone, A",final|,51,51,0.0,0.636
+51.0,Aug 172:03 PM,Gastonia,Lexington,10-5,"Warren, A","Edwards, C",final|,51,51,0.0,0.0
+51.0,Aug 146:40 PM,High Point,Charleston,5-4,"Scolaro, J","Hill, J",final|,51,51,1.0,0.0
+52.0,Aug 266:34 PM,York,Long Island,3-5,"Reed, M","Burnette, J",final|,49,52,0.364,0.636
+52.0,Aug 266:35 PM,Charleston,High Point,10-5,"Diaz, A","Scolaro, J",final|,49,52,0.0,1.0
+52.0,Aug 266:38 PM,Staten Island,S Maryland,4-5,"McCabe, B","Snead, K",final|,52,52,0.0,
+52.0,Aug 266:48 PM,Gastonia,Lexington,8-9,"Loper, J","Grey, C",final|,52,52,0.0,0.0
+52.0,Aug 156:40 PM,High Point,Charleston,5-7,"Demurias, E","Wereski, B",final|,52,52,1.0,0.0
+52.0,Aug 296:46 PM,Staten Island,Lancaster,8-9,"Bremer, N","Mack, A",final|,53,51,0.0,0.0
+52.0,Aug 227:01 PM,Lancaster,Gastonia,7-4,"White, B","Stem, C",final|,50,52,0.0,0.0
+52.0,Aug 196:36 PM,Hagerstown,York,6-16,"Vallimont, C","Minaya, J",final|,52,51,0.0,0.364
+52.0,Aug 266:32 PM,Lancaster,Hagerstown,5-1,"Skirrow, N","Henriquez, J",final|,51,51,0.0,0.0
+52.0,Aug 227:04 PM,S Maryland,Staten Island,6-10,"Hernandez, L","Ross, D",final|,50,52,,0.0
+53.0,Aug 276:31 PM,Lancaster,Hagerstown,0-2,"Imhoff, A","McAvene, M",final|,52,52,0.0,0.0
+53.0,Aug 276:34 PM,York,Long Island,5-2,"Miranda, K","Melville, T",final|,50,53,0.364,0.636
+53.0,Aug 276:36 PM,Staten Island,S Maryland,0-3,"Thompson, C","Scott, W",final|,54,53,0.0,
+53.0,Aug 276:49 PM,Gastonia,Lexington,11-5,"Hartman, M","Wicklander, P",final|,53,53,0.0,0.0
+53.0,Aug 276:37 PM,Charleston,High Point,0-5,"Wereski, B","Hill, J",final|,50,53,0.0,1.0
+53.0,Aug 237:02 PM,Lancaster,Gastonia,2-9,"Newsome, L","Bremer, N",final|,53,53,0.0,0.0
+53.0,Aug 236:50 PM,S Maryland,Staten Island,12-4,"Chatham, C","Mack, A",final|,51,53,,0.0
+53.0,Aug 306:47 PM,Staten Island,Lancaster,4-15,"Swarmer, M","Kaminsky, R",final|,55,52,0.0,0.0
+53.0,Aug 166:39 PM,High Point,Charleston,7-9,"de Avila, L","Rouse, S",final|,53,53,1.0,0.0
+53.0,Aug 206:34 PM,Hagerstown,York,4-3,"Reyes, C","Robinson, C",final|,53,52,0.0,0.364
+54.0,Aug 286:36 PM,Lancaster,Hagerstown,8-2,"Green, M","Weisenburger, J",final|,54,53,0.0,0.0
+54.0,Aug 286:49 PM,Gastonia,Lexington,10-5,"Wells, N","Laio, N",final|,54,54,0.0,0.0
+54.0,Aug 312:05 PM,Staten Island,Lancaster,1-5,"Skirrow, N","Roe, N",final|,56,53,0.0,0.0
+54.0,Aug 286:40 PM,Charleston,High Point,8-5,"Reyes, S","Barker, A",final|,51,54,0.0,1.0
+54.0,Aug 286:35 PM,York,Long Island,4-8,"Jacobson, T","Firoved, E",final|,51,54,0.364,0.636
+54.0,Aug 216:34 PM,Hagerstown,York,8-11,"Mollerus, J","Simone, A",final|,54,53,0.0,0.364
+54.0,Aug 173:09 PM,High Point,Charleston,10-6,"Uelmen, E","Diaz, A",final|,54,54,1.0,0.0
+54.0,Aug 244:02 PM,Lancaster,Gastonia,8-5,"Engler, S","Benoit, D",final|,55,54,0.0,0.0
+54.0,Aug 241:33 PM,S Maryland,Staten Island,12-8,"Thurman, A","Kaminsky, R",final|,52,54,,0.0
+54.0,Aug 286:34 PM,Staten Island,S Maryland,10-5,"McKenna, B","Miller, J",final|,57,54,0.0,
+55.0,Sep  36:32 PM,Hagerstown,Staten Island,3-12,"Scott, W","Imhoff, A",final|,55,55,0.0,0.0
+55.0,Aug 295:04 PM,Lexington,S Maryland,1-2,"Briceño, E","Haab, J",final|,56,55,0.0,
+55.0,Aug 296:32 PM,High Point,Hagerstown,1-3,"Simone, A","Uelmen, E",final|,55,54,1.0,0.0
+55.0,Aug 296:35 PM,York,Long Island,4-2,"Kickham, M","Griffin, D",final|,52,55,0.364,0.636
+55.0,Aug 296:39 PM,Gastonia,Charleston,4-1,"King, T","de Avila, L",final|,55,55,0.0,0.0
+55.0,Sep  26:32 PM,Long Island,Gastonia,2-5,"Hartman, M","Melville, T",final|,55,55,0.636,0.0
+55.0,Aug 226:36 PM,Charleston,York,6-5,"Corona, R","Robinson, C",final|,52,54,0.0,0.364
+55.0,Sep  26:49 PM,Charleston,Lexington,11-10,"Corona, R","Haab, J",final|,53,55,0.0,0.0
+55.0,Sep  26:46 PM,York,Lancaster,9-2,"Burnette, J","McCollough, L",final|,53,54,0.364,0.0
+55.0,Sep  26:38 PM,S Maryland,High Point,4-3,"Virbitsky, K","Wereski, B",final|,53,55,,1.0
+56.0,Sep  36:47 PM,York,Lancaster,9-6,"Bennett, N","Green, M",final|,54,55,0.364,0.0
+56.0,Sep  36:37 PM,S Maryland,High Point,5-4,"Thompson, C","Cotter, C",final|,54,56,,1.0
+56.0,Sep  312:31 PM,Long Island,Gastonia,12-8,"Jacobson, T","Wells, N",final|,56,56,0.636,0.0
+56.0,Sep  44:01 PM,Hagerstown,Staten Island,0-2,"Kehoe, R","Weisenburger, J",final|,56,56,0.0,0.0
+56.0,Aug 236:36 PM,Charleston,York,3-12,"Kickham, M","Davis, M",final|,54,55,0.0,0.364
+56.0,Aug 306:42 PM,Gastonia,Charleston,9-4,"Benoit, D","Lebron, D",final|,56,56,0.0,0.0
+56.0,Aug 306:37 PM,York,Long Island,2-1,"Vallimont, C","Sandberg, R",final|,55,56,0.364,0.636
+56.0,Aug 306:35 PM,Lexington,S Maryland,1-5,"Thurman, A","Edwards, C",final|,57,56,0.0,
+56.0,Aug 306:02 PM,High Point,Hagerstown,10-4,"Del Bonta-Smith, F","Noriega, B",final|,56,55,1.0,0.0
+56.0,Sep  36:50 PM,Charleston,Lexington,5-6,"Armstrong, J","Lusk, L",final|,55,56,0.0,0.0
+57.0,Sep  46:30 PM,Long Island,Gastonia,2-5,"Stem, C","Griffin, D",final|,57,57,0.636,0.0
+57.0,Sep  47:47 PM,S Maryland,High Point,5-7,"Uelmen, E","Semple, S",final|,55,57,,1.0
+57.0,Sep  46:48 PM,York,Lancaster,12-4,"Kickham, M","Bremer, N",final|,56,56,0.364,0.0
+57.0,Sep  46:28 PM,Hagerstown,Staten Island,4-13,"Mack, A","Paulino, F",final|,57,57,0.0,0.0
+57.0,Sep  46:47 PM,Charleston,Lexington,7-8,"Armstrong, J","Corona, R",final|,56,57,0.0,0.0
+57.0,Aug 313:09 PM,Gastonia,Charleston,13-15,"Lusk, L","Blanton, B",final|,57,57,0.0,0.0
+57.0,Aug 312:10 PM,Lexington,S Maryland,6-2,"Beggs, D","Overton, C",final|,58,57,0.0,
+57.0,Aug 312:01 PM,High Point,Hagerstown,14-8,"Scolaro, J","Henriquez, J",final|,57,56,1.0,0.0
+57.0,Aug 241:03 PM,Charleston,York,3-4,"Vallimont, C","Lebron, D",final|,57,56,0.0,0.364
+57.0,Aug 315:09 PM,York,Long Island,2-4,"Hillman, J","Valverde, A",final|,57,57,0.364,0.636
+58.0,Sep  96:37 PM,Lexington,Long Island,8-2,"Laio, N","Clenney, N",final|,59,58,0.0,0.636
+58.0,Sep  96:38 PM,Gastonia,Charleston,13-3,"Westcott, Z","Hill, J",final|,58,58,0.0,0.0
+58.0,Sep 126:52 PM,Lexington,Lancaster,7-6,"Loper, J","Gilliam, R",final|,60,57,0.0,0.0
+58.0,Sep  57:17 PM,S Maryland,Gastonia,7-6,"Briceño, E","Horvath, N",final|,56,58,,0.0
+58.0,Sep  57:04 PM,Charleston,Lexington,2-6,"Eastman, C","de Avila, L",final|,58,58,0.0,0.0
+58.0,Sep  57:00 PM,Hagerstown,Staten Island,4-6,"Helvey, C","Martinez, Q",final|,58,58,0.0,0.0
+58.0,Sep  56:39 PM,Long Island,High Point,2-3,"Del Bonta-Smith, F","Sandberg, R",final|,58,58,0.636,1.0
+58.0,Sep  56:39 PM,Lancaster,York,3-8,"Vallimont, C","Swarmer, M",final|,56,57,0.0,0.364
+58.0,Sep  96:37 PM,High Point,S Maryland,1-6,"Miller, J","Gilbert, J",final|,58,58,1.0,
+58.0,Sep  96:33 PM,Lancaster,Hagerstown,6-2,"White, B","Imhoff, A",final|,57,57,0.0,0.0
+59.0,Sep 106:38 PM,High Point,S Maryland,9-5,"Hess, D","McCabe, B",final|,59,59,1.0,
+59.0,Sep 106:34 PM,Lexington,Long Island,6-2,"Ferrer, B","Griffin, D",final|,61,59,0.0,0.636
+59.0,Sep 136:58 PM,Lexington,Lancaster,3-6,"Sullivan, B","Wicklander, P",final|,62,58,0.0,0.0
+59.0,Sep 106:39 PM,Gastonia,Charleston,6-3,"Wells, N","Campbell, M",final|,59,59,0.0,0.0
+59.0,Sep  66:36 PM,Hagerstown,Staten Island,17-8,"Jackson, J","Lepard, T",final|,59,59,0.0,0.0
+59.0,Sep  68:01 PM,Long Island,High Point,10-7,"Santos, R","Cotter, C",final|,59,59,0.636,1.0
+59.0,Sep  66:38 PM,Lancaster,York,8-7,"Gilliam, R","Cellucci, B",final|,58,58,0.0,0.364
+59.0,Sep  67:30 PM,S Maryland,Gastonia,5-7,"Underwood Jr., D","Overton, C",final|,57,59,,0.0
+59.0,Sep  67:04 PM,Charleston,Lexington,6-8,"Beggs, D","Davis, M",final|,59,59,0.0,0.0
+60.0,Sep 142:01 PM,Lexington,Lancaster,7-8,"Diehl, P","Loper, J",final|,63,59,0.0,0.0
+60.0,Sep 116:43 PM,Gastonia,Charleston,13-4,"Newsome, L","de Avila, L",final|,60,60,0.0,0.0
+60.0,Sep 116:39 PM,Lexington,Long Island,1-10,"Sandberg, R","Eastman, C",final|,64,60,0.0,0.636
+60.0,Sep 116:36 PM,High Point,S Maryland,9-12,"Thompson, C","McGrane, J",final|,60,60,1.0,
+60.0,Sep 116:34 PM,Lancaster,Hagerstown,7-2,"Swarmer, M","Martinez, Q",final|,59,58,0.0,0.0
+60.0,Sep  74:07 PM,Long Island,High Point,2-6,"Wereski, B","Melville, T",final|,60,60,0.636,1.0
+60.0,Sep  71:03 PM,Lancaster,York,1-2,"Scott, B","Killgore, K",final|,60,59,0.0,0.364
+60.0,Sep  71:35 PM,Hagerstown,Staten Island,1-2,"Baker, R","Kelly, R",final|,60,60,0.0,0.0
+60.0,Sep  72:05 PM,Charleston,Lexington,4-15,"Wicklander, P","Diaz, A",final|,60,60,0.0,0.0
+60.0,Sep  74:01 PM,S Maryland,Gastonia,5-8,"Hennen, R","McCabe, B",final|,58,60,,0.0
+61.0,Sep 166:47 PM,Long Island,Lancaster,8-5,"Dominguez, M","Green, M",final|,61,60,0.636,0.0
+61.0,Sep 166:50 PM,S Maryland,Lexington,5-1,"Vazquez, R","Gregersen, S",final|,59,61,,0.0
+61.0,Sep 166:33 PM,Hagerstown,Gastonia,2-8,"Stem, C","Weisenburger, J",final|,61,61,0.0,0.0
+61.0,Sep 166:32 PM,York,Staten Island,2-3,"McKenna, B","Robinson, C",final|,58,61,0.364,0.0
+61.0,Sep 166:41 PM,Charleston,High Point,5-12,"Uelmen, E","Campbell, M",final|,61,61,0.0,1.0
+61.0,Sep 126:41 PM,High Point,S Maryland,5-9,"Overton, C","Scolaro, J",final|,61,61,1.0,
+61.0,Sep  96:38 PM,Staten Island,York,7-6,"Scott, W","Miranda, K",final|,58,60,0.0,0.364
+61.0,Sep 126:39 PM,Gastonia,Charleston,7-1,"Grey, C","Davis, M",final|,61,61,0.0,0.0
+61.0,Sep 126:36 PM,York,Long Island,1-4,"Clenney, N","Bennett, N",final|,59,61,0.364,0.636
+61.0,Sep 126:38 PM,Staten Island,Hagerstown,14-9,"Hernandez, L","Minaya, J",final|,59,59,0.0,0.0
+62.0,Sep 136:38 PM,High Point,S Maryland,2-1,"Wereski, B","Virbitsky, K",final|,62,62,1.0,
+62.0,Sep 1711:04 AM,S Maryland,Lexington,1-4,"Eastman, C","Thurman, A",final|,60,62,,0.0
+62.0,Sep 106:36 PM,Staten Island,York,3-15,"Kickham, M","Kehoe, R",final|,60,61,0.0,0.364
+62.0,Sep 1712:32 PM,Hagerstown,Gastonia,14-13,"Reyes, C","Bordner, S",final|,62,62,0.0,0.0
+62.0,Sep 176:37 PM,Charleston,High Point,1-8,"Hendrickson, J","Davis, M",final|,62,62,0.0,1.0
+62.0,Sep 176:49 PM,Long Island,Lancaster,4-5,"McAvene, M","Santos, R",final|,62,61,0.636,0.0
+62.0,Sep 136:41 PM,Gastonia,Charleston,10-4,"King, T","Diaz, A",final|,62,62,0.0,0.0
+62.0,Sep 136:38 PM,York,Long Island,2-5,"Jacobson, T","Cellucci, B",final|,60,62,0.364,0.636
+62.0,Sep 136:02 PM,Staten Island,Hagerstown,0-3,"Henriquez, J","Allegretti, C",final|,61,60,0.0,0.0
+62.0,Sep 176:32 PM,York,Staten Island,9-1,"Bennett, N","Roe, N",final|,61,62,0.364,0.0
+63.0,Sep 1810:37 AM,York,Staten Island,15-10,"Scott, B","Lepard, T",final|,62,63,0.364,0.0
+63.0,Sep 186:33 PM,Hagerstown,Gastonia,0-6,"Westcott, Z","Henriquez, J",final|,63,63,0.0,0.0
+63.0,Sep 186:36 PM,Charleston,High Point,3-2,"Kruglewicz, P","McGrane, J",final|,63,63,0.0,1.0
+63.0,Sep 116:37 PM,Staten Island,York,5-3,"McKenna, B","Burnette, J",final|,62,62,0.0,0.364
+63.0,Sep 142:07 PM,High Point,S Maryland,0-1,"Blanchard, J","Gilbert, J",final|,63,63,1.0,
+63.0,Sep 142:05 PM,Staten Island,Hagerstown,4-5,"Kelly, R","Snead, K",final|,63,61,0.0,0.0
+63.0,Sep 141:39 PM,York,Long Island,5-3,"Miranda, K","Hillman, J",final|,63,63,0.364,0.636
+63.0,Sep 186:50 PM,Long Island,Lancaster,5-1,"Asa, J","McCollough, L",final|,63,62,0.636,0.0
+63.0,Sep 143:08 PM,Gastonia,Charleston,14-12,"Westcott, Z","Bacon, T",final|,63,63,0.0,0.0
+63.0,Sep 187:10 PM,S Maryland,Lexington,9-3,"Overton, C","Beggs, D",final|,61,63,,0.0
+,Apr 257:10 PM,York,Gastonia,5-4,"Churchill, I","Hasler, K",final|,64,64,0.364,0.0
+,May  41:02 PM,Long Island,York,2-4,"Denoyer, N","Plesac, Z",final|,64,63,0.636,0.364
+,May  811:03 AM,S Maryland,Lancaster,5-4,"Scrubb, A","Diehl, P",final|,62,63,,0.0
+,May  96:35 PM,York,Hagerstown,8-6,"Llovera, M","Kelly, R",final|,65,62,0.364,0.0
+,May 1411:05 AM,Lancaster,Hagerstown,7-2,"Skirrow, N","Richardson, D",final|,61,63,0.0,0.0
+,May 226:19 PM,Long Island,Staten Island,,,,Cancelled,65,64,0.636,0.0
+,May 291:20 PM,Lancaster,Staten Island,2-1,"Johnson, K","Williamson, R",final|,62,65,0.0,0.0
+,May 294:03 PM,York,Hagerstown,4-2,"Dula, H","Kelly, R",final|,66,64,0.364,0.0
+,May 316:06 PM,Gastonia,S Maryland,3-4,"McCabe, B","Horvath, N",final|,64,64,0.0,
+,Jun 231:07 PM,Charleston,S Maryland,16-8,"Demurias, E","Wright, J",final|,64,65,0.0,
+,Jul  25:04 PM,Hagerstown,S Maryland,0-2,"Semple, S","Kickham, M",final|,64,66,0.0,
+,Jul  26:32 PM,Lancaster,York,5-4,"Engler, S","Churchill, I",final|,63,64,0.0,0.364
+,Jul 104:59 PM,S Maryland,Lancaster,6-2,"Thurman, A","Sullivan, B",final|,63,64,,0.0
+,Jul 1711:07 AM,High Point,York,22-12,"Blair, D","Morales, J",final|,64,65,1.0,0.364
+,Jul 295:09 PM,S Maryland,Charleston,2-3,"Moscatiello, F","McCabe, B",final|,64,64,,0.0
+,Aug  45:34 PM,Staten Island,Long Island,4-5,"Santos, R","Baker, R",final|,64,64,0.0,0.636
+,Aug  74:05 PM,Long Island,York,3-4,"Kickham, M","Hillman, J",final|,66,66,0.636,0.364
+,Aug  87:39 PM,S Maryland,High Point,0-4,"Scolaro, J","Chatham, C",final|,65,64,,1.0
+,Aug 298:02 PM,Lexington,S Maryland,1-2,"McCabe, B","Luna, G",final|,65,67,0.0,
+,Sep 106:32 PM,Lancaster,Hagerstown,5-2,"Bremer, N","Weisenburger, J",final|,64,65,0.0,0.0

@@ -1,0 +1,27 @@
+﻿row_number,inning,half,pitcher,batter,ball_count,strike_count,pitch,result,outs,runner_1B,runner_2B,runner_3B,score,away_score,home_score,pitcher_pitch_count,gameid,game_date,pitcher_throw,batter_hit,batter_height,batter_position,Extension (ft),Pitch Time,Release Speed (mph),Spin Rate (rpm),Tilt,Induced Virtual Break (in),Horizontal Break (in),Vertical Approach Angle,Horizontal Approach Angle,Location Side (ft),Location Height (ft),Release Height (ft),Release Side (ft),Pitch Type,PitchType_Color,Handedness,Hit Type,Exit Velocity (mph),Launch Angle (°),Batter Name,Hit Time,Direction (°),Bearing (°),Distance (ft)
+,,,Nick Wells,Jalen Miller,,,,Fly out to right field,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Popup,78.33,38.88,Jalen Miller,4/25/2025 19:12,12.04,20.25,266.76
+,,,Nick Wells,Frankie Tostado,,,,Single to center field,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,LineDrive,75.02,23.28,Frankie Tostado,4/25/2025 19:13,10.66,9.31,250.8
+,,,Nick Wells,Osvaldo Tovalin,,,,Line out (L5),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,LineDrive,63.1,17.78,Osvaldo Tovalin,4/25/2025 19:23,–22.71,–29.35,153.74
+,,,Nick Wells,Justin Connell,,,,Single to Left field,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,LineDrive,98.1,11.48,Justin Connell,4/25/2025 19:25,–17.73,–18.80,191.87
+,,,Nick Wells,Jairus Richards,,,,Fielders Choice (4-6),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,83.65,–25.15,Jairus Richards,4/25/2025 19:27,27.2,10.95,4.9
+,,,Nick Wells,Jeffrey Wehler,,,,Triple to center,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,LineDrive,101.27,31.32,Jeffrey Wehler,4/25/2025 19:28,7.57,14.22,397.16
+,,,Nick Wells,Tomo Otosaka,,,,Flyout to left field,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Popup,94.9,53.11,Tomo Otosaka,4/25/2025 19:42,–12.15,–23.22,264.73
+,,,Nick Wells,Jalen Miller,,,,Groundout (e4),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,70.26,–24.50,Jalen Miller,4/25/2025 19:43,16.2,18.42,6.25
+,,,Nick Wells,Alerick Soularie,,,,Lineout (L4),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,LineDrive,57.8,20.32,Alerick Soularie,4/25/2025 19:46,–23.27,–24.93,141.52
+,,,Nick Wells,Osvaldo Tovalin,,,,Groundout (4-3),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,33.36,–69.76,Osvaldo Tovalin,4/25/2025 20:02,44.47,–10.66,3.02
+,,,Nick Wells,Jairus Richards,,,,Single to Right Field,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FlyBall,57.65,36.08,Jairus Richards,4/25/2025 20:05,34.63,40.09,176.1
+,,,Duane Underwood Jr.,Tomo Otosaka,,,,Single to third base,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Bunt,29.73,23.5,Tomo Otosaka,4/25/2025 20:15,–19.10,–18.89,53.6
+,,,Duane Underwood Jr.,Jalen Miller,,,,Groundout (3u),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,46.98,27.38,Jalen Miller,4/25/2025 20:16,31.97,32.28,33.64
+,,,Duane Underwood Jr.,Frankie Tostado,,,,Groundout (4-3),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,92.87,–15.26,Frankie Tostado,4/25/2025 20:28,29.96,25.29,11.18
+,,,Duane Underwood Jr.,Alerick Soularie,,,,Groundout (3u),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,79.88,–24.81,Alerick Soularie,4/25/2025 20:29,31.03,28.85,14.17
+,,,Duane Underwood Jr.,Justin Connell,,,,Groundout (3u),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,61.15,–48.33,Justin Connell,4/25/2025 20:43,49.13,36.35,1.79
+,,,Duane Underwood Jr.,Jairus Richards,,,,home run,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FlyBall,105.26,23.14,Jairus Richards,4/25/2025 20:44,3.53,0.65,426.32
+,,,Duane Underwood Jr.,Jeffrey Wehler,,,,Popup (P6),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Popup,64.85,49.06,Jeffrey Wehler,4/25/2025 20:45,–14.70,–12.86,189.12
+,,,Duane Underwood Jr.,Michael Berglund,,,,Single to Right Field,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,38.8,–74.70,Michael Berglund,4/25/2025 20:46,–125.05,–46.81,2.53
+,,,Justus Sheffield,Jalen Miller,,,,Groundout (P4),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Popup,81.57,50.06,Jalen Miller,4/25/2025 20:58,–0.31,1.46,336.73
+,,,Justus Sheffield,Osvaldo Tovalin,,,,Single,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,97.18,–2.67,Osvaldo Tovalin,4/25/2025 21:03,30.09,27.76,52.41
+,,,Justus Sheffield,Michael Berglund,,,,Single to Right Field,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,LineDrive,96.97,11.5,Michael Berglund,4/25/2025 21:23,10.63,12.04,187.27
+,,,Justus Sheffield,Jalen Miller,,,,Groundout (1-3),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GroundBall,52.83,–28.61,Jalen Miller,4/25/2025 21:26,–17.32,–18.02,6.92
+,,,Nick Snyder,Frankie Tostado,,,,Flyout to Center Field,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FlyBall,101.2,27.26,Frankie Tostado,4/25/2025 21:41,13.3,9.22,377.62
+,,,,Justin Connell,,,,Popout (P6),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Popup,79.63,62.84,Justin Connell,4/25/2025 22:00,–26.49,–18.59,125.85
+,,,Ryan Higgins,Jeffrey Wehler,,,,Sac fly,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,FlyBall,102.63,38.32,Jeffrey Wehler,4/25/2025 22:06,–3.78,0.83,371.65

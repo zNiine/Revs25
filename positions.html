@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defensive Positioning Cards</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ===== SCREEN UI ===== */
+body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+.top-bar {
+  background: #1e293b; border-bottom: 2px solid #2563eb;
+  padding: 10px 18px; position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 2px 10px rgba(0,0,0,.6);
+}
+.top-bar h1 { font-size: 14px; font-weight: 800; color: #60a5fa; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+.ctrl-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ctrl-group { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #94a3b8; white-space: nowrap; }
+select { background: #334155; color: #f1f5f9; border: 1px solid #475569; border-radius: 3px; padding: 3px 6px; font-size: 11px; min-width: 160px; }
+input[type="file"] { font-size: 11px; color: #94a3b8; }
+.btn { padding: 4px 12px; border: none; border-radius: 3px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: .4px; }
+.btn-blue  { background: #2563eb; color:#fff; } .btn-blue:hover  { background: #1d4ed8; }
+.btn-green { background: #16a34a; color:#fff; } .btn-green:hover { background: #15803d; }
+#statusBar { font-size: 11px; color: #64748b; padding: 4px 18px; background: #0f172a; border-bottom: 1px solid #1e293b; }
+#preview { padding: 20px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; min-height: 200px; }
+.empty-state { display: flex; align-items: center; justify-content: center; width: 100%; height: 160px; color: #475569; font-size: 13px; }
+
+/* ===== CARD ===== */
+.pos-card {
+  background: #fff; color: #000;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+  border: 1.5pt solid #000; overflow: hidden;
+  break-inside: avoid; page-break-inside: avoid;
+  box-shadow: 0 3px 14px rgba(0,0,0,.5);
+}
+.pos-card.size-5x8 { width: 7.5in; }
+.pos-card.size-4x6 { width: 5.8in; }
+
+/* card header colours — one per card type */
+.card-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 8px; border-bottom: 2.5pt solid currentColor;
+}
+.pos-card.inf-lhp .card-hdr { background: #1e3a5f; color: #93c5fd; border-bottom-color: #3b82f6; }
+.pos-card.inf-rhp .card-hdr { background: #1a3030; color: #5eead4; border-bottom-color: #14b8a6; }
+.pos-card.of-lhp  .card-hdr { background: #2d1a3a; color: #d8b4fe; border-bottom-color: #a855f7; }
+.pos-card.of-rhp  .card-hdr { background: #3a1a1a; color: #fca5a5; border-bottom-color: #ef4444; }
+
+.hdr-left  { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hdr-right { text-align: right; }
+.card-title { font-size: 12pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #fff; }
+.vs-badge { font-size: 9pt; font-weight: 700; padding: 1px 7px; border-radius: 3px; background: rgba(255,255,255,.15); color: #fff; letter-spacing: .5px; }
+.card-sub  { font-size: 7.5pt; color: rgba(255,255,255,.6); }
+.hdr-team  { font-size: 11pt; font-weight: 800; text-transform: uppercase; display: block; color: #fff; }
+.hdr-date  { font-size: 7pt; color: rgba(255,255,255,.6); display: block; }
+
+/* table */
+.card-tbl { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.card-tbl th {
+  font-size: 7.5pt; font-weight: 800; padding: 2px 2px;
+  text-align: center; border: 0.5pt solid rgba(255,255,255,.25); color: #fff;
+}
+.pos-card.inf-lhp .card-tbl th { background: #1e3a5f; }
+.pos-card.inf-rhp .card-tbl th { background: #1a3030; }
+.pos-card.of-lhp  .card-tbl th { background: #2d1a3a; }
+.pos-card.of-rhp  .card-tbl th { background: #3a1a1a; }
+.card-tbl th.th-name { text-align: left; padding-left: 4px; }
+
+.card-tbl td { font-size: 8pt; padding: 1.5pt 2pt; border: 0.5pt solid #ccc; text-align: center; vertical-align: middle; white-space: nowrap; overflow: hidden; }
+.card-tbl td.td-name { text-align: left; padding-left: 4px; font-weight: 600; text-overflow: ellipsis; }
+.card-tbl tbody tr:nth-child(even) { background: #f7f7f7; }
+
+/* highlights */
+.z-max   { font-weight: 800 !important; background: #fef9c3 !important; }
+.z-shift { background: #fee2e2 !important; color: #991b1b; font-weight: 800; font-size: 7.5pt; }
+.z-shade { background: #dbeafe !important; color: #1e3a8a; font-weight: 700;  font-size: 7.5pt; }
+.z-line  { background: #fef3c7 !important; color: #78350f; font-weight: 700;  font-size: 7.5pt; }
+.z-nrm   { font-size: 7.5pt; color: #555; }
+
+/* ---- infield column widths (10 cols) ----
+   # 3% | NAME 20% | 4 zones 8.5% ea=34% | 4 codes 9.5% ea=38%  → ~95% */
+.ci-num  { width: 3%;   }
+.ci-name { width: 20%;  }
+.ci-z    { width: 8.5%; }
+.ci-c    { width: 9.5%; }
+
+/* ---- outfield column widths (12 cols) ----
+   # 3% | NAME 18% | 6 zones 7% ea=42% | DST 5% | 3 codes 8% ea=24%  → ~92% */
+.co-num  { width: 3%;  }
+.co-name { width: 18%; }
+.co-z    { width: 7%;  }
+.co-dst  { width: 5%;  }
+.co-c    { width: 8%;  }
+
+/* legend */
+.card-legend { font-size: 6.5pt; color: #555; border-top: 0.5pt solid #aaa; padding: 2.5pt 7pt; background: #f5f5f5; line-height: 1.6; }
+
+/* ===== PRINT ===== */
+@media print {
+  body { background: #fff; margin: 0; padding: 0; }
+  .top-bar, #statusBar { display: none !important; }
+  #preview { padding: 0; display: block; }
+  .pos-card { box-shadow: none; margin: 0; page-break-after: always; break-after: page; border: 1pt solid #000; }
+  .pos-card:last-child { page-break-after: avoid; break-after: avoid; }
+  @page { size: landscape; margin: 0.25in; }
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>Defensive Positioning Cards</h1>
+  <div class="ctrl-row">
+    <div class="ctrl-group"><label>CSV:</label><input type="file" id="csvFile" accept=".csv"></div>
+    <div class="ctrl-group">
+      <label>Opposing Team:</label>
+      <select id="teamSel"><option value="">-- Load CSV --</option></select>
+    </div>
+    <div class="ctrl-group">
+      <label>Size:</label>
+      <select id="cardSize"><option value="5x8" selected>5x8 in</option><option value="4x6">4x6 in</option></select>
+    </div>
+    <button class="btn btn-blue"  id="genBtn">Generate 4 Cards</button>
+    <button class="btn btn-green" onclick="window.print()">Print / Download</button>
+  </div>
+</div>
+
+<div id="statusBar">Loading data.csv...</div>
+<div id="preview"><div class="empty-state">Loading...</div></div>
+
+<script>
+// ================================================================
+// CONSTANTS
+// ================================================================
+
+// ----------------------------------------------------------------
+// TRACKMAN DIRECTION CONVENTION (batted-ball Direction field):
+//   -45° = 3B / LF foul line   (negative values)
+//     0° = home plate → 2B     (center)
+//   +45° = 1B / RF foul line   (positive values)
+//
+// HITTER-RELATIVE DIRECTION (used everywhere below):
+//   relDir = getHitterRelativeDir(direction, batterSide)
+//   positive relDir = PULL side for this batter
+//   negative relDir = OPPO side for this batter
+//
+//   RHH pull = toward 3B/LF = negative raw → flip to positive:  relDir = -direction
+//   LHH pull = toward 1B/RF = positive raw → already positive:  relDir = +direction
+// ----------------------------------------------------------------
+
+// Debug flag — set true to log spray samples to the console on card generate
+const DEBUG_SPRAY = false;
+
+// Infield hitter-relative zone thresholds (applied to relDir)
+const INF_LINE =  22;   // relDir > 22  → 3B  (pull line)
+const INF_GAP  =   8;   // relDir > 8   → 5-6 (pull gap)
+const INF_MID  =  -8;   // relDir >= -8 → MID ; else 4-3 (oppo)
+
+// Outfield hitter-relative zone thresholds (applied to relDir)
+const OF_PULL_LINE = 28;   // relDir > 28  → PLL (pull-line territory)
+const OF_PULL_ZONE = 13;   // relDir > 13  → PL  (pull zone)
+const OF_PULL_GAP  =  3;   // relDir > 3   → PLG (pull gap)
+// center:   -3 ≤ relDir ≤ 3  → CTR
+// oppo gap: -13 ≤ relDir < -3 → OPG
+// oppo:     relDir < -13      → OPP  (includes oppo-line territory)
+
+// Minimum batted balls to show a number (else --)
+const MIN_GB = 8;
+const MIN_AB = 8;
+
+// Outfield individual fielder depth thresholds (feet)
+const OF_DEEP_FT  = 278;
+const OF_SHAL_FT  = 212;
+
+// ================================================================
+// STATE
+// ================================================================
+let ALL_ROWS = [];
+
+// ================================================================
+// HELPERS
+// ================================================================
+const getS = (row, col, def = '') => { const v = row[col]; return (v !== undefined && v !== null) ? String(v).trim() : def; };
+const getN = (row, col) => { const v = parseFloat(row[col]); return isNaN(v) ? null : v; };
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function effectiveSide(batterSide, pitcherThrows) {
+  if (batterSide === 'Switch' || batterSide === 'S' || batterSide === 'B')
+    return pitcherThrows === 'Right' ? 'Left' : 'Right';
+  return batterSide;
+}
+
+// ================================================================
+// BALL-IN-PLAY / HIT-TYPE HELPERS
+// ================================================================
+function isBallInPlay(row) {
+  const pc  = getS(row,'PitchCall').toLowerCase().replace(/[\s_-]/g,'');
+  const ht  = getS(row,'TaggedHitType').toLowerCase().replace(/[\s_-]/g,'');
+  const pr  = getS(row,'PlayResult').toLowerCase().replace(/[\s_-]/g,'');
+  const dir = getN(row,'Direction');
+  const real = ht && !['','undefined','other','none'].includes(ht);
+  const res  = ['single','double','triple','homerun','out','error','fielderschoice',
+                'sacrifice','sacfly','sacbunt'].some(r => pr.includes(r));
+  return (pc.includes('inplay') || real || res) && dir !== null;
+}
+
+// Ground ball: TaggedHitType preferred; falls back to Angle < 10°
+function isGroundBall(row) {
+  const ht = getS(row,'TaggedHitType').toLowerCase().replace(/[\s_-]/g,'');
+  if (ht.includes('ground') || ht === 'gb') return true;
+  if (!ht || ht === 'undefined') { const a = getN(row,'Angle'); if (a !== null && a < 10) return true; }
+  return false;
+}
+
+// Air ball: fly balls + line drives, no infield popups
+function isAirBall(row) {
+  const ht = getS(row,'TaggedHitType').toLowerCase().replace(/[\s_-]/g,'');
+  if (ht.includes('popup')) return false;
+  if (ht.includes('flyball') || ht === 'fly') return true;
+  if (ht.includes('linedrive') || ht === 'ld') return true;
+  if (!ht || ht === 'undefined') { const a = getN(row,'Angle'); if (a !== null && a >= 10 && a <= 50) return true; }
+  return false;
+}
+
+// ================================================================
+// DIRECTION UTILITIES
+// ================================================================
+
+// See direction convention at the top of CONSTANTS.
+// Returns hitter-relative direction: positive = pull, negative = oppo.
+function getHitterRelativeDir(direction, batterSide) {
+  return (batterSide === 'Left' || batterSide === 'L') ? direction : -direction;
+}
+
+// Infield zones — hitter-relative, positive = pull side.
+function getInfieldZone(direction, batterSide) {
+  const r = getHitterRelativeDir(direction, batterSide);
+  if (r > INF_LINE) return '3B';
+  if (r > INF_GAP)  return '5-6';
+  if (r >= INF_MID) return 'MID';
+  return '4-3';
+}
+
+// Outfield zones — hitter-relative, positive = pull side.
+// Zones (most-oppo to most-pull): OPP | OPG | CTR | PLG | PL | PLL
+function getOutfieldZone(direction, batterSide) {
+  const r = getHitterRelativeDir(direction, batterSide);
+  if (r >  OF_PULL_LINE) return 'PLL';   // > 28:  pull-line territory
+  if (r >  OF_PULL_ZONE) return 'PL';    // 13–28: pull zone
+  if (r >  OF_PULL_GAP)  return 'PLG';   // 3–13:  pull gap
+  if (r >= -OF_PULL_GAP) return 'CTR';   // -3–3:  center
+  if (r >= -OF_PULL_ZONE) return 'OPG';  // -13–-3: oppo gap
+  return 'OPP';                           // < -13: oppo (incl. oppo-line territory)
+}
+
+// ================================================================
+// PERCENTAGE COMPUTATIONS
+// ================================================================
+
+// Infield: handles Switch hitters per-row via each row's PitcherThrows
+function computeInfieldPercents(rows, rawBatterSide) {
+  const zones = ['3B','5-6','MID','4-3'];
+  const counts = {'3B':0,'5-6':0,'MID':0,'4-3':0};
+  const isSwitch = rawBatterSide === 'Switch' || rawBatterSide === 'S' || rawBatterSide === 'B';
+  let total = 0;
+  for (const r of rows) {
+    if (!isBallInPlay(r) || !isGroundBall(r)) continue;
+    const dir = getN(r,'Direction'); if (dir === null) continue;
+    const eff = isSwitch ? (getS(r,'PitcherThrows') === 'Right' ? 'Left' : 'Right') : rawBatterSide;
+    counts[getInfieldZone(dir, eff)]++;
+    total++;
+  }
+  if (total < MIN_GB) return null;
+  const pcts = {};
+  for (const z of zones) pcts[z] = Math.round((counts[z] / total) * 100);
+  return { pcts, total };
+}
+
+// Outfield: hitter-relative zones; switch hitters resolved per-row via PitcherThrows.
+function computeOutfieldPercents(rows, rawBatterSide) {
+  const zones = ['OPP','OPG','CTR','PLG','PL','PLL'];
+  const counts = {OPP:0,OPG:0,CTR:0,PLG:0,PL:0,PLL:0};
+  const isSwitch = rawBatterSide === 'Switch' || rawBatterSide === 'S' || rawBatterSide === 'B';
+  let total=0, dsum=0, dcnt=0;
+  for (const r of rows) {
+    if (!isBallInPlay(r) || !isAirBall(r)) continue;
+    const dir = getN(r,'Direction'); if (dir === null) continue;
+    const eff = isSwitch ? (getS(r,'PitcherThrows') === 'Right' ? 'Left' : 'Right') : rawBatterSide;
+    counts[getOutfieldZone(dir, eff)]++;
+    total++;
+    const d = getN(r,'Distance'); if (d !== null && d > 0) { dsum += d; dcnt++; }
+  }
+  if (total < MIN_AB) return null;
+  const pcts = {};
+  for (const z of zones) pcts[z] = Math.round((counts[z] / total) * 100);
+  return { pcts, total, avgDist: dcnt > 0 ? Math.round(dsum / dcnt) : null };
+}
+
+// ================================================================
+// POSITIONING CODE GENERATORS — one per fielder
+// ================================================================
+// Zone key reminder (hitter-relative, same for LHH and RHH):
+//   p['3B']  = pull-line %    (for RHH: literal 3B line; for LHH: literal 1B line)
+//   p['5-6'] = pull-gap %     (for RHH: 5-6 hole;        for LHH: 3-4 hole)
+//   p['MID'] = middle %
+//   p['4-3'] = oppo %         (for RHH: toward 1B;       for LHH: toward 3B)
+//
+// All code functions accept effSide so they can map pull/oppo to the
+// correct physical fielder.  'Left' = LHH (pull toward 1B/RF side).
+// ================================================================
+
+function computeSSCode(p, effSide) {
+  const isLeft  = effSide === 'Left' || effSide === 'L';
+  const pull    = (p['3B']||0) + (p['5-6']||0);
+
+  if (isLeft) {
+    // LHH pull goes toward 1B/2B side — SS is on the oppo side.
+    // SS primary role: protect middle and fill the 2B gap when 2B shifts.
+    // Shade toward 2B only as pull load increases.
+    if (pull > 65) return 'SFT';   // heavy pull: SS fills 2B area
+    if (pull > 45) return 'P+1';   // moderate pull: small shade toward 2B
+    return 'NRM';
+  } else {
+    // RHH pull goes toward 3B/SS territory — shade aggressively pull-side.
+    if (pull > 65) return 'P+3';
+    if (pull > 50) return 'P+2';
+    if (pull > 35) return 'P+1';
+    return 'NRM';
+  }
+}
+
+function compute2BCode(p, effSide) {
+  const pull = (p['3B']||0) + (p['5-6']||0);
+  // 2B shifts toward pull side regardless of handedness.
+  // For RHH: 2B moves left (toward SS area).
+  // For LHH: 2B moves right (toward 1B hole).
+  if (pull > 75) return 'SHIFT';
+  if (pull > 55) return 'SFT';
+  return 'NRM';
+}
+
+function compute3BCode(p, effSide) {
+  const isLeft = effSide === 'Left' || effSide === 'L';
+
+  if (isLeft) {
+    // LHH pull goes toward 1B — 3B is the oppo side for LHH.
+    // 3B hugs its line only when the LHH is oppo-heavy (balls actually coming that way).
+    const oppo = p['4-3']||0;   // oppo for LHH = toward 3B/LF
+    if (oppo > 35) return 'LINE';
+    return 'NRM';
+  } else {
+    // RHH pull goes toward 3B — 3B is the pull side.
+    const line = p['3B']||0, gap = p['5-6']||0;
+    if (line > 30) return 'LINE';
+    if (gap > 50 && line < 10) return 'IN';
+    return 'NRM';
+  }
+}
+
+function compute1BCode(p, effSide) {
+  const isLeft = effSide === 'Left' || effSide === 'L';
+
+  if (isLeft) {
+    // LHH pull goes toward 1B — 1B is the pull-side fielder.
+    const pullLine = p['3B']||0;               // pull-line for LHH = toward 1B foul line
+    const pull     = pullLine + (p['5-6']||0);
+    if (pullLine > 30) return 'LINE';   // many pull-line balls → hug the 1B line
+    if (pull > 75)     return 'IN';     // extreme pull → crash for ground balls
+    return 'NRM';
+  } else {
+    // RHH oppo goes toward 1B — 1B is the oppo-side fielder.
+    const oppo = p['4-3']||0, pull = (p['3B']||0) + (p['5-6']||0);
+    if (oppo > 35) return 'LINE';   // oppo-heavy → protect the 1B line
+    if (pull > 75) return 'IN';     // extreme pull → 1B charges (ball unlikely to reach here)
+    return 'NRM';
+  }
+}
+
+// LF code — effSide tells us which hitter-relative zone maps to the LF side of the field.
+// RHH pull = LF side → LF is the PULL fielder → trigger on PLL / PLG.
+// LHH pull = RF side → LF is the OPPO fielder → trigger on OPP / OPG.
+function computeLFCode(p, avgDist, effSide) {
+  const isLeft = effSide === 'Left' || effSide === 'L';
+  const line = isLeft ? (p.OPP||0) : (p.PLL||0);
+  const gap  = isLeft ? (p.OPG||0) : (p.PLG||0);
+  if (line > 18)            return 'LINE';
+  if (gap  > 32)            return 'GAP';
+  if (avgDist > OF_DEEP_FT) return 'DEEP';
+  if (avgDist < OF_SHAL_FT) return 'SHAL';
+  return 'NRM';
+}
+
+// CF code — PLG is the pull-side gap, OPG is the oppo-side gap.
+// Shade in the absolute-field direction that corresponds to the dominant gap zone.
+// RHH: pull = LF side → PLG heavy → shade SH-L; OPG heavy → shade SH-R.
+// LHH: pull = RF side → PLG heavy → shade SH-R; OPG heavy → shade SH-L.
+function computeCFCode(p, avgDist, effSide) {
+  const isLeft = effSide === 'Left' || effSide === 'L';
+  const plg = p.PLG||0, opg = p.OPG||0;
+  if (plg - opg > 18) return isLeft ? 'SH-R' : 'SH-L';
+  if (opg - plg > 18) return isLeft ? 'SH-L' : 'SH-R';
+  if (avgDist > OF_DEEP_FT) return 'DEEP';
+  if (avgDist < OF_SHAL_FT) return 'SHAL';
+  return 'NRM';
+}
+
+// RF code — mirror of LF.
+// RHH pull = LF side → RF is the OPPO fielder → trigger on OPP / OPG.
+// LHH pull = RF side → RF is the PULL fielder → trigger on PLL / PLG.
+function computeRFCode(p, avgDist, effSide) {
+  const isLeft = effSide === 'Left' || effSide === 'L';
+  const line = isLeft ? (p.PLL||0) : (p.OPP||0);
+  const gap  = isLeft ? (p.PLG||0) : (p.OPG||0);
+  if (line > 18)            return 'LINE';
+  if (gap  > 32)            return 'GAP';
+  if (avgDist > OF_DEEP_FT) return 'DEEP';
+  if (avgDist < OF_SHAL_FT) return 'SHAL';
+  return 'NRM';
+}
+
+// ================================================================
+// BUILD HITTER ROWS
+// ================================================================
+function buildHitterRows(allRows, batterTeam, pitcherThrows) {
+  const teamRows = allRows.filter(r => getS(r,'BatterTeam') === batterTeam);
+  const bSet     = new Set(teamRows.map(r => getS(r,'Batter')).filter(Boolean));
+  const names    = [...bSet].sort((a,b) => a.localeCompare(b));
+
+  return names.slice(0, 14).map((name, idx) => {
+    // Only rows for this batter vs this pitcher handedness
+    const rows = allRows.filter(r =>
+      getS(r,'Batter') === name && getS(r,'PitcherThrows') === pitcherThrows
+    );
+
+    // Determine batter side
+    const bsRow   = rows.find(r => getS(r,'BatterSide')) ||
+                    teamRows.find(r => getS(r,'Batter') === name);
+    const rawSide = bsRow ? getS(bsRow,'BatterSide') : 'Right';
+    const effSide = effectiveSide(rawSide, pitcherThrows);
+
+    const infRes  = computeInfieldPercents(rows, rawSide);
+    const ip      = infRes ? infRes.pcts   : null;
+
+    const ofRes   = computeOutfieldPercents(rows, rawSide);
+    const op      = ofRes  ? ofRes.pcts    : null;
+    const dist    = ofRes  ? ofRes.avgDist : null;
+
+    return {
+      num: idx + 1, name, rawSide, effSide,
+      // infield zone percents
+      ip, infTotal: infRes ? infRes.total : 0,
+      // infield codes — all 4 fielders, using effSide for handedness-aware mapping
+      ss  : ip ? computeSSCode(ip, effSide)  : '--',
+      ib2 : ip ? compute2BCode(ip, effSide)  : '--',
+      t3b : ip ? compute3BCode(ip, effSide)  : '--',
+      ib1 : ip ? compute1BCode(ip, effSide)  : '--',
+      // outfield zone percents (hitter-relative zones)
+      op, ofTotal: ofRes ? ofRes.total : 0,
+      avgDist: dist,
+      // outfield codes — fielder positions in absolute field terms
+      lf  : op ? computeLFCode(op, dist, effSide) : '--',
+      cf  : op ? computeCFCode(op, dist, effSide) : '--',
+      rf  : op ? computeRFCode(op, dist, effSide) : '--',
+    };
+  });
+}
+
+// ================================================================
+// RENDER HELPERS
+// ================================================================
+function maxPct(pcts, zones) { return Math.max(...zones.map(z => pcts[z]||0)); }
+function sc(rawSide) { return rawSide==='Left'?'L':rawSide==='Right'?'R':'S'; }
+
+function codeCell(val, cls) {
+  return `<td class="${cls}">${val}</td>`;
+}
+
+function codeCss(val) {
+  if (val === 'NRM' || val === '--') return 'z-nrm';
+  if (val === 'SHIFT' || val === 'SFT') return 'z-shift';
+  if (val === 'LINE') return 'z-line';
+  return 'z-shade';
+}
+
+// ================================================================
+// RENDER INFIELD CARD
+// cols: # | NAME | 3B | 5-6 | MID | 4-3 | SS | 2B | 1B | 3BPOS
+// ================================================================
+function renderInfieldCard(hitters, batterTeam, pitcherThrows, size) {
+  const hand    = pitcherThrows === 'Left' ? 'LHP' : 'RHP';
+  const variant = pitcherThrows === 'Left' ? 'inf-lhp' : 'inf-rhp';
+  const INF_Z   = ['3B','5-6','MID','4-3'];
+  const date    = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  const tbody = hitters.map(h => {
+    const nm = h.name.length > 17 ? h.name.slice(0,16)+'\u2026' : h.name;
+    if (!h.ip) {
+      return `<tr>
+        <td class="ci-num">${h.num}</td>
+        <td class="td-name ci-name">${escHtml(nm)}<sup>${sc(h.rawSide)}</sup></td>
+        <td class="ci-z">--</td><td class="ci-z">--</td><td class="ci-z">--</td><td class="ci-z">--</td>
+        <td class="ci-c z-nrm">--</td><td class="ci-c z-nrm">--</td><td class="ci-c z-nrm">--</td><td class="ci-c z-nrm">--</td>
+      </tr>`;
+    }
+    const mx = maxPct(h.ip, INF_Z);
+    const zc = INF_Z.map(z => {
+      const v = h.ip[z];
+      return `<td class="ci-z${v===mx&&v>0?' z-max':''}">${v}</td>`;
+    }).join('');
+    return `<tr>
+      <td class="ci-num">${h.num}</td>
+      <td class="td-name ci-name">${escHtml(nm)}<sup>${sc(h.rawSide)}</sup></td>
+      ${zc}
+      ${codeCell(h.ss,  'ci-c '+codeCss(h.ss))}
+      ${codeCell(h.ib2, 'ci-c '+codeCss(h.ib2))}
+      ${codeCell(h.ib1, 'ci-c '+codeCss(h.ib1))}
+      ${codeCell(h.t3b, 'ci-c '+codeCss(h.t3b))}
+    </tr>`;
+  }).join('');
+
+  return `<div class="pos-card ${variant} size-${size}">
+  <div class="card-hdr">
+    <div class="hdr-left">
+      <span class="card-title">Infield</span>
+      <span class="vs-badge">vs ${hand}</span>
+      <span class="card-sub">ground-ball positioning</span>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-team">${escHtml(batterTeam)}</span>
+      <span class="hdr-date">${date}</span>
+    </div>
+  </div>
+  <table class="card-tbl">
+    <colgroup>
+      <col class="ci-num"><col class="ci-name">
+      <col class="ci-z"><col class="ci-z"><col class="ci-z"><col class="ci-z">
+      <col class="ci-c"><col class="ci-c"><col class="ci-c"><col class="ci-c">
+    </colgroup>
+    <thead><tr>
+      <th class="ci-num">#</th>
+      <th class="th-name ci-name">NAME</th>
+      <th class="ci-z">PL%</th>
+      <th class="ci-z">PG%</th>
+      <th class="ci-z">MID%</th>
+      <th class="ci-z">OP%</th>
+      <th class="ci-c">SS</th>
+      <th class="ci-c">2B</th>
+      <th class="ci-c">1B</th>
+      <th class="ci-c">3BPOS</th>
+    </tr></thead>
+    <tbody>${tbody}</tbody>
+  </table>
+  <div class="card-legend">
+    <b>PL% / PG% / MID% / OP%</b> = GB zone % (hitter-relative: pull-line / pull-gap / middle / oppo — direction depends on batter hand)
+    &nbsp;|&nbsp; <b>SS</b>: RHH: P+1/2/3=shade pull (3B side) &middot; LHH: P+1/SFT=shade toward 2B &middot; NRM
+    &nbsp;|&nbsp; <b>2B</b>: SHIFT/SFT=shift pull-side (RHH: left; LHH: right) &middot; NRM
+    &nbsp;|&nbsp; <b>1B</b>: RHH: LINE=oppo line &middot; LHH: LINE=pull line &middot; IN=charge &middot; NRM
+    &nbsp;|&nbsp; <b>3BPOS</b>: RHH: LINE=pull line &middot; IN=charge &middot; LHH: LINE=oppo line only &middot; NRM
+    &nbsp;|&nbsp; --=under ${MIN_GB} GB &nbsp; L/R/S=batter hand
+  </div>
+</div>`;
+}
+
+// ================================================================
+// RENDER OUTFIELD CARD
+// cols: # | NAME | OPP | OPG | CTR | PLG | PL | PLL | DST | LF | CF | RF
+// Zone columns are hitter-relative (positive = pull).
+// Fielder code columns are absolute field positions.
+// ================================================================
+function renderOutfieldCard(hitters, batterTeam, pitcherThrows, size) {
+  const hand    = pitcherThrows === 'Left' ? 'LHP' : 'RHP';
+  const variant = pitcherThrows === 'Left' ? 'of-lhp' : 'of-rhp';
+  const OF_Z    = ['OPP','OPG','CTR','PLG','PL','PLL'];
+  const date    = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  const tbody = hitters.map(h => {
+    const nm = h.name.length > 17 ? h.name.slice(0,16)+'\u2026' : h.name;
+    if (!h.op) {
+      return `<tr>
+        <td class="co-num">${h.num}</td>
+        <td class="td-name co-name">${escHtml(nm)}<sup>${sc(h.rawSide)}</sup></td>
+        <td class="co-z">--</td><td class="co-z">--</td><td class="co-z">--</td>
+        <td class="co-z">--</td><td class="co-z">--</td><td class="co-z">--</td>
+        <td class="co-dst">--</td>
+        <td class="co-c z-nrm">--</td><td class="co-c z-nrm">--</td><td class="co-c z-nrm">--</td>
+      </tr>`;
+    }
+    const mx  = maxPct(h.op, OF_Z);
+    const zc  = OF_Z.map(z => {
+      const v = h.op[z];
+      return `<td class="co-z${v===mx&&v>0?' z-max':''}">${v}</td>`;
+    }).join('');
+    const dst = h.avgDist !== null ? h.avgDist : '--';
+    return `<tr>
+      <td class="co-num">${h.num}</td>
+      <td class="td-name co-name">${escHtml(nm)}<sup>${sc(h.rawSide)}</sup></td>
+      ${zc}
+      <td class="co-dst">${dst}</td>
+      ${codeCell(h.lf, 'co-c '+codeCss(h.lf))}
+      ${codeCell(h.cf, 'co-c '+codeCss(h.cf))}
+      ${codeCell(h.rf, 'co-c '+codeCss(h.rf))}
+    </tr>`;
+  }).join('');
+
+  return `<div class="pos-card ${variant} size-${size}">
+  <div class="card-hdr">
+    <div class="hdr-left">
+      <span class="card-title">Outfield</span>
+      <span class="vs-badge">vs ${hand}</span>
+      <span class="card-sub">air-ball positioning</span>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-team">${escHtml(batterTeam)}</span>
+      <span class="hdr-date">${date}</span>
+    </div>
+  </div>
+  <table class="card-tbl">
+    <colgroup>
+      <col class="co-num"><col class="co-name">
+      <col class="co-z"><col class="co-z"><col class="co-z">
+      <col class="co-z"><col class="co-z"><col class="co-z">
+      <col class="co-dst">
+      <col class="co-c"><col class="co-c"><col class="co-c">
+    </colgroup>
+    <thead><tr>
+      <th class="co-num">#</th>
+      <th class="th-name co-name">NAME</th>
+      <th class="co-z">OPP</th>
+      <th class="co-z">OPG</th>
+      <th class="co-z">CTR</th>
+      <th class="co-z">PLG</th>
+      <th class="co-z">PL</th>
+      <th class="co-z">PLL</th>
+      <th class="co-dst">DST</th>
+      <th class="co-c">LF</th>
+      <th class="co-c">CF</th>
+      <th class="co-c">RF</th>
+    </tr></thead>
+    <tbody>${tbody}</tbody>
+  </table>
+  <div class="card-legend">
+    <b>OPP/OPG/CTR/PLG/PL/PLL</b> = fly-ball &amp; line-drive % (hitter-relative: oppo → pull)
+    &nbsp;|&nbsp; OPP=oppo incl. line &middot; OPG=oppo gap &middot; CTR=center &middot; PLG=pull gap &middot; PL=pull &middot; PLL=pull line
+    &nbsp;|&nbsp; <b>DST</b> = avg air-ball distance (ft)
+    &nbsp;|&nbsp; <b>LF/CF/RF</b> codes: NRM &middot; LINE=hug foul line &middot; GAP=shade to gap &middot; SH-L/SH-R=shade (absolute field) &middot; DEEP &middot; SHAL
+    &nbsp;|&nbsp; --=under ${MIN_AB} AB &nbsp; L/R/S=batter hand
+  </div>
+</div>`;
+}
+
+// ================================================================
+// DEBUG HELPER — spray direction verification
+// Set DEBUG_SPRAY = true at the top to activate.
+// ================================================================
+function debugSprayForBatter(allRows, batterName, pitcherThrows = null) {
+  const rows = allRows.filter(r =>
+    getS(r,'Batter') === batterName &&
+    (!pitcherThrows || getS(r,'PitcherThrows') === pitcherThrows) &&
+    isBallInPlay(r)
+  );
+  const bsRow   = allRows.find(r => getS(r,'Batter') === batterName && getS(r,'BatterSide'));
+  const rawSide = bsRow ? getS(bsRow,'BatterSide') : '?';
+  const label   = `${batterName} (${rawSide}) vs ${pitcherThrows || 'any'}`;
+
+  if (!rows.length) {
+    console.log(`[DEBUG SPRAY] No BIP rows for ${label}`);
+    return;
+  }
+
+  const hdr = ['#','EffSide','PThrows','RawDir','RelDir','HitType','InfZone','OfZone']
+    .map(h => h.padEnd(10)).join('');
+  console.log(`\n=== DEBUG SPRAY: ${label} (${rows.length} BIP rows, showing up to 20) ===`);
+  console.log(hdr);
+
+  let shown = 0;
+  for (const r of rows) {
+    if (shown >= 20) break;
+    const isSwitch = rawSide === 'Switch' || rawSide === 'S' || rawSide === 'B';
+    const pt  = getS(r,'PitcherThrows');
+    const eff = isSwitch ? (pt === 'Right' ? 'Left' : 'Right') : rawSide;
+    const dir = getN(r,'Direction');
+    if (dir === null) continue;
+    const rel     = getHitterRelativeDir(dir, eff);
+    const ht      = getS(r,'TaggedHitType') || '?';
+    const infZone = isGroundBall(r) ? getInfieldZone(dir, eff) : '—';
+    const ofZone  = isAirBall(r)   ? getOutfieldZone(dir, eff) : '—';
+    const row = [
+      String(shown+1), eff, pt,
+      dir.toFixed(1), rel.toFixed(1), ht, infZone, ofZone
+    ].map(v => String(v).padEnd(10)).join('');
+    console.log(row);
+    shown++;
+  }
+  console.log(`---`);
+}
+
+// ================================================================
+// GENERATE ALL 4 CARDS
+// ================================================================
+function generateFourCards(batterTeam) {
+  const size = document.getElementById('cardSize').value;
+  const lhp  = buildHitterRows(ALL_ROWS, batterTeam, 'Left');
+  const rhp  = buildHitterRows(ALL_ROWS, batterTeam, 'Right');
+
+  if (DEBUG_SPRAY) {
+    const teamRows = ALL_ROWS.filter(r => getS(r,'BatterTeam') === batterTeam);
+    const seen = new Set();
+    let foundL = false, foundR = false;
+    for (const r of teamRows) {
+      const n = getS(r,'Batter');
+      if (!n || seen.has(n)) continue;
+      seen.add(n);
+      const side = getS(r,'BatterSide');
+      if (!foundL && side === 'Left')  { debugSprayForBatter(ALL_ROWS, n); foundL = true; }
+      if (!foundR && side === 'Right') { debugSprayForBatter(ALL_ROWS, n); foundR = true; }
+      if (foundL && foundR) break;
+    }
+  }
+
+  return [
+    renderInfieldCard(lhp,  batterTeam, 'Left',  size),
+    renderInfieldCard(rhp,  batterTeam, 'Right', size),
+    renderOutfieldCard(lhp, batterTeam, 'Left',  size),
+    renderOutfieldCard(rhp, batterTeam, 'Right', size),
+  ].join('\n');
+}
+
+// ================================================================
+// CSV + UI
+// ================================================================
+function parseCSV(text) {
+  const r = Papa.parse(text, { header:true, skipEmptyLines:true, dynamicTyping:false, transformHeader: h=>h.trim() });
+  return r.data||[];
+}
+
+function setStatus(msg) { document.getElementById('statusBar').textContent = msg; }
+
+function populateTeams() {
+  const sel   = document.getElementById('teamSel');
+  const teams = [...new Set(ALL_ROWS.map(r=>getS(r,'BatterTeam')).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">-- Select Opposing Team --</option>' +
+    teams.map(t=>`<option>${escHtml(t)}</option>`).join('');
+}
+
+function loadCSVText(text) {
+  ALL_ROWS = parseCSV(text);
+  const bc = new Set(ALL_ROWS.map(r=>getS(r,'Batter')).filter(Boolean)).size;
+  setStatus(`Loaded ${ALL_ROWS.length.toLocaleString()} pitches | ${bc} batters.`);
+  populateTeams();
+}
+
+document.getElementById('csvFile').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { try { loadCSVText(ev.target.result); } catch(err){ setStatus('Error: '+err.message); } };
+  reader.readAsText(file);
+});
+
+document.getElementById('genBtn').addEventListener('click', () => {
+  const team = document.getElementById('teamSel').value;
+  if (!team) { setStatus('Select an opposing team first.'); return; }
+  setStatus('Building 4 cards...');
+  setTimeout(() => {
+    try {
+      document.getElementById('preview').innerHTML = generateFourCards(team);
+      setStatus(`4 cards ready for ${team} — Infield vs LHP, Infield vs RHP, Outfield vs LHP, Outfield vs RHP.`);
+    } catch(err){ setStatus('Error: '+err.message); console.error(err); }
+  }, 0);
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  fetch('data/data.csv')
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
+    .then(text => {
+      loadCSVText(text);
+      document.getElementById('preview').innerHTML =
+        '<div class="empty-state">Select an opposing team above, then click Generate 4 Cards.</div>';
+    })
+    .catch(err => {
+      setStatus(`Could not auto-load data.csv (${err.message}) — use the file picker.`);
+      document.getElementById('preview').innerHTML =
+        '<div class="empty-state">Upload data.csv to get started.</div>';
+    });
+});
+</script>
+</body>
+</html>

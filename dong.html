@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Would It Dong? – ALPB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .check { color: var(--success); font-size: 1.2em; }
+    td.park { cursor: pointer; text-align: center; }
+    td.park:hover { background: var(--accent-soft); }
+    .dong-table { min-width: 2200px; table-layout: fixed; }
+    .dong-table th.park, .dong-table td.park { width: 8rem; min-width: 8rem; text-align: center; }
+    .dong-table th, .dong-table td { white-space: nowrap; }
+    .dong-table .col-date { width: 5rem; }
+    .dong-table .col-batter { width: 8rem; }
+    .dong-table .col-inning { width: 3rem; }
+    .dong-table .col-result { width: 5rem; }
+    .dong-table .col-dist { width: 4rem; }
+    .dong-table .col-exit { width: 4rem; }
+    .dong-table .col-angle { width: 4rem; }
+    .dong-table .col-details { width: 4rem; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="logo">ALPB</a>
+    <nav class="nav-desktop">
+      <a href="index.html">Home</a>
+      <a href="schedule.html">Standings</a>
+      <a href="games.html">Games</a>
+      <a href="leaderboards.html">Leaderboards</a>
+      <a href="park-factors.html">Park Factors</a>
+      <a href="fielding.html">Fielding</a>
+      <a href="stolen-bases.html">Base Running</a>
+      <a href="dong.html" class="active">Would it Dong?</a>
+    </nav>
+    <div class="hamburger" id="hamburger-btn" aria-label="Menu"><span></span><span></span><span></span></div>
+  </header>
+  <div id="side-menu" class="side-menu">
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="schedule.html">Standings</a></li>
+        <li><a href="games.html">Games</a></li>
+        <li><a href="leaderboards.html">Leaderboards</a></li>
+        <li><a href="park-factors.html">Park Factors</a></li>
+        <li><a href="fielding.html">Fielding</a></li>
+        <li><a href="stolen-bases.html">Base Running</a></li>
+        <li><a href="dong.html" class="active">Would it Dong?</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div id="overlay" class="overlay"></div>
+
+  <main class="main-container" style="max-width:100%;width:100%;padding:1rem 1.5rem;">
+    <h1 class="page-title">Would It Dong?</h1>
+    <div class="filters-panel">
+      <div class="filters-grid">
+        <div><label for="player-filter">Player</label><input type="text" id="player-filter" list="player-list" placeholder="Filter…" /></div>
+        <div><label for="team-filter">Team</label><input type="text" id="team-filter" list="team-list" placeholder="Filter…" /></div>
+      </div>
+      <datalist id="player-list"></datalist>
+      <datalist id="team-list"></datalist>
+    </div>
+    <p id="note" class="error-msg" style="margin-bottom:1rem;">Work in progress. Park shapes and wall height data may limit accuracy.</p>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div id="table-container" style="width:100%;overflow-x:auto;">Loading…</div>
+    </div>
+  </main>
+
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal-content">
+      <span id="modalClose" class="modal-close" aria-label="Close">&times;</span>
+      <iframe id="animFrame" src="" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    // park lookup
+    const teamParkMap = {
+      'LAN':'Penn Medicine Park','SMD':'Regency Furniture Stadium','YOR':'Wellspan Park',
+      'HAG_FLY':'Meritus Park','LI':'Fairfield Properties BallPark','GAS':'CaroMont Health Park',
+      'STA_YAN':'SIUH Community Park','HP':'Truist Point','LEX_LEG':'Legends Field',
+      'WES_POW':'GoMart BallPark'
+    };
+
+    // Fence distances (ft). Wall heights (ft): wallHeightLeftFoul, wallHeightLeftCenter, wallHeightCenter, wallHeightRightCenter, wallHeightRightFoul.
+    // Edit the wallHeight* values below for each park; 8 is placeholder. round:true = circular fence (e.g. SIUH).
+    const FENCE_KEYS = ['leftFoul','leftCenter','center','rightCenter','rightFoul'];
+    const WALL_ANGLES = [-90,-45,0,45,90]; // degrees
+
+    const parks = {
+      default:{leftFoul:325,leftCenter:(325+400)/2,center:400,rightCenter:(400+325)/2,rightFoul:325, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "Meritus Park":{leftFoul:346,leftCenter:(346+387)/2,center:400,rightCenter:(400+360)/2,rightFoul:325, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "Wellspan Park":{leftFoul:300,leftCenter:(300+405)/2,center:405,rightCenter:(405+326)/2,rightFoul:326, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "CaroMont Health Park":{leftFoul:315,leftCenter:361,center:400,rightCenter:367,rightFoul:325, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "Penn Medicine Park":{leftFoul:320,leftCenter:409,center:400,rightCenter:363,rightFoul:300, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "Fairfield Properties BallPark":{leftFoul:325,leftCenter:(325+400)/2,center:400,rightCenter:(400+325)/2,rightFoul:325, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "SIUH Community Park":{leftFoul:320,leftCenter:(320+390)/2,center:390,rightCenter:(390+318)/2,rightFoul:318, round:true, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "GoMart BallPark":{leftFoul:330,leftCenter:(330+400)/2,center:400,rightCenter:(400+320)/2,rightFoul:320, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "Truist Point":{leftFoul:336,leftCenter:363,center:400,rightCenter:366,rightFoul:339, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "Legends Field":{leftFoul:320,leftCenter:(320+401)/2,center:401,rightCenter:(401+318)/2,rightFoul:318, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8},
+      "Regency Furniture Stadium":{leftFoul:310,leftCenter:(310+400)/2,center:400,rightCenter:(400+325)/2,rightFoul:325, round:false, wallHeightLeftFoul:8,wallHeightLeftCenter:8,wallHeightCenter:8,wallHeightRightCenter:8,wallHeightRightFoul:8}
+    };
+
+    const logicParks = {};
+    Object.entries(parks).forEach(([name,d])=>{
+      logicParks[name] = { ...d };
+    });
+
+    function buildWallVertices(park) {
+      return WALL_ANGLES.map((deg,i)=>{
+        const rad = deg*Math.PI/180, r = park[FENCE_KEYS[i]];
+        return { x: Math.sin(rad)*r, y: -Math.cos(rad)*r };
+      });
+    }
+
+    function fenceDist(park, dirDeg) {
+      if (park.round) return park.center;
+      const θ = dirDeg*Math.PI/180, dx = Math.sin(θ), dy = -Math.cos(θ), wall = buildWallVertices(park);
+      let minT = Infinity;
+      for (let i = 0; i < wall.length-1; i++) {
+        const P1 = wall[i], P2 = wall[i+1], sx = P2.x-P1.x, sy = P2.y-P1.y, det = dx*(-sy)-dy*(-sx);
+        if (Math.abs(det) < 1e-6) continue;
+        const inv = 1/det, t = (P1.x*(-sy)-P1.y*(-sx))*inv, u = (dx*P1.y-dy*P1.x)*inv;
+        if (t > 0 && u >= 0 && u <= 1) minT = Math.min(minT, t);
+      }
+      return isFinite(minT) ? minT : park.center;
+    }
+
+    function wallHeightAt(park, dirDeg) {
+      const h = (k)=>park['wallHeight'+k.charAt(0).toUpperCase()+k.slice(1)];
+      const heights = FENCE_KEYS.map(k=>h(k)!=null?h(k):8);
+      if (dirDeg <= WALL_ANGLES[0]) return heights[0];
+      if (dirDeg >= WALL_ANGLES[4]) return heights[4];
+      for (let i = 0; i < WALL_ANGLES.length-1; i++) {
+        if (dirDeg >= WALL_ANGLES[i] && dirDeg <= WALL_ANGLES[i+1]) {
+          const t = (dirDeg - WALL_ANGLES[i]) / (WALL_ANGLES[i+1]-WALL_ANGLES[i]);
+          return heights[i]*(1-t) + heights[i+1]*t;
+        }
+      }
+      return heights[2];
+    }
+
+    let allHits=[];
+    Papa.parse('data.csv',{download:true,header:true,dynamicTyping:true,complete:({data})=>{
+      const parkNames=Object.keys(parks).filter(n=>'default'!==n);
+      allHits=data.filter(r=>{
+        if(r.PitchCall!=='InPlay') return false;
+        const dist=+r.Distance||0,dir=+r.Direction||0;
+        return parkNames.some(p=>dist>=fenceDist(logicParks[p],dir));
+      });
+      // build filters
+      const players=new Set(),teams=new Set();
+      allHits.forEach(r=>{players.add(r.Batter);teams.add(r.BatterTeam);});
+      const plList=document.getElementById('player-list'),
+            tmList=document.getElementById('team-list');
+      players.forEach(p=>plList.append(new Option(p)));
+      teams.forEach(t=>tmList.append(new Option(t)));
+      document.getElementById('player-filter').addEventListener('input',renderTable);
+      document.getElementById('team-filter'  ).addEventListener('input',renderTable);
+      renderTable();
+    }});
+
+    const g=32.174;
+    function trajectoryHeight(x,exitMPH,launchDeg){
+      const v0=exitMPH*1.46667,θ=launchDeg*Math.PI/180,vx=v0*Math.cos(θ);
+      if(vx<=0) return 0;
+      const t=x/vx,vy=v0*Math.sin(θ);
+      return vy*t-0.5*g*t*t;
+    }
+
+    function renderTable(){
+      const pf=document.getElementById('player-filter').value.trim().toLowerCase(),
+            tf=document.getElementById('team-filter').value.trim().toLowerCase();
+      const filtered=allHits.filter(r=>{
+        return (!pf||r.Batter.toLowerCase().includes(pf))
+            &&(!tf||r.BatterTeam.toLowerCase().includes(tf));
+      });
+      filtered.sort((a,b)=>new Date(b.Date)-new Date(a.Date));
+      const parkNames=Object.keys(parks).filter(n=>'default'!==n);
+      let html='<table class="dong-table"><thead><tr>'
+               +'<th class="col-date">Date</th><th class="col-batter">Batter</th><th class="col-inning">Inn</th>'
+               +'<th class="col-result">Result</th><th class="col-dist">Dist</th><th class="col-exit">Exit</th>'
+               +'<th class="col-angle">Angle</th>';
+      parkNames.forEach(p=>html+=`<th class="park">${p}</th>`);
+      html+='<th class="col-details">Details</th></tr></thead><tbody>';
+      filtered.forEach((r,i)=>{
+        const dist=+r.Distance||0,dir=+r.Direction||0,exit=+r.ExitSpeed||0,ang=+r.Angle||0;
+        const actualPark=teamParkMap[r.HomeTeam]||null;
+        const dateLink=`<a href="./Game-view.html?gameUID=${encodeURIComponent(r.GameUID)}">${r.Date}</a>`;
+        const batterLink=`<a href="batter-profiles.html?player=${encodeURIComponent(r.Batter)}">${r.Batter}</a>`;
+        const detailLink=`<a href="Game-view.html?pitchUID=${encodeURIComponent(r.PitchUID)}">Details</a>`;
+        html+='<tr>';
+        html+=`<td class="col-date">${dateLink}</td><td class="col-batter">${batterLink}</td><td class="col-inning">${r.Inning}</td>`
+             +`<td class="col-result">${r.PlayResult}</td><td class="col-dist">${dist.toFixed(0)}</td>`
+             +`<td class="col-exit">${exit.toFixed(0)}</td><td class="col-angle">${ang.toFixed(0)}</td>`;
+        parkNames.forEach(p=>{
+          let mark='';
+          if(p===actualPark){
+            if(r.PlayResult==='HomeRun') mark='<span class="check">✓</span>';
+          } else {
+            const parkObj=logicParks[p];
+            const fDist=fenceDist(parkObj,dir);
+            const requiredHeight=wallHeightAt(parkObj,dir);
+            const heightAtFence=trajectoryHeight(fDist,exit,ang);
+            if(dist>=fDist&&heightAtFence>=requiredHeight) mark='<span class="check">✓</span>';
+          }
+          html+=`<td class="park" data-index="${i}" data-park="${p}" data-pitchuid="${r.PitchUID}">${mark}</td>`;
+        });
+        html+=`<td class="col-details">${detailLink}</td></tr>`;
+      });
+      html+='</tbody></table>';
+      document.getElementById('table-container').innerHTML=html;
+      attachParkClicks();
+    }
+
+    // Modal & click handling
+    const modalOverlay = document.getElementById('modalOverlay'),
+          modalClose   = document.getElementById('modalClose'),
+          animFrame    = document.getElementById('animFrame');
+
+    function attachParkClicks(){
+      document.querySelectorAll('td.park').forEach(cell=>{
+        cell.addEventListener('click',()=>{
+           const pitchUID = cell.dataset.pitchuid;
+           const park = cell.dataset.park;
+animFrame.src = 
+  `animate.html?pitchUID=${encodeURIComponent(pitchUID)}`
+  + `&park=${encodeURIComponent(park)}`;
+            modalOverlay.classList.add('show');
+        });
+      });
+    }
+
+    modalClose.addEventListener('click',()=>{ modalOverlay.classList.remove('show'); animFrame.src = ''; });
+    modalOverlay.addEventListener('click', e=>{ if(e.target === modalOverlay){ modalOverlay.classList.remove('show'); animFrame.src = ''; } });
+  </script>
+  <script>
+    (function(){ var h=document.getElementById('hamburger-btn'), s=document.getElementById('side-menu'), o=document.getElementById('overlay');
+      h.addEventListener('click', function(){ if(s.classList.contains('open')){ h.classList.remove('open'); s.classList.remove('open'); o.classList.remove('visible'); }else{ h.classList.add('open'); s.classList.add('open'); o.classList.add('visible'); } });
+      o.addEventListener('click', function(){ h.classList.remove('open'); s.classList.remove('open'); o.classList.remove('visible'); });
+    })();
+  </script>
+  <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+    authDomain: "revs-2c987.firebaseapp.com",
+    projectId: "revs-2c987",
+    storageBucket: "revs-2c987.firebasestorage.app",
+    messagingSenderId: "181256684157",
+    appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+    measurementId: "G-2050889X0C"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+
+  const auth = firebase.auth();
+
+    // Redirect to login if not authenticated
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = 'login.html';
+      } else {
+        // Display user email once logged in
+        document.addEventListener('DOMContentLoaded', () => {
+
+        });
+      }
+    });
+</script>
+</body>
+</html>

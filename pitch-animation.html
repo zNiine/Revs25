@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pitch Viewer – Polynomial + Auto-Oriented Camera</title>
+  <style>
+    body { margin:0; overflow:hidden; font-family:sans-serif }
+    #ui {
+      position:absolute; top:10px; left:10px;
+      background:rgba(255,255,255,0.9); padding:8px; border-radius:4px;
+      z-index:1;
+    }
+    #ui button { margin:0 5px }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <button id="prev">Prev</button>
+    <span id="info">Loading…</span>
+    <button id="next">Next</button>
+  </div>
+
+  <script src="https://unpkg.com/three@0.153.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+  let scene, camera, renderer;
+  let zone, ball;
+  let pitches = [], current = 0;
+  let trail = [], tIdx = 0, playing = false;
+  const clock = new THREE.Clock();
+
+  document.getElementById('prev').onclick = () => {
+    if (current > 0) loadPitch(current - 1);
+  };
+  document.getElementById('next').onclick = () => {
+    if (current < pitches.length - 1) loadPitch(current + 1);
+  };
+
+  function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+
+    camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 2000);
+    renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xeeeeff, 0x444444, 1.2));
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(400,400),
+      new THREE.MeshLambertMaterial({ color:0x228B22 })
+    );
+    ground.rotation.x = -Math.PI/2;
+    scene.add(ground);
+
+    // ─── make your strike zone from explicit bounds ───
+    const zoneBounds = {
+      left:   -17/24,   // −0.708 ft
+      right:   17/24,   // +0.708 ft
+      bottom:  1.5,     // 1.5 ft
+      top:     3.5      // 3.5 ft
+    };
+
+    const width  = zoneBounds.right  - zoneBounds.left;   // ≈1.416 ft
+    const height = zoneBounds.top    - zoneBounds.bottom;  // 2.0 ft
+    const depth  = 0.05;                                   // thickness
+
+    zone = new THREE.Mesh(
+      new THREE.BoxGeometry(width, height, depth),
+      new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.3 })
+    );
+
+    // position center at midpoint of bounds
+    zone.position.set(
+      (zoneBounds.left + zoneBounds.right) / 2,   // ≈ 0
+      (zoneBounds.bottom + zoneBounds.top) / 2,   // (1.5 + 3.5)/2 = 2.5 ft
+      0
+    );
+    scene.add(zone);
+
+    // ─── your baseball ───
+    ball = new THREE.Mesh(
+      new THREE.SphereGeometry(0.15,16,16),
+      new THREE.MeshLambertMaterial({ color:0xffffff })
+    );
+    scene.add(ball);
+
+    window.addEventListener('resize', onResize);
+  }
+
+  function loadData() {
+    fetch('data.csv').then(r=>r.text()).then(txt=>{
+      Papa.parse(txt,{
+        header:true,
+        dynamicTyping:true,
+        complete: res => {
+          pitches = res.data.filter(r => r.PitchTrajectoryXc0!=null && r.ZoneTime!=null);
+          if (!pitches.length) {
+            document.getElementById('info').textContent = 'No valid pitches';
+          } else {
+            loadPitch(0);
+          }
+        }
+      });
+    });
+  }
+
+  function loadPitch(i) {
+    current = i;
+    const d = pitches[i];
+    document.getElementById('info').textContent = `Pitch ${i+1}/${pitches.length}`;
+
+    // build trajectory
+    const T = d.ZoneTime, STEPS = 200;
+    trail = [];
+    for (let j=0; j<=STEPS; j++) {
+      const t = (j/STEPS)*T;
+      const x = d.PitchTrajectoryXc0 + d.PitchTrajectoryXc1*t + d.PitchTrajectoryXc2*t*t;
+      const y = d.PitchTrajectoryYc0 + d.PitchTrajectoryYc1*t + d.PitchTrajectoryYc2*t*t;
+      const z = d.PitchTrajectoryZc0 + d.PitchTrajectoryZc1*t + d.PitchTrajectoryZc2*t*t;
+      trail.push(new THREE.Vector3(x,y,z));
+    }
+
+    const releasePos = trail[0];
+    const plateCross = trail[trail.length-1];
+
+    // orient the zone to face the incoming pitch
+    const horizTarget = releasePos.clone().setY(plateCross.y);
+    zone.lookAt(horizTarget);
+
+    // position camera relative to the zone’s fixed center
+    const approach = releasePos.clone().sub(plateCross).normalize();
+    const camPos = zone.position.clone()
+      .addScaledVector(approach, -10)
+      .setY(zone.position.y + 3);
+
+    camera.position.copy(camPos);
+    camera.lookAt(zone.position);
+
+    // reset and play
+    tIdx = 0;
+    playing = true;
+    ball.position.copy(releasePos);
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = clock.getDelta();
+    if (playing) {
+      const speed = trail.length / (pitches[current].ZoneTime||1);
+      tIdx += dt * speed;
+      if (tIdx >= trail.length) {
+        tIdx = trail.length - 1;
+        playing = false;
+      }
+      ball.position.copy(trail[Math.floor(tIdx)]);
+    }
+    renderer.render(scene, camera);
+  }
+
+  function onResize(){
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  }
+
+  init();
+  loadData();
+  animate();
+  </script>
+  <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgBqrrRBB1vvAnQ9mNBt9Vq6p2NWeKYZw",
+    authDomain: "revs-2c987.firebaseapp.com",
+    projectId: "revs-2c987",
+    storageBucket: "revs-2c987.firebasestorage.app",
+    messagingSenderId: "181256684157",
+    appId: "1:181256684157:web:a9e1c5dfd767658e2ba714",
+    measurementId: "G-2050889X0C"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+</body>
+</html>

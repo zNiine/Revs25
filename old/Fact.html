@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Record Facts</title>
+  <script>
+    document.write('<script src="script.js?ts=' + Date.now() + '"><\/script>');
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    section {
+      margin-bottom: 2rem;
+    }
+    label {
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+    select {
+      padding: 0.3rem;
+      margin-bottom: 0.5rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+    th, td {
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    thead {
+      background: #e0e0e0;
+    }
+    tbody tr:nth-child(odd) {
+      background: #fff;
+    }
+    tbody tr:nth-child(even) {
+      background: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+    <button onclick="window.location.href='index.html'">Home</button>
+
+  <h1>Record Sheet</h1>
+
+  <section id="jersey-record">
+    <h2>Record by Jersey</h2>
+    <table id="jerseyTable">
+      <thead>
+        <tr><th>Jersey / Pants</th><th>Wins</th><th>Losses</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="weekday-record">
+    <h2>Record by Day of Week</h2>
+    <table id="dayTable">
+      <thead>
+        <tr><th>Day</th><th>Wins</th><th>Losses</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="month-record">
+    <h2>Record by Month</h2>
+    <label for="monthSelect">Select Month:</label>
+    <select id="monthSelect"></select>
+    <table id="monthTable">
+      <thead>
+        <tr><th>Month</th><th>Wins</th><th>Losses</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="venue-record">
+    <h2>Home vs Away Record</h2>
+    <table id="venueTable">
+      <thead>
+        <tr><th>Venue</th><th>Wins</th><th>Losses</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      Papa.parse('schedule.csv', {
+        header: true,
+        download: true,
+        skipEmptyLines: true,
+        complete: results => {
+          const jerseyStats = {};
+          const dayStats = {};
+          const monthStats = {};
+          const venueStats = { Home: { wins: 0, losses: 0 }, Away: { wins: 0, losses: 0 } };
+
+          results.data.forEach(row => {
+            const away    = row['Away'];
+            const home    = row['Home'];
+            const dateStr = row['Date'];
+            const result  = row['Result'];
+            const jersey  = row['Jersey / Pants'];
+            if (!away || !home || !dateStr || !result) return;
+
+            const [awayScore, homeScore] = result.split('-').map(n => parseInt(n, 10));
+            const isYorkAway = away.trim().toLowerCase() === 'york';
+            const isYorkHome = home.trim().toLowerCase() === 'york';
+            if (!isYorkAway && !isYorkHome) return;
+
+            const yorkWon = isYorkAway ? awayScore > homeScore : homeScore > awayScore;
+
+            // By Jersey
+            if (!jerseyStats[jersey]) jerseyStats[jersey] = { wins: 0, losses: 0 };
+            jerseyStats[jersey][yorkWon ? 'wins' : 'losses']++;
+
+            // By Weekday
+            const dayPart = dateStr.split(',')[1].trim();
+            const dtWeek  = new Date(`${dayPart} 2025`);
+            const weekday = dtWeek.toLocaleDateString('en-US', { weekday: 'long' });
+            if (!dayStats[weekday]) dayStats[weekday] = { wins: 0, losses: 0 };
+            dayStats[weekday][yorkWon ? 'wins' : 'losses']++;
+
+            // By Month
+            const monthName = dtWeek.toLocaleDateString('en-US', { month: 'long' });
+            if (!monthStats[monthName]) monthStats[monthName] = { wins: 0, losses: 0 };
+            monthStats[monthName][yorkWon ? 'wins' : 'losses']++;
+
+            // By Venue
+            if (isYorkHome) venueStats.Home[yorkWon ? 'wins' : 'losses']++;
+            if (isYorkAway) venueStats.Away[yorkWon ? 'wins' : 'losses']++;
+          });
+
+          // Render Jersey Table
+          const jerseyTbody = document.querySelector('#jerseyTable tbody');
+          Object.entries(jerseyStats).forEach(([style, { wins, losses }]) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${style}</td><td>${wins}</td><td>${losses}</td>`;
+            jerseyTbody.appendChild(tr);
+          });
+
+          // Render Weekday Table
+          const weekdayOrder = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+          const dayTbody = document.querySelector('#dayTable tbody');
+          weekdayOrder.forEach(day => {
+            if (dayStats[day]) {
+              const { wins, losses } = dayStats[day];
+              const tr = document.createElement('tr');
+              tr.innerHTML = `<td>${day}</td><td>${wins}</td><td>${losses}</td>`;
+              dayTbody.appendChild(tr);
+            }
+          });
+
+          // Populate Month Dropdown & Table
+          const monthSelect = document.getElementById('monthSelect');
+          const monthOrder = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+          monthOrder.filter(m => monthStats[m]).forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            monthSelect.appendChild(opt);
+          });
+
+          function updateMonthTable() {
+            const selected = monthSelect.value;
+            const stats    = monthStats[selected] || { wins: 0, losses: 0 };
+            const mb       = document.querySelector('#monthTable tbody');
+            mb.innerHTML   = '';
+            const tr       = document.createElement('tr');
+            tr.innerHTML   = `<td>${selected}</td><td>${stats.wins}</td><td>${stats.losses}</td>`;
+            mb.appendChild(tr);
+          }
+
+          monthSelect.addEventListener('change', updateMonthTable);
+          if (monthSelect.options.length) {
+            monthSelect.selectedIndex = 0;
+            updateMonthTable();
+          }
+
+          // Render Venue Table
+          const venueTbody = document.querySelector('#venueTable tbody');
+          Object.entries(venueStats).forEach(([venue, { wins, losses }]) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${venue}</td><td>${wins}</td><td>${losses}</td>`;
+            venueTbody.appendChild(tr);
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
